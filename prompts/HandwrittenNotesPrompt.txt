@@ -1,0 +1,50 @@
+Here is the problem I would like to solve.
+
+Problem Statement:
+
+There are images that are stored in a shared google drive folder. These images are handwritten notes about weekly offerings that are collected by Christ Church of India, San Ramon. This is often mentioned as CCISR, CCI SR offering etc. Each slip will have a date of the week for which it was collected. The date is mostly in mm/dd/yy or dd/mm/yy or mm/dd etc. I'm also planning to uploaded the actual scanned check book images also. The program should have ability to scan & process check book images accurately. These are standard US bank accepted checks. Until the time we completely cutover to dealing with check images, we should also process handwritten slips. Mostly they are Sundays. All amount are in US dollars.
+
+Each image will have one or more following details:
+
+1. Checks, sometimes called General, or General Offerings.
+
+These are general offerings. They are listed as check amount x number of checks. The may be computed or not.
+
+
+2. Cash
+
+These are cash offerings. They are usually computed by denomiations, such as 1*10 or 5*10, where 1 and 5 are denominations, and 10 is the count.
+
+3. SS or Sunday School or Children 
+
+These are also mostly cash offerings. 
+
+4. Bldg or Building or Building Funds:
+
+These are mostly checks, but sometimes there may be cash offering, but rare.
+
+5. Any other category on slip should be grouped under Miscellaneous.
+
+
+Objective or Goal:
+
+I would like to tabulate the weekly offering by date and month and year. The individual totals for each of the week, aggregated to month and then year.
+The results should be nicely tabulated, and totals appropriately aggregated. Show me month over month % increase or %decrease. 
+
+The program should have the ability to access a shared google drive and compute all the information. The weeks/months that are missing should be clearly marked in the rows as missing. The program should run as a service, that I can start locally as docker compose up/down, and then it should be running. The shared drive should be watched all the time. Anytime there is a new image uploaded, the image must be processed, and the totals should be incrementally updated. Always maintain cummulative summary of year to date. This summary sheet must be saved as a pdf file, and whenever an update is done, it should be emailed to email recipients that I configure the service with.
+
+Give this service can run as part of docker compose, create a nice react based UI that I can point the browser to, that shows the details of offering and summary in a visually appealing manner. You can use the lastest UI widgets that makest the look and feel really good, prefer theme based, dark themes would be best. Look at harbor html or other good react tools to render good UI.
+
+
+The UI should have the ability to hit manual refresh to check for new images, and reprocess the calculations. I should be able to view/edit/add/remove email recipients in UI and send the pdf also.
+
+The tool must be robust, and manage the state of what is processed, what is new and not repeat the calculations. Sometimes images that are uploaded can be back dated, program has to account for that.
+
+The program should run with minimum user intervention. If possible the program can optionally generate google sheet of the summary that can be shared with others, inaddition to pdf I mentioned earlier.
+
+Before you dive into detail design and implementation, share your design thoughts, and mockups so I can review. Once our design and end goals objectives are met in the design and implemention, you can go ahead with implementation. You are free to use any opensrc lightweight db to persist, queueing software or any other enterprise quality software to make the design and implementation robust. 
+
+Once this phase is completed, we can think of deploying this as a service on cloud, where we can see everything online.  Let me know if you have any clarifying questions, before we dive in.
+
+The tool must provide ability to not process hand written slips when we completely cutover to processing checkbook images. This feature can be toggled in UI. 
+

@@ -1,0 +1,31 @@
+Problem Statement & Context:
+
+I use google account with login & password. I have access to my own drive folders. Others have also shared their folders, which appear in my shared drive. The shared drive contains certain images. These images are uploaded periodically. The images are either handwritten notes or scanned regular US bank checks. These images could be uploaded to same shared folder or a subfolder periodically by different users.
+
+
+Goal or Objective:
+
+The upload images must be processed. How they are formatted, and how they should be processed in a problem I would like to solve
+subsequently. Initially, I would like to have a service that runs in a container. This container should have programmatic access to
+one or more shared drives given my account credentials. I can access the same drive foler from the browser or google drive app. 
+The job of this service is to detect when new files or images are uploaded, to the shared drive we are interested in monitoring.
+It must then kick of image processing job (image analyzer or IA) whose responsibility we can cover in next phase of the problem.
+
+The service must detect new images uploaded. It must track what images were already processed. If more than one image is simultaeneously uploaded by one or more people, we need to queue them for processing. We should not kick of IA for each file uploaded. In fact, the IA can always wait for job listening, possibly on a priorty queue, and process. Initially, the service must pick all existing image files and process them using the same IA and queue mechanism. All state must be peristed in a db. This db could be supabase or simple sql (mysql or postgres sql db). The content of images processed must be extracted as json file, and this must be stored in db. Not sure if mongodb makes sense for this.
+
+If the IA processor or the service crashes and restarts, it must not loose state. The program must be seamlessly be able to connect and access the shared drive that the user account has access to. I should be able to specify what drive folders, whether shared or owned drive folders to monitor, and the type of files to monitor. We should also have the ability to recurse within a folder. 
+
+The IA must use the appropriate LLM, to process the images accurately and with precision. When all the images, whether initial ones or newly uploaded ones are processed, the system must send notification. This email notification can be async event, and be reflected in the UI that a new image was received and processed.
+
+Since this is my own personal development project, I would like to use all open source software, and sdk available, including large language model. I should be able to start the entire service with a simple docker compose up or down, it should bring up all related services.
+
+For now, you can extract the text content from the image as json, and persist them. What to do with the data, and how to process them will come in next phase.
+
+If using k8s make sense for this problem, we can do that also. Eventually my goal is to host the service on my own personal computer. Use ngrok or tailscale to expose the service to public.
+
+Then create a beautiful react style, using harbor html or other new frameworks to visualize the summmary of files processed, what files are getting processed, the progress, and other useful metrics to watch.  Ensure system uses proper logger, to log all relevant debug and details for debugging.
+
+Come up with a plan to accomplish this task, with architectural overview and block diagram with flow of events.  Let me know if you have any clarifying question before you start. Once all questions are answered, and you have full context, you can start building for me. 
+
+
+
