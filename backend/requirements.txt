@@ -33,6 +33,7 @@ qrcode[pil]==7.4.2
 
 # Utils
 pydantic>=2.5.0
+pydantic-settings>=2.0.0
 httpx>=0.25.0
 pyyaml>=6.0.0
 click>=8.1.0

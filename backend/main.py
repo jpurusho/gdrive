@@ -13,7 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import uvicorn
 
-from app.api import auth, sync, profiles, files, settings
+from app.api import auth, sync, profiles, files
+from app.api import settings as settings_api
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.logger import setup_logger
@@ -77,7 +78,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(sync.router, prefix="/api/sync", tags=["Synchronization"])
 app.include_router(profiles.router, prefix="/api/profiles", tags=["Sync Profiles"])
 app.include_router(files.router, prefix="/api/files", tags=["File Browser"])
-app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(settings_api.router, prefix="/api/settings", tags=["Settings"])
 
 # Health check endpoint
 @app.get("/health")

@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: gdrive-sync-backend
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=http://localhost:8000/api/oauth/callback
+      - GOOGLE_REDIRECT_URI=http://localhost:8080/api/oauth/callback
       - DATABASE_URL=/app/data/sync.db
       - SECRET_KEY=${SECRET_KEY:-default-secret-key-change-in-production}
-      - FRONTEND_URL=http://localhost:3000
+      - FRONTEND_URL=http://localhost:3001
     volumes:
       - ./backend:/app
       - ./data:/app/data
@@ -32,9 +32,9 @@ services:
       dockerfile: Dockerfile
     container_name: gdrive-sync-frontend
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8000
+      - REACT_APP_BACKEND_URL=http://localhost:8080
     volumes:
       - ./frontend:/app
       - /app/node_modules

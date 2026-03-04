@@ -317,7 +317,7 @@ async def resolve_conflict(
             action="conflict_resolved",
             file_name=Path(resolution.file_path).name,
             status="success",
-            metadata={"resolution": resolution.resolution}
+            meta_data={"resolution": resolution.resolution}
         )
         db.add(activity)
         await db.commit()

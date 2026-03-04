@@ -8,7 +8,7 @@ from pathlib import Path
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Text, Boolean,
-    DateTime, ForeignKey, JSON, Float, Index, CheckConstraint
+    DateTime, ForeignKey, JSON, Float, Index, CheckConstraint, text
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
@@ -131,7 +131,7 @@ class ActivityLog(Base):
     file_size = Column(Float)
     status = Column(String(50))  # success, failed, skipped
     error_message = Column(Text)
-    metadata = Column(JSON, default=dict)
+    meta_data = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     # Relationships
@@ -179,7 +179,7 @@ async def init_db():
     async with AsyncSessionLocal() as session:
         # Check if settings exist
         result = await session.execute(
-            "SELECT COUNT(*) FROM settings"
+            text("SELECT COUNT(*) FROM settings")
         )
         count = result.scalar()
 
