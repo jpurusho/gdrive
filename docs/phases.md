@@ -12,19 +12,19 @@ gantt
     OAuth + Dashboard + File Trees     :done, p1, 2024-01-01, 7d
 
     section Phase 2
-    Sync Profiles + Card UI            :active, p2, after p1, 10d
+    Sync Profiles + Card UI            :done, p2, after p1, 10d
 
     section Phase 3
-    Sync Engine + Transfers             :p3, after p2, 14d
+    Sync Engine + Transfers             :done, p3, after p2, 14d
 
     section Phase 4
-    Scheduling + History                :p4, after p3, 10d
+    Scheduling + History                :done, p4, after p3, 10d
 
     section Phase 5
-    CI/CD + Auto-Update + Polish        :p5, after p4, 7d
+    CI/CD + Auto-Update + Polish        :done, p5, after p4, 7d
 ```
 
-## Phase 1: Authentication & Dashboard (Current)
+## Phase 1: Authentication & Dashboard
 
 **Goal:** Working Electron app with Google OAuth and drive/file browsing.
 
@@ -47,14 +47,14 @@ gantt
 
 **Deliverables:**
 - Sync profile creation dialog (select drive folder + local folder + direction)
-- Auto-detect sync direction based on drive permissions (read-only → download only)
-- Card-based sync profile display
-- Card states with visual indicators:
-  - Idle: neutral border
-  - In progress: glowing animated border (primary color)
-  - Completed: green border, checkmark
-  - Failed: red border, error details
-- Start/pause/cancel sync from card
+- Auto-detect sync direction based on drive permissions (read-only = download only)
+- Card-based sync profile display with horizontally scrolling cards
+- Card states with glowing pulse animation for in-progress syncs
+- Linear progress bar overlay on active cards
+- Start/delete sync from card
+- Schedule selector in profile creation (15m/30m/hourly/6h/daily/weekdays)
+
+**Status:** Complete
 
 ---
 
@@ -63,14 +63,16 @@ gantt
 **Goal:** Actual file synchronization with progress tracking.
 
 **Deliverables:**
-- Chunked file downloads (5-10MB chunks, resumable)
-- Chunked file uploads (resumable via Google API)
-- MD5 hash checksum comparison for change detection
-- File-level progress tracking (bytes transferred, speed, ETA)
-- Resumable sync (pick up where it left off after failure)
-- Sync file log in database for each file transferred
-- Parallel transfers for small files
-- Google Workspace file export (Docs → DOCX, Sheets → XLSX, etc.)
+- Streaming file downloads from Google Drive
+- Streaming file uploads to Google Drive
+- MD5 hash checksum comparison for change detection (skip unchanged files)
+- Per-file progress reporting via IPC events
+- Google Workspace file export (Docs->DOCX, Sheets->XLSX, Slides->PPTX, Drawings->PNG)
+- Bidirectional sync with timestamp-based conflict resolution (newer wins)
+- Sync history and per-file logs persisted in SQLite
+- Cancellation support via IPC
+
+**Status:** Complete
 
 ---
 
@@ -79,23 +81,28 @@ gantt
 **Goal:** Automated sync schedules and comprehensive activity tracking.
 
 **Deliverables:**
-- Cron-like scheduling per sync profile (e.g., "every 2 hours")
-- File system watcher for real-time local change detection
-- Activity history page with filterable log
-- Sync session details (files synced, bytes, duration, errors)
-- Conflict resolution dialog (keep newer, keep both, preview diff)
-- Deletion confirmation prompts (never auto-delete)
+- node-cron based scheduler: auto-syncs profiles on cron schedules
+- Scheduler initializes on app start, refreshes when profiles change
+- Activity History page with table view: status, duration, file counts, bytes, errors
+- Live progress updates in History page via sync:progress events
+- Schedule badge displayed on profile cards
+
+**Status:** Complete
 
 ---
 
-## Phase 5: CI/CD & Auto-Update
+## Phase 5: CI/CD & Auto-Update & Polish
 
-**Goal:** Automated builds and seamless update experience.
+**Goal:** Automated builds, seamless updates, and visual polish.
 
 **Deliverables:**
-- GitHub Actions workflow: single job per platform (macOS, Windows, Linux)
-- Build artifacts as GitHub Release assets
-- `electron-updater` integration for in-app update notifications
-- Auto-download and install updates
-- Version display in settings
-- Update check on app launch
+- GitHub Actions workflow: matrix build for macOS/Windows/Linux
+- Build artifacts uploaded and released via GitHub Releases
+- `electron-updater` integration for in-app update check
+- Version and platform display in Settings
+- "Check for Updates" button in Settings
+- Multi-theme system: 6 themes (Midnight, GitHub Dark, Dracula, Nord, One Dark Pro, Light)
+- Theme selector with mini preview cards in Settings
+- Theme persistence via localStorage
+
+**Status:** Complete

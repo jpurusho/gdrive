@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,8 +6,11 @@ import {
   Card,
   CardActionArea,
   Chip,
+  Button,
+  Divider,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import { useThemeContext } from '../theme/ThemeContext';
 import type { ThemeDefinition } from '../theme/themes';
 
@@ -26,7 +29,6 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
       }}
     >
       <CardActionArea onClick={onSelect} sx={{ p: 0 }}>
-        {/* Mini preview */}
         <Box sx={{ background: colors.background, p: 1.5, position: 'relative' }}>
           {selected && (
             <CheckCircleIcon
@@ -39,13 +41,11 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#28c840' }} />
           </Box>
           <Box display="flex" gap={1} height={50}>
-            {/* Sidebar preview */}
             <Box sx={{ width: 40, bgcolor: colors.paper, borderRadius: 0.75, p: 0.5 }}>
               <Box sx={{ width: '100%', height: 4, bgcolor: colors.primary, borderRadius: 0.5, mb: 0.5 }} />
               <Box sx={{ width: '100%', height: 3, bgcolor: alpha(colors.textSecondary, 0.3), borderRadius: 0.5, mb: 0.5 }} />
               <Box sx={{ width: '100%', height: 3, bgcolor: alpha(colors.textSecondary, 0.3), borderRadius: 0.5 }} />
             </Box>
-            {/* Content preview */}
             <Box sx={{ flex: 1, bgcolor: colors.paper, borderRadius: 0.75, p: 0.5 }}>
               <Box sx={{ width: '60%', height: 4, bgcolor: colors.text, borderRadius: 0.5, mb: 0.5, opacity: 0.7 }} />
               <Box sx={{ width: '80%', height: 3, bgcolor: alpha(colors.textSecondary, 0.4), borderRadius: 0.5, mb: 0.5 }} />
@@ -56,7 +56,6 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
             </Box>
           </Box>
         </Box>
-        {/* Label */}
         <Box
           sx={{ bgcolor: colors.paper, px: 1.5, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}
         >
@@ -82,6 +81,23 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
 
 export default function Settings() {
   const { themeId, setThemeId, availableThemes } = useThemeContext();
+  const [version, setVersion] = useState('');
+  const [platform, setPlatform] = useState('');
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    window.api.app.getVersion().then(setVersion);
+    window.api.app.getPlatform().then(setPlatform);
+  }, []);
+
+  async function checkUpdates() {
+    setChecking(true);
+    try {
+      await window.api.app.checkForUpdates();
+    } finally {
+      setChecking(false);
+    }
+  }
 
   return (
     <Box flex={1} overflow="auto" px={4} py={3}>
@@ -91,7 +107,7 @@ export default function Settings() {
       </Typography>
 
       <Typography variant="subtitle1" mb={2}>Theme</Typography>
-      <Box display="flex" flexWrap="wrap" gap={2}>
+      <Box display="flex" flexWrap="wrap" gap={2} mb={4}>
         {availableThemes.map((def) => (
           <ThemeCard
             key={def.id}
@@ -100,6 +116,38 @@ export default function Settings() {
             onSelect={() => setThemeId(def.id)}
           />
         ))}
+      </Box>
+
+      <Divider sx={{ opacity: 0.3, mb: 3 }} />
+
+      <Typography variant="subtitle1" mb={2}>About</Typography>
+      <Box
+        sx={{
+          p: 2.5,
+          borderRadius: 2,
+          border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
+          bgcolor: 'background.paper',
+          maxWidth: 400,
+        }}
+      >
+        <Typography variant="body2" fontWeight={600} mb={1}>
+          GDrive Sync v{version || '...'}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+          Platform: {platform || '...'} | Electron Desktop App
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+          Built with React, Material UI, and TypeScript
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<SystemUpdateIcon />}
+          onClick={checkUpdates}
+          disabled={checking}
+        >
+          {checking ? 'Checking...' : 'Check for Updates'}
+        </Button>
       </Box>
     </Box>
   );
