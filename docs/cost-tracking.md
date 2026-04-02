@@ -38,9 +38,35 @@ Source: AWS Bedrock Pricing API (2026-03-13) + Anthropic docs
 | Subagent (pricing research) | ~68,000 (combined) | ~$0.55 |
 | **Session total** | **~238,000** | **~$2.80** |
 
-> **Note:** These are estimates based on conversation length and content volume.
-> For exact figures, check the AWS Bedrock usage dashboard in the AWS Console
-> under CloudWatch > Metrics > Bedrock > ModelId.
+---
+
+### Session 2 — Phases 2-5: Complete Implementation
+**Date:** 2026-04-02
+
+**Work done:**
+- Cleaned up workspace: removed old Docker/Python backend, legacy frontend
+- Added 6-theme system (Midnight, GitHub Dark, Dracula, Nord, One Dark Pro, Light)
+- Theme selector with mini preview cards in Settings
+- Phase 2: Sync profile CRUD (database + IPC + dialog + card UI)
+- Phase 2: CreateProfileDialog with drive folder picker, permission-aware direction
+- Phase 2: SyncCards with glowing pulse animation, progress bars
+- Phase 3: Sync engine (download, upload, bidirectional)
+- Phase 3: MD5 checksum comparison, Google Workspace export, streaming transfers
+- Phase 3: Sync history + per-file logging in SQLite
+- Phase 4: node-cron scheduler with preset schedules
+- Phase 4: Activity History page with status table and live updates
+- Phase 5: Settings page polish (version, platform, update check)
+- Phase 5: Updated architecture and phase docs
+- Committed and pushed each phase incrementally
+
+**Estimated token usage:**
+
+| Metric | Tokens | Cost |
+|--------|--------|------|
+| Input tokens | ~200,000 | $1.00 |
+| Output tokens | ~120,000 | $3.00 |
+| Subagent (exploration) | ~50,000 (combined) | ~$0.40 |
+| **Session total** | **~370,000** | **~$4.40** |
 
 ---
 
@@ -48,19 +74,19 @@ Source: AWS Bedrock Pricing API (2026-03-13) + Anthropic docs
 
 | Metric | Value |
 |--------|-------|
-| **Total input tokens** | ~130,000 |
-| **Total output tokens** | ~108,000 |
-| **Total cost** | **~$2.80** |
-| Sessions completed | 1 |
+| **Total input tokens** | ~350,000 |
+| **Total output tokens** | ~258,000 |
+| **Total cost** | **~$7.20** |
+| Sessions completed | 2 |
 
 ---
 
 ## How to Verify Actual Usage
 
-1. **AWS Console** → CloudWatch → Metrics → Bedrock
+1. **AWS Console** -> CloudWatch -> Metrics -> Bedrock
 2. Filter by ModelId: `us.anthropic.claude-opus-4-6-v1`
 3. Look at `InputTokenCount` and `OutputTokenCount` metrics
-4. Or check **AWS Cost Explorer** → filter by Bedrock service
+4. Or check **AWS Cost Explorer** -> filter by Bedrock service
 
 Alternatively, if using Claude Code directly:
 - Check the token usage displayed at the end of each conversation
