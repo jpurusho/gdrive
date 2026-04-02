@@ -19,7 +19,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import BackupIcon from '@mui/icons-material/Backup';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SyncProblemIcon from '@mui/icons-material/SyncProblem';
@@ -394,70 +393,6 @@ export default function Settings() {
         ))}
       </Box>
 
-      <Divider sx={{ opacity: 0.3, mb: 3 }} />
-
-      {/* ── About ── */}
-      <Typography variant="subtitle1" mb={2}>About</Typography>
-      <Box
-        sx={{
-          p: 3, borderRadius: 3,
-          border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
-          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.06)}, ${alpha(t.palette.secondary.main, 0.04)})`,
-          maxWidth: 500,
-        }}
-      >
-        <Typography
-          variant="h6"
-          fontWeight={800}
-          mb={1}
-          sx={{
-            background: 'linear-gradient(135deg, #00e5ff, #00bfa5, #64ffda)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          {appTitle}
-        </Typography>
-        <Box display="flex" flexDirection="column" gap={0.75} mb={2}>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Version</Typography>
-            <Typography variant="caption">{version || '...'}</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Platform</Typography>
-            <Typography variant="caption">{platform || '...'}</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Runtime</Typography>
-            <Typography variant="caption">Electron + React + TypeScript</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>UI</Typography>
-            <Typography variant="caption">Material UI 5</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Database</Typography>
-            <Typography variant="caption">SQLite (better-sqlite3)</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>APIs</Typography>
-            <Typography variant="caption">Google Drive API v3</Typography>
-          </Box>
-          <Box display="flex" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Author</Typography>
-            <Typography variant="caption">Jerome Purushotham</Typography>
-          </Box>
-        </Box>
-        <Divider sx={{ opacity: 0.2, mb: 2 }} />
-        <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-          Sync your Google Drive files with local folders. Supports bidirectional sync,
-          scheduled auto-sync, MD5 checksum verification, Google Workspace file export,
-          and database backup/restore to Drive.
-        </Typography>
-        <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
-          {checking ? 'Checking...' : 'Check for Updates'}
-        </Button>
-      </Box>
 
       <EditProfileDialog
         open={!!editProfile}

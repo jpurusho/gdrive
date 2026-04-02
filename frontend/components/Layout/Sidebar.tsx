@@ -16,6 +16,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import HistoryIcon from '@mui/icons-material/History';
 import SyncIcon from '@mui/icons-material/Sync';
 import SettingsIcon from '@mui/icons-material/Settings';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import type { UserInfo } from '../../../shared/types';
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { id: 'profiles', label: 'Profiles', icon: SyncIcon },
   { id: 'history', label: 'History', icon: HistoryIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
+  { id: 'about', label: 'About', icon: InfoOutlinedIcon },
 ];
 
 export default function Sidebar({ user, currentPage, onNavigate, onLogout }: SidebarProps) {

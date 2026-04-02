@@ -7,6 +7,7 @@ import SyncStatus from '../components/SyncStatus/SyncStatus';
 import Profiles from './Profiles';
 import Settings from './Settings';
 import History from './History';
+import About from './About';
 import { useAppSettings } from '../context/AppSettingsContext';
 import type { UserInfo } from '../../shared/types';
 
@@ -15,7 +16,7 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-type Page = 'dashboard' | 'profiles' | 'history' | 'settings';
+type Page = 'dashboard' | 'profiles' | 'history' | 'settings' | 'about';
 
 function ResizeHandle({ onDrag }: { onDrag: (deltaY: number) => void }) {
   const dragging = useRef(false);
@@ -138,10 +139,29 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             {appTitle}
           </Typography>
           <Box display="flex" alignItems="center" gap={2}>
-            <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.6 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 600,
+                background: 'linear-gradient(135deg, #64ffda, #00bfa5)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
               {formatDate()}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.4 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
+                color: 'primary.light',
+                fontSize: 11,
+              }}
+            >
               v{version}
             </Typography>
           </Box>
@@ -192,6 +212,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         {currentPage === 'history' && <History />}
 
         {currentPage === 'settings' && <Settings />}
+
+        {currentPage === 'about' && <About />}
       </Box>
     </Box>
   );
