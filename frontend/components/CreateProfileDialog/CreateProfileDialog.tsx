@@ -13,6 +13,10 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Collapse,
   Chip,
   ToggleButtonGroup,
@@ -207,6 +211,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [folderSel, setFolderSel] = useState<FolderSelection | null>(null);
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
+  const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
@@ -224,6 +229,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setFolderSel(null);
     setLocalPath('');
     setDirection('download');
+    setSchedule('');
     setError('');
   }
 
@@ -248,6 +254,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         driveFolderPath: folderSel.folderPath,
         localPath,
         syncDirection: direction,
+        schedule: schedule || undefined,
         isActive: true,
       });
       onCreate(profile);
@@ -338,6 +345,23 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
               This drive is read-only. Only download is available.
             </Typography>
           )}
+        </Box>
+
+        {/* Schedule */}
+        <Box>
+          <Typography variant="subtitle2" mb={1}>Auto-sync Schedule (optional)</Typography>
+          <FormControl size="small" fullWidth>
+            <InputLabel>Schedule</InputLabel>
+            <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
+              <MenuItem value="">Manual only</MenuItem>
+              <MenuItem value="*/15 * * * *">Every 15 minutes</MenuItem>
+              <MenuItem value="*/30 * * * *">Every 30 minutes</MenuItem>
+              <MenuItem value="0 * * * *">Every hour</MenuItem>
+              <MenuItem value="0 */6 * * *">Every 6 hours</MenuItem>
+              <MenuItem value="0 0 * * *">Daily at midnight</MenuItem>
+              <MenuItem value="0 9 * * 1-5">Weekdays at 9 AM</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
 
         {error && (

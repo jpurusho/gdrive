@@ -20,6 +20,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
 import FolderIcon from '@mui/icons-material/Folder';
 import CloudIcon from '@mui/icons-material/Cloud';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CreateProfileDialog from '../CreateProfileDialog/CreateProfileDialog';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
@@ -122,6 +123,14 @@ function ProfileCard({
               {profile.localPath}
             </Typography>
           </Box>
+          {profile.schedule && (
+            <Box display="flex" alignItems="center" gap={0.75}>
+              <ScheduleIcon sx={{ fontSize: 14, color: 'secondary.main' }} />
+              <Typography variant="caption" color="text.secondary">
+                {profile.schedule}
+              </Typography>
+            </Box>
+          )}
           {profile.lastSyncAt && (
             <Box display="flex" alignItems="center" gap={0.75}>
               <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />

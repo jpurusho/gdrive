@@ -5,6 +5,7 @@ import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
 import SyncCards from '../components/SyncCards/SyncCards';
 import Settings from './Settings';
+import History from './History';
 import type { UserInfo } from '../../shared/types';
 
 interface DashboardProps {
@@ -59,11 +60,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </Box>
         )}
 
-        {currentPage === 'history' && (
-          <Box flex={1} display="flex" alignItems="center" justifyContent="center" color="text.secondary">
-            Sync history will be available in Phase 4.
-          </Box>
-        )}
+        {currentPage === 'history' && <History />}
 
         {currentPage === 'settings' && <Settings />}
       </Box>

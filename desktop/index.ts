@@ -3,6 +3,8 @@ import * as path from 'path';
 import { config } from 'dotenv';
 import { registerIpcHandlers } from './ipc-handlers';
 import { initDatabase } from './services/database';
+import { initScheduler } from './services/scheduler';
+import { GoogleAuthService } from './services/google-auth';
 import { autoUpdater } from 'electron-updater';
 
 // Load .env from project root
@@ -55,6 +57,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   initDatabase();
   registerIpcHandlers();
+  initScheduler(new GoogleAuthService());
   createWindow();
 
   if (!isDev) {

@@ -4,6 +4,7 @@ import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile } from './services/database';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
+import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import type { SyncProfile } from '../shared/types';
 
 let authService: GoogleAuthService;
@@ -77,14 +78,22 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('sync:createProfile', async (_event, profile: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
-    return createProfile(profile);
+    const created = createProfile(profile);
+    if (created.schedule && created.isActive) scheduleProfile(created);
+    return created;
   });
 
   ipcMain.handle('sync:updateProfile', async (_event, id: number, updates: Partial<SyncProfile>) => {
-    return updateProfile(id, updates);
+    const updated = updateProfile(id, updates);
+    if (updated) {
+      unscheduleProfile(id);
+      if (updated.schedule && updated.isActive) scheduleProfile(updated);
+    }
+    return updated;
   });
 
   ipcMain.handle('sync:deleteProfile', async (_event, id: number) => {
+    unscheduleProfile(id);
     deleteProfile(id);
   });
 
