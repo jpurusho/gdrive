@@ -106,6 +106,7 @@ function FolderNode({ file, driveId, depth }: FolderNodeProps) {
 export default function DriveTree() {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
   const [driveFiles, setDriveFiles] = useState<Record<string, DriveFile[]>>({});
   const [loadingDrives, setLoadingDrives] = useState<Set<string>>(new Set());
@@ -114,11 +115,13 @@ export default function DriveTree() {
 
   async function loadDrives() {
     setLoading(true);
+    setError(null);
     try {
       const result = await window.api.drive.listDrives();
       setDrives(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load drives:', err);
+      setError(err?.message || 'Failed to load drives');
     } finally {
       setLoading(false);
     }
@@ -175,6 +178,15 @@ export default function DriveTree() {
       <Box flex={1} overflow="auto">
         {loading ? (
           <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
+        ) : error ? (
+          <Box display="flex" flexDirection="column" alignItems="center" py={4} gap={1}>
+            <Typography variant="body2" color="error.main" textAlign="center">{error}</Typography>
+            <Typography variant="caption" color="text.secondary" textAlign="center"
+              sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+              onClick={loadDrives}>
+              Click to retry
+            </Typography>
+          </Box>
         ) : drives.length === 0 ? (
           <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
             No drives found. Sign in to see your drives.

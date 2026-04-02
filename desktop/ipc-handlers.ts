@@ -14,10 +14,19 @@ let driveService: GoogleDriveService | null = null;
 function getDriveService(): GoogleDriveService {
   if (!driveService) {
     const tokens = getTokens();
-    if (!tokens) throw new Error('Not authenticated');
+    if (!tokens) throw new Error('Not authenticated. Please sign in again.');
     driveService = new GoogleDriveService(authService.getOAuth2Client());
   }
   return driveService;
+}
+
+/** Send sync error event to all renderer windows */
+function sendSyncError(profileId: number, error: string): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('sync:error', { profileId, error });
+    }
+  }
 }
 
 export function registerIpcHandlers(): void {
@@ -25,38 +34,73 @@ export function registerIpcHandlers(): void {
 
   // ─── Auth ────────────────────────────────────────────────────────────────
   ipcMain.handle('auth:login', async () => {
-    const window = BrowserWindow.getFocusedWindow();
-    if (!window) throw new Error('No active window');
-    const user = await authService.login(window);
-    driveService = null;
-    return user;
+    try {
+      const window = BrowserWindow.getFocusedWindow();
+      if (!window) throw new Error('No active window');
+      const user = await authService.login(window);
+      driveService = null;
+      return user;
+    } catch (err: any) {
+      console.error('Login failed:', err?.message);
+      throw new Error(err?.message || 'Login failed');
+    }
   });
 
   ipcMain.handle('auth:logout', async () => {
-    await authService.logout();
-    driveService = null;
+    try {
+      await authService.logout();
+      driveService = null;
+    } catch (err: any) {
+      console.error('Logout error:', err?.message);
+      // Clear local state even if revoke fails
+      driveService = null;
+    }
   });
 
   ipcMain.handle('auth:getUser', async () => {
-    return authService.getCurrentUser();
+    try {
+      return await authService.getCurrentUser();
+    } catch (err: any) {
+      console.error('Get user failed:', err?.message);
+      return null;
+    }
   });
 
   ipcMain.handle('auth:isLoggedIn', async () => {
-    return authService.isLoggedIn();
+    try {
+      return authService.isLoggedIn();
+    } catch {
+      return false;
+    }
   });
 
   // ─── Drive ───────────────────────────────────────────────────────────────
   ipcMain.handle('drive:listDrives', async () => {
-    return getDriveService().listDrives();
+    try {
+      return await getDriveService().listDrives();
+    } catch (err: any) {
+      console.error('List drives failed:', err?.message);
+      throw new Error(err?.message || 'Failed to list drives');
+    }
   });
 
   ipcMain.handle('drive:listFiles', async (_event, driveId: string, folderId: string) => {
-    return getDriveService().listFiles(driveId, folderId);
+    try {
+      return await getDriveService().listFiles(driveId, folderId);
+    } catch (err: any) {
+      console.error('List files failed:', err?.message);
+      throw new Error(err?.message || 'Failed to list files');
+    }
   });
 
   // ─── Local Filesystem ────────────────────────────────────────────────────
   ipcMain.handle('localFs:listDirectory', async (_event, dirPath: string) => {
-    return LocalFsService.listDirectory(dirPath);
+    try {
+      return await LocalFsService.listDirectory(dirPath);
+    } catch (err: any) {
+      console.error('List directory failed:', err?.message);
+      throw new Error(err?.message || 'Failed to list directory');
+    }
   });
 
   ipcMain.handle('localFs:getHomeDir', async () => {
@@ -75,36 +119,60 @@ export function registerIpcHandlers(): void {
 
   // ─── Sync Profiles ───────────────────────────────────────────────────────
   ipcMain.handle('sync:getProfiles', async () => {
-    return getProfiles();
+    try {
+      return getProfiles();
+    } catch (err: any) {
+      console.error('Get profiles failed:', err?.message);
+      return [];
+    }
   });
 
   ipcMain.handle('sync:createProfile', async (_event, profile: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const created = createProfile(profile);
-    if (created.schedule && created.isActive) scheduleProfile(created);
-    return created;
+    try {
+      const created = createProfile(profile);
+      if (created.schedule && created.isActive) scheduleProfile(created);
+      return created;
+    } catch (err: any) {
+      console.error('Create profile failed:', err?.message);
+      throw new Error(err?.message || 'Failed to create profile');
+    }
   });
 
   ipcMain.handle('sync:updateProfile', async (_event, id: number, updates: Partial<SyncProfile>) => {
-    const updated = updateProfile(id, updates);
-    if (updated) {
-      unscheduleProfile(id);
-      if (updated.schedule && updated.isActive) scheduleProfile(updated);
+    try {
+      const updated = updateProfile(id, updates);
+      if (updated) {
+        unscheduleProfile(id);
+        if (updated.schedule && updated.isActive) scheduleProfile(updated);
+      }
+      return updated;
+    } catch (err: any) {
+      console.error('Update profile failed:', err?.message);
+      throw new Error(err?.message || 'Failed to update profile');
     }
-    return updated;
   });
 
   ipcMain.handle('sync:deleteProfile', async (_event, id: number) => {
-    unscheduleProfile(id);
-    deleteProfile(id);
+    try {
+      unscheduleProfile(id);
+      deleteProfile(id);
+    } catch (err: any) {
+      console.error('Delete profile failed:', err?.message);
+      throw new Error(err?.message || 'Failed to delete profile');
+    }
   });
 
   // ─── Sync Engine ────────────────────────────────────────────────────────
   ipcMain.handle('sync:startSync', async (_event, profileId: number) => {
-    const driveService = getDriveService();
-    // Run sync in background — don't await, just fire and forget
-    startSync(profileId, driveService).catch((err) => {
-      console.error('Sync failed:', err);
-    });
+    try {
+      const ds = getDriveService();
+      startSync(profileId, ds).catch((err) => {
+        console.error('Sync failed:', err?.message);
+        sendSyncError(profileId, err?.message || 'Sync failed');
+      });
+    } catch (err: any) {
+      throw new Error(err?.message || 'Failed to start sync');
+    }
   });
 
   ipcMain.handle('sync:cancelSync', async (_event, profileId: number) => {
@@ -112,37 +180,62 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('sync:getSessions', async (_event, profileId?: number) => {
-    return getSessions(profileId);
+    try {
+      return getSessions(profileId);
+    } catch (err: any) {
+      console.error('Get sessions failed:', err?.message);
+      return [];
+    }
   });
 
   // ─── DB Backup ─────────────────────────────────────────────────────────────
   ipcMain.handle('backup:backup', async () => {
-    const driveService = getDriveService();
-    const result = await backupDatabase(driveService);
-    if (result.success) recordBackup();
-    return result;
+    try {
+      const ds = getDriveService();
+      const result = await backupDatabase(ds);
+      if (result.success) recordBackup();
+      return result;
+    } catch (err: any) {
+      return { success: false, action: 'created' as const, fileId: '', size: 0, timestamp: '', error: err?.message || 'Backup failed' };
+    }
   });
 
   ipcMain.handle('backup:restore', async () => {
-    const driveService = getDriveService();
-    return restoreDatabase(driveService);
+    try {
+      const ds = getDriveService();
+      return await restoreDatabase(ds);
+    } catch (err: any) {
+      return { success: false, size: 0, profilesRestored: 0, historyRestored: 0, error: err?.message || 'Restore failed' };
+    }
   });
 
   ipcMain.handle('backup:syncMerge', async () => {
-    const driveService = getDriveService();
-    const result = await syncMergeDatabase(driveService);
-    if (result.success) recordBackup();
-    return result;
+    try {
+      const ds = getDriveService();
+      const result = await syncMergeDatabase(ds);
+      if (result.success) recordBackup();
+      return result;
+    } catch (err: any) {
+      return { success: false, profilesAdded: 0, profilesUpdated: 0, historyAdded: 0, fileLogAdded: 0, totalChanges: 0, error: err?.message || 'Merge failed' };
+    }
   });
 
   ipcMain.handle('backup:getInfo', async () => {
-    return getBackupInfo();
+    try {
+      return getBackupInfo();
+    } catch {
+      return { lastBackup: null, folderId: null };
+    }
   });
 
   // ─── App Settings ──────────────────────────────────────────────────────────
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {});
   ipcMain.handle('app:getPlatform', () => process.platform);
-  ipcMain.handle('app:getSetting', (_event, key: string) => getSetting(key));
-  ipcMain.handle('app:setSetting', (_event, key: string, value: string) => setSetting(key, value));
+  ipcMain.handle('app:getSetting', (_event, key: string) => {
+    try { return getSetting(key); } catch { return null; }
+  });
+  ipcMain.handle('app:setSetting', (_event, key: string, value: string) => {
+    try { setSetting(key, value); } catch (err: any) { console.error('Set setting failed:', err?.message); }
+  });
 }

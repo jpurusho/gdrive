@@ -5,6 +5,59 @@ import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportIn
 import { getProfile, updateProfile, getDb } from './database';
 import type { SyncProfile, SyncSession } from '../../shared/types';
 
+/** Retry a function with exponential backoff for transient errors */
+async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const status = err?.code || err?.status || err?.response?.status;
+      const isRetryable = status === 'ECONNRESET' || status === 'ETIMEDOUT' || status === 'ENOTFOUND'
+        || status === 429 || status === 500 || status === 503
+        || err?.message?.includes('ECONNRESET') || err?.message?.includes('socket hang up');
+
+      if (!isRetryable || attempt === maxRetries) throw err;
+
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 500;
+      console.log(`[Sync] Retrying after ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries}): ${err?.message}`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+/** Validate that local folder exists; create it if it's a download profile */
+async function validateLocalFolder(profile: SyncProfile): Promise<string | null> {
+  try {
+    await fs.promises.access(profile.localPath);
+    return null;
+  } catch {
+    if (profile.syncDirection === 'download') {
+      try {
+        await fs.promises.mkdir(profile.localPath, { recursive: true });
+        console.log(`[Sync] Created local folder: ${profile.localPath}`);
+        return null;
+      } catch (err: any) {
+        return `Cannot create local folder: ${err.message}`;
+      }
+    }
+    return `Local folder does not exist: ${profile.localPath}`;
+  }
+}
+
+/** Validate that the remote Drive folder is accessible */
+async function validateRemoteFolder(profile: SyncProfile, driveService: GoogleDriveService): Promise<string | null> {
+  try {
+    await driveService.listFiles(profile.driveId, profile.driveFolderId);
+    return null;
+  } catch (err: any) {
+    const status = err?.code || err?.status || err?.response?.status;
+    if (status === 404) return `Drive folder not found: ${profile.driveFolderPath}`;
+    if (status === 401 || status === 403) return `Access denied to Drive folder: ${profile.driveFolderPath}`;
+    return `Cannot access Drive folder: ${err.message}`;
+  }
+}
+
 /** Apply glob-like file filter patterns (e.g., "*.pdf,*.docx" or "*.jpg,reports/*") */
 function applyFileFilter<T extends { name: string; relativePath: string }>(files: T[], filter: string): T[] {
   const patterns = filter.split(',').map((p) => p.trim().toLowerCase()).filter(Boolean);
@@ -216,7 +269,7 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
 
       if (needsDownload) {
         const cancelToken = { get cancelled() { return ctx.cancelled; } };
-        const hash = await driveService.downloadFile(
+        const hash = await retryWithBackoff(() => driveService.downloadFile(
           file.id,
           file.mimeType,
           localPath,
@@ -225,7 +278,7 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
             sendProgress(session);
           },
           cancelToken,
-        );
+        ));
         if (ctx.cancelled) {
           // Paused — partial file saved for resume
           logFile(session.id, file.name, file.relativePath, 'download', 'paused', file.size || 0, 0);
@@ -452,6 +505,33 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   console.log(`[Sync]   Local: ${profile.localPath}`);
 
   sendProgress(session);
+
+  // Validate folders before starting
+  const localErr = await validateLocalFolder(profile);
+  if (localErr) {
+    session.status = 'failed';
+    session.completedAt = new Date().toISOString();
+    session.errorMessage = localErr;
+    updateSession(session);
+    sendProgress(session);
+    activeSyncs.delete(profileId);
+    updateProfile(profileId, { isActive: false });
+    console.error(`[Sync] ${localErr} — profile deactivated`);
+    return;
+  }
+
+  const remoteErr = await validateRemoteFolder(profile, driveService);
+  if (remoteErr) {
+    session.status = 'failed';
+    session.completedAt = new Date().toISOString();
+    session.errorMessage = remoteErr;
+    updateSession(session);
+    sendProgress(session);
+    activeSyncs.delete(profileId);
+    updateProfile(profileId, { isActive: false });
+    console.error(`[Sync] ${remoteErr} — profile deactivated`);
+    return;
+  }
 
   try {
     switch (profile.syncDirection) {

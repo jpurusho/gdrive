@@ -76,6 +76,7 @@ function ProfileCard({
   const isPaused = session?.status === 'paused';
   const isFailed = session?.status === 'failed';
   const isCompleted = session?.status === 'completed';
+  const isInactive = !profile.isActive;
 
   // Fluorescent glow color — boosted saturation/lightness from theme primary
   const primary = theme.palette.primary.main;
@@ -89,16 +90,19 @@ function ProfileCard({
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
+        opacity: isInactive ? 0.6 : 1,
         border: `1.5px solid ${
-          isActive
-            ? fluorescent
-            : isPaused
-              ? alpha(theme.palette.warning.main, 0.6)
-              : isFailed
-                ? alpha(theme.palette.error.main, 0.6)
-                : isCompleted
-                  ? alpha(theme.palette.success.main, 0.5)
-                  : alpha(theme.palette.primary.main, 0.25)
+          isInactive
+            ? alpha(theme.palette.text.secondary, 0.3)
+            : isActive
+              ? fluorescent
+              : isPaused
+                ? alpha(theme.palette.warning.main, 0.6)
+                : isFailed
+                  ? alpha(theme.palette.error.main, 0.6)
+                  : isCompleted
+                    ? alpha(theme.palette.success.main, 0.5)
+                    : alpha(theme.palette.primary.main, 0.25)
         }`,
         borderRadius: 3,
         transition: 'transform 0.2s, border-color 0.3s',
@@ -165,6 +169,26 @@ function ProfileCard({
         </Box>
 
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          {isInactive && (
+            <Box
+              sx={{
+                mb: 1,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+              }}
+            >
+              <ErrorOutlineIcon sx={{ fontSize: 14, color: 'error.main' }} />
+              <Typography variant="caption" color="error.main" fontWeight={600}>
+                Inactive — folder missing or inaccessible
+              </Typography>
+            </Box>
+          )}
           <Chip
             label={directionLabels[profile.syncDirection]}
             size="small"
@@ -172,8 +196,8 @@ function ProfileCard({
               height: 22,
               fontSize: 11,
               mb: 1.25,
-              bgcolor: alpha(primary, 0.1),
-              color: primary,
+              bgcolor: isInactive ? alpha(theme.palette.text.secondary, 0.1) : alpha(primary, 0.1),
+              color: isInactive ? 'text.secondary' : primary,
               fontWeight: 600,
             }}
           />
