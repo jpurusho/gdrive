@@ -10,9 +10,6 @@ import { autoUpdater } from 'electron-updater';
 // Load .env from project root
 config({ path: path.join(__dirname, '../../.env') });
 
-// Disable WebAuthn/FIDO at the Chromium level.
-app.commandLine.appendSwitch('disable-features', 'WebAuthentication,WebAuthenticationConditionalUI');
-
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | null = null;
 
