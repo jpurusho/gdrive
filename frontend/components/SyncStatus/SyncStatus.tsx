@@ -97,17 +97,22 @@ export default function SyncStatus() {
         borderRadius: 2,
         border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
         bgcolor: 'background.paper',
+        overflow: 'hidden',
       }}
     >
       <Table size="small">
         <TableHead>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }}>Profile</TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }}>Status</TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }}>Last Sync</TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }} align="right">Files</TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }}>Schedule</TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: 12, py: 1 }} align="right" width={40}></TableCell>
+          <TableRow
+            sx={{
+              background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
+            }}
+          >
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Profile</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Status</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Last Sync</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Files</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Schedule</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right" width={40}></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
