@@ -84,10 +84,33 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
   const localChanged = localPath !== profile.localPath;
 
+  const DirIcon = direction === 'download' ? CloudDownloadIcon : direction === 'upload' ? CloudUploadIcon : SyncIcon;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ fontWeight: 600 }}>Edit Sync Profile</DialogTitle>
-      <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 2 }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+      {/* Styled title banner */}
+      <Box
+        sx={{
+          px: 3,
+          py: 2,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.2)}, ${alpha(theme.palette.secondary.main, 0.15)})`,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+        <DirIcon sx={{ fontSize: 24, color: theme.palette.primary.main }} />
+        <Box>
+          <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
+            {profile.name || 'Edit Profile'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Edit sync profile settings
+          </Typography>
+        </Box>
+      </Box>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 2.5 }}>
         <TextField
           label="Profile Name"
           value={name}

@@ -112,37 +112,56 @@ function ProfileCard({
         />
       )}
       <CardActionArea onClick={onClick} sx={{ p: 0 }}>
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1.5}>
-            <Box>
-              <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ maxWidth: 180 }}>
-                {profile.name}
-              </Typography>
-              <Chip
-                icon={<DirIcon sx={{ fontSize: '14px !important' }} />}
-                label={directionLabels[profile.syncDirection]}
-                size="small"
-                sx={{ height: 22, fontSize: 11, mt: 0.5 }}
-              />
-            </Box>
-            <Box display="flex" gap={0.25} onClick={(e) => e.stopPropagation()}>
-              <Tooltip title="Sync now">
-                <IconButton size="small" onClick={onSync} disabled={isActive}>
-                  <PlayArrowIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Edit profile">
-                <IconButton size="small" onClick={onClick} sx={{ color: 'text.secondary' }}>
-                  <EditIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton size="small" onClick={onDelete} disabled={isActive} sx={{ color: 'text.secondary' }}>
-                  <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
+        {/* Title banner */}
+        <Box
+          sx={{
+            px: 2,
+            py: 1.25,
+            background: `linear-gradient(135deg, ${alpha(primary, 0.2)}, ${alpha(secondary, 0.15)})`,
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={1} minWidth={0}>
+            <DirIcon sx={{ fontSize: 18, color: primary, flexShrink: 0 }} />
+            <Typography variant="subtitle2" fontWeight={700} noWrap>
+              {profile.name}
+            </Typography>
           </Box>
+          <Box display="flex" gap={0.25} flexShrink={0} onClick={(e) => e.stopPropagation()}>
+            <Tooltip title="Sync now">
+              <IconButton size="small" onClick={onSync} disabled={isActive} sx={{ color: 'text.secondary' }}>
+                <PlayArrowIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={onClick} sx={{ color: 'text.secondary' }}>
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton size="small" onClick={onDelete} disabled={isActive} sx={{ color: 'text.secondary' }}>
+                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Chip
+            label={directionLabels[profile.syncDirection]}
+            size="small"
+            sx={{
+              height: 22,
+              fontSize: 11,
+              mb: 1.25,
+              bgcolor: alpha(primary, 0.1),
+              color: primary,
+              fontWeight: 600,
+            }}
+          />
 
           <Box display="flex" flexDirection="column" gap={0.75}>
             <Box display="flex" alignItems="center" gap={0.75}>
