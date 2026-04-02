@@ -30,9 +30,15 @@ import CreateProfileDialog from '../CreateProfileDialog/CreateProfileDialog';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
 
-const glowPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 8px var(--glow-color), 0 0 20px var(--glow-color); }
-  50% { box-shadow: 0 0 16px var(--glow-color), 0 0 40px var(--glow-color); }
+const borderGlow = keyframes`
+  0%, 100% {
+    border-color: var(--glow-color);
+    box-shadow: inset 0 0 0 1px var(--glow-color), 0 0 12px var(--glow-color-dim), 0 0 4px var(--glow-color-dim);
+  }
+  50% {
+    border-color: var(--glow-bright);
+    box-shadow: inset 0 0 0 1px var(--glow-bright), 0 0 24px var(--glow-color), 0 0 8px var(--glow-color);
+  }
 `;
 
 const directionIcons = {
@@ -65,7 +71,11 @@ function ProfileCard({
   const isActive = session?.status === 'in_progress';
   const isFailed = session?.status === 'failed';
   const isCompleted = session?.status === 'completed';
-  const glowColor = alpha(theme.palette.primary.main, 0.4);
+
+  // Fluorescent glow color — boosted saturation/lightness from theme primary
+  const primary = theme.palette.primary.main;
+  const secondary = theme.palette.secondary.main;
+  const fluorescent = theme.palette.primary.light;
 
   return (
     <Card
@@ -74,20 +84,23 @@ function ProfileCard({
         flexShrink: 0,
         position: 'relative',
         overflow: 'visible',
-        border: `1px solid ${
-          isFailed
-            ? alpha(theme.palette.error.main, 0.5)
-            : isCompleted
-              ? alpha(theme.palette.success.main, 0.3)
-              : alpha(theme.palette.divider, 0.3)
+        border: `2px solid ${
+          isActive
+            ? fluorescent
+            : isFailed
+              ? alpha(theme.palette.error.main, 0.5)
+              : isCompleted
+                ? alpha(theme.palette.success.main, 0.3)
+                : alpha(theme.palette.divider, 0.2)
         }`,
         borderRadius: 3,
-        transition: 'transform 0.2s, box-shadow 0.2s',
+        transition: 'transform 0.2s, border-color 0.3s',
         '&:hover': { transform: 'translateY(-2px)' },
         ...(isActive && {
-          '--glow-color': glowColor,
-          animation: `${glowPulse} 2s ease-in-out infinite`,
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+          '--glow-color': alpha(primary, 0.6),
+          '--glow-color-dim': alpha(primary, 0.25),
+          '--glow-bright': fluorescent,
+          animation: `${borderGlow} 1.8s ease-in-out infinite`,
         } as any),
       }}
     >
