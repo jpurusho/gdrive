@@ -5,6 +5,7 @@ import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile } from './services/database';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
+import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
 import type { SyncProfile } from '../shared/types';
 
 let authService: GoogleAuthService;
@@ -112,6 +113,30 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('sync:getSessions', async (_event, profileId?: number) => {
     return getSessions(profileId);
+  });
+
+  // ─── DB Backup ─────────────────────────────────────────────────────────────
+  ipcMain.handle('backup:backup', async () => {
+    const driveService = getDriveService();
+    const result = await backupDatabase(driveService);
+    if (result.success) recordBackup();
+    return result;
+  });
+
+  ipcMain.handle('backup:restore', async () => {
+    const driveService = getDriveService();
+    return restoreDatabase(driveService);
+  });
+
+  ipcMain.handle('backup:syncMerge', async () => {
+    const driveService = getDriveService();
+    const result = await syncMergeDatabase(driveService);
+    if (result.success) recordBackup();
+    return result;
+  });
+
+  ipcMain.handle('backup:getInfo', async () => {
+    return getBackupInfo();
   });
 
   // ─── App ──────────────────────────────────────────────────────────────────

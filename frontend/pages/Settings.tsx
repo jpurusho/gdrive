@@ -19,16 +19,21 @@ import {
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
+import BackupIcon from '@mui/icons-material/Backup';
+import RestoreIcon from '@mui/icons-material/Restore';
+import SyncProblemIcon from '@mui/icons-material/SyncProblem';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 import { useThemeContext } from '../theme/ThemeContext';
 import EditProfileDialog from '../components/EditProfileDialog/EditProfileDialog';
 import type { ThemeDefinition } from '../theme/themes';
-import type { SyncProfile } from '../../shared/types';
+import type { SyncProfile, BackupInfo } from '../../shared/types';
 
 const directionIcons: Record<string, React.ElementType> = {
   download: CloudDownloadIcon,
@@ -99,12 +104,76 @@ export default function Settings() {
   const [checking, setChecking] = useState(false);
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
   const [editProfile, setEditProfile] = useState<SyncProfile | null>(null);
+  const [backupInfo, setBackupInfo] = useState<BackupInfo>({ lastBackup: null, folderId: null });
+  const [backupLoading, setBackupLoading] = useState('');
+  const [backupMessage, setBackupMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
     window.api.app.getPlatform().then(setPlatform);
     loadProfiles();
+    window.api.backup.getInfo().then(setBackupInfo);
   }, []);
+
+  async function handleBackup() {
+    setBackupLoading('backup');
+    setBackupMessage(null);
+    try {
+      const result = await window.api.backup.backup();
+      if (result.success) {
+        setBackupMessage({ type: 'success', text: `Database backed up to Google Drive (${(result.size / 1024).toFixed(0)} KB)` });
+        window.api.backup.getInfo().then(setBackupInfo);
+      } else {
+        setBackupMessage({ type: 'error', text: result.error || 'Backup failed' });
+      }
+    } catch (err: any) {
+      setBackupMessage({ type: 'error', text: err?.message || 'Backup failed' });
+    } finally {
+      setBackupLoading('');
+    }
+  }
+
+  async function handleRestore() {
+    setBackupLoading('restore');
+    setBackupMessage(null);
+    try {
+      const result = await window.api.backup.restore();
+      if (result.success) {
+        setBackupMessage({ type: 'success', text: `Restored: ${result.profilesRestored} profiles, ${result.historyRestored} history records. Restart the app to apply.` });
+      } else {
+        setBackupMessage({ type: 'error', text: result.error || 'Restore failed' });
+      }
+    } catch (err: any) {
+      setBackupMessage({ type: 'error', text: err?.message || 'Restore failed' });
+    } finally {
+      setBackupLoading('');
+    }
+  }
+
+  async function handleSyncMerge() {
+    setBackupLoading('merge');
+    setBackupMessage(null);
+    try {
+      const result = await window.api.backup.syncMerge();
+      if (result.success) {
+        const parts = [];
+        if (result.profilesAdded) parts.push(`${result.profilesAdded} profiles added`);
+        if (result.profilesUpdated) parts.push(`${result.profilesUpdated} profiles updated`);
+        if (result.historyAdded) parts.push(`${result.historyAdded} history records added`);
+        if (result.fileLogAdded) parts.push(`${result.fileLogAdded} file logs added`);
+        const msg = parts.length > 0 ? `Merged: ${parts.join(', ')}. Uploaded merged DB.` : 'Already in sync. No changes needed.';
+        setBackupMessage({ type: 'success', text: msg });
+        loadProfiles();
+        window.api.backup.getInfo().then(setBackupInfo);
+      } else {
+        setBackupMessage({ type: 'error', text: result.error || 'Merge failed' });
+      }
+    } catch (err: any) {
+      setBackupMessage({ type: 'error', text: err?.message || 'Merge failed' });
+    } finally {
+      setBackupLoading('');
+    }
+  }
 
   async function loadProfiles() {
     const result = await window.api.sync.getProfiles();
@@ -222,6 +291,62 @@ export default function Settings() {
           </Table>
         </TableContainer>
       )}
+
+      <Divider sx={{ opacity: 0.3, mb: 3 }} />
+
+      {/* ── Database Backup ── */}
+      <Typography variant="subtitle1" mb={1}>Database Backup & Restore</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Backup your profiles, sync history, and settings to Google Drive.
+        Restore or merge when setting up a new machine or recovering from data loss.
+      </Typography>
+
+      {backupMessage && (
+        <Alert severity={backupMessage.type} sx={{ mb: 2, borderRadius: 2 }} onClose={() => setBackupMessage(null)}>
+          {backupMessage.text}
+        </Alert>
+      )}
+
+      <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
+        <Button
+          variant="outlined"
+          startIcon={backupLoading === 'backup' ? <CircularProgress size={18} /> : <BackupIcon />}
+          onClick={handleBackup}
+          disabled={!!backupLoading}
+        >
+          Backup to Drive
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={backupLoading === 'merge' ? <CircularProgress size={18} /> : <SyncIcon />}
+          onClick={handleSyncMerge}
+          disabled={!!backupLoading}
+        >
+          Sync & Merge
+        </Button>
+        <Button
+          variant="outlined"
+          color="warning"
+          startIcon={backupLoading === 'restore' ? <CircularProgress size={18} /> : <RestoreIcon />}
+          onClick={handleRestore}
+          disabled={!!backupLoading}
+        >
+          Restore from Drive
+        </Button>
+      </Box>
+
+      <Box mb={4}>
+        {backupInfo.lastBackup && (
+          <Typography variant="caption" color="text.secondary">
+            Last backup: {new Date(backupInfo.lastBackup).toLocaleString()}
+          </Typography>
+        )}
+        {!backupInfo.lastBackup && (
+          <Typography variant="caption" color="text.secondary">
+            No backup yet. Click "Backup to Drive" to create one.
+          </Typography>
+        )}
+      </Box>
 
       <Divider sx={{ opacity: 0.3, mb: 3 }} />
 

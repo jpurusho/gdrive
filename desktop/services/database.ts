@@ -73,6 +73,12 @@ export function initDatabase(): void {
       FOREIGN KEY (profile_id) REFERENCES sync_profiles(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS sync_file_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       history_id INTEGER NOT NULL,

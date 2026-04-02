@@ -33,6 +33,12 @@ const api: ElectronAPI = {
       return () => ipcRenderer.removeListener('sync:progress', handler);
     },
   },
+  backup: {
+    backup: () => ipcRenderer.invoke('backup:backup'),
+    restore: () => ipcRenderer.invoke('backup:restore'),
+    syncMerge: () => ipcRenderer.invoke('backup:syncMerge'),
+    getInfo: () => ipcRenderer.invoke('backup:getInfo'),
+  },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),

@@ -107,6 +107,40 @@ export interface SyncFileEntry {
   errorMessage?: string;
 }
 
+// ─── DB Backup ──────────────────────────────────────────────────────────────
+
+export interface BackupResult {
+  success: boolean;
+  action: 'created' | 'updated';
+  fileId: string;
+  size: number;
+  timestamp: string;
+  error?: string;
+}
+
+export interface RestoreResult {
+  success: boolean;
+  size: number;
+  profilesRestored: number;
+  historyRestored: number;
+  error?: string;
+}
+
+export interface MergeResult {
+  success: boolean;
+  profilesAdded: number;
+  profilesUpdated: number;
+  historyAdded: number;
+  fileLogAdded: number;
+  totalChanges: number;
+  error?: string;
+}
+
+export interface BackupInfo {
+  lastBackup: string | null;
+  folderId: string | null;
+}
+
 // ─── IPC API ─────────────────────────────────────────────────────────────────
 
 export interface ElectronAPI {
@@ -134,6 +168,12 @@ export interface ElectronAPI {
     cancelSync: (sessionId: number) => Promise<void>;
     getSessions: (profileId?: number) => Promise<SyncSession[]>;
     onSyncProgress: (callback: (session: SyncSession) => void) => () => void;
+  };
+  backup: {
+    backup: () => Promise<BackupResult>;
+    restore: () => Promise<RestoreResult>;
+    syncMerge: () => Promise<MergeResult>;
+    getInfo: () => Promise<BackupInfo>;
   };
   app: {
     getVersion: () => Promise<string>;
