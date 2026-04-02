@@ -85,7 +85,9 @@ export interface SyncSession {
   status: SyncStatus;
   startedAt: string;
   completedAt?: string;
+  totalFiles: number;
   filesSynced: number;
+  filesSkipped: number;
   filesFailed: number;
   bytesTransferred: number;
   totalBytes: number;

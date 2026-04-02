@@ -125,7 +125,9 @@ export default function History() {
                 <TableCell>Status</TableCell>
                 <TableCell>Started</TableCell>
                 <TableCell>Duration</TableCell>
-                <TableCell align="right">Files</TableCell>
+                <TableCell align="right">Found</TableCell>
+                <TableCell align="right">Synced</TableCell>
+                <TableCell align="right">Skipped</TableCell>
                 <TableCell align="right">Transferred</TableCell>
                 <TableCell>Error</TableCell>
               </TableRow>
@@ -159,6 +161,9 @@ export default function History() {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
+                      <Typography variant="caption">{session.totalFiles}</Typography>
+                    </TableCell>
+                    <TableCell align="right">
                       <Typography variant="caption">
                         {session.filesSynced}
                         {session.filesFailed > 0 && (
@@ -167,6 +172,9 @@ export default function History() {
                           </Typography>
                         )}
                       </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="caption">{session.filesSkipped}</Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="caption">{formatBytes(session.bytesTransferred)}</Typography>

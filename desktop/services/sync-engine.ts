@@ -3,7 +3,7 @@ import * as path from 'path';
 import { BrowserWindow } from 'electron';
 import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportInfo } from './google-drive';
 import { getProfile, updateProfile, getDb } from './database';
-import type { SyncProfile, SyncSession, SyncDirection } from '../../shared/types';
+import type { SyncProfile, SyncSession } from '../../shared/types';
 
 interface SyncContext {
   profile: SyncProfile;
@@ -36,7 +36,9 @@ function createSession(profileId: number, profileName: string): SyncSession {
     profileName,
     status: 'in_progress',
     startedAt: new Date().toISOString(),
+    totalFiles: 0,
     filesSynced: 0,
+    filesSkipped: 0,
     filesFailed: 0,
     bytesTransferred: 0,
     totalBytes: 0,
@@ -46,13 +48,16 @@ function createSession(profileId: number, profileName: string): SyncSession {
 function updateSession(session: SyncSession): void {
   const db = getDb();
   db.prepare(`
-    UPDATE sync_history SET status = ?, completed_at = ?, files_synced = ?, files_failed = ?,
-    bytes_transferred = ?, total_bytes = ?, current_file = ?, error_message = ?
+    UPDATE sync_history SET status = ?, completed_at = ?, total_files = ?, files_synced = ?,
+    files_skipped = ?, files_failed = ?, bytes_transferred = ?, total_bytes = ?,
+    current_file = ?, error_message = ?
     WHERE id = ?
   `).run(
     session.status,
     session.completedAt ?? null,
+    session.totalFiles,
     session.filesSynced,
+    session.filesSkipped,
     session.filesFailed,
     session.bytesTransferred,
     session.totalBytes,
@@ -88,12 +93,13 @@ async function listAllLocalFiles(rootDir: string, relativePath: string = '/'): P
   let entries;
   try {
     entries = await fs.promises.readdir(rootDir, { withFileTypes: true });
-  } catch {
+  } catch (err: any) {
+    console.error(`Cannot read directory ${rootDir}:`, err?.message);
     return result;
   }
 
   for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue; // skip hidden files
+    if (entry.name.startsWith('.')) continue;
     const fullPath = path.join(rootDir, entry.name);
 
     try {
@@ -121,11 +127,13 @@ async function listAllLocalFiles(rootDir: string, relativePath: string = '/'): P
 async function runDownloadSync(ctx: SyncContext): Promise<void> {
   const { profile, driveService, session } = ctx;
 
-  // List all remote files
   session.currentFile = 'Scanning remote files...';
   sendProgress(session);
 
+  console.log(`[Sync] Download sync for "${profile.name}" — driveId=${profile.driveId}, folderId=${profile.driveFolderId}`);
+
   const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+  console.log(`[Sync] Found ${remoteFiles.length} total remote files`);
 
   // Filter out unsupported Google Workspace types
   const downloadable = remoteFiles.filter((f) => {
@@ -135,23 +143,31 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
     return true;
   });
 
+  session.totalFiles = downloadable.length;
   session.totalBytes = downloadable.reduce((sum, f) => sum + (f.size || 0), 0);
+
+  if (downloadable.length === 0) {
+    session.currentFile = 'No files found in source folder';
+    console.log(`[Sync] No downloadable files found. Remote had ${remoteFiles.length} files (${remoteFiles.length - downloadable.length} unsupported types filtered)`);
+  } else {
+    session.currentFile = `Found ${downloadable.length} files to check...`;
+  }
   sendProgress(session);
 
   for (const file of downloadable) {
     if (ctx.cancelled) break;
 
-    const localPath = path.join(profile.localPath, file.relativePath.slice(1)); // remove leading /
-    session.currentFile = file.name;
+    const localPath = path.join(profile.localPath, file.relativePath.slice(1));
+    session.currentFile = `[${session.filesSynced + session.filesSkipped + session.filesFailed + 1}/${session.totalFiles}] ${file.name}`;
     sendProgress(session);
 
     try {
-      // Check if local file exists and compare hashes
       let needsDownload = true;
       if (fs.existsSync(localPath) && file.md5Checksum) {
         const localHash = await computeLocalMd5(localPath);
         if (localHash === file.md5Checksum) {
           needsDownload = false;
+          session.filesSkipped++;
           logFile(session.id, file.name, file.relativePath, 'download', 'skipped', file.size || 0, 0, localHash, file.md5Checksum);
         }
       }
@@ -170,6 +186,7 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
         session.filesSynced++;
       }
     } catch (err: any) {
+      console.error(`[Sync] Failed to download ${file.name}:`, err?.message);
       logFile(session.id, file.name, file.relativePath, 'download', 'failed', file.size || 0, 0, undefined, undefined, err?.message);
       session.filesFailed++;
     }
@@ -184,19 +201,28 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
   session.currentFile = 'Scanning local files...';
   sendProgress(session);
 
-  const localFiles = await listAllLocalFiles(profile.localPath);
+  console.log(`[Sync] Upload sync for "${profile.name}" — localPath=${profile.localPath}`);
 
+  const localFiles = await listAllLocalFiles(profile.localPath);
+  console.log(`[Sync] Found ${localFiles.length} local files`);
+
+  session.totalFiles = localFiles.length;
   session.totalBytes = localFiles.reduce((sum, f) => sum + f.size, 0);
+
+  if (localFiles.length === 0) {
+    session.currentFile = 'No files found in local folder';
+  } else {
+    session.currentFile = `Found ${localFiles.length} files to check...`;
+  }
   sendProgress(session);
 
   for (const file of localFiles) {
     if (ctx.cancelled) break;
 
-    session.currentFile = file.name;
+    session.currentFile = `[${session.filesSynced + session.filesSkipped + session.filesFailed + 1}/${session.totalFiles}] ${file.name}`;
     sendProgress(session);
 
     try {
-      // Navigate to the correct remote folder
       const relDir = path.dirname(file.relativePath);
       let parentId = profile.driveFolderId;
 
@@ -207,7 +233,6 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
         }
       }
 
-      // Check if file already exists remotely
       const existing = await driveService.findFile(parentId, file.name, profile.driveId);
 
       let needsUpload = true;
@@ -215,6 +240,7 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
         const localHash = await computeLocalMd5(file.path);
         if (localHash === existing.md5Checksum) {
           needsUpload = false;
+          session.filesSkipped++;
           logFile(session.id, file.name, file.relativePath, 'upload', 'skipped', file.size, 0, localHash, existing.md5Checksum);
         }
       }
@@ -235,6 +261,7 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
         session.filesSynced++;
       }
     } catch (err: any) {
+      console.error(`[Sync] Failed to upload ${file.name}:`, err?.message);
       logFile(session.id, file.name, file.relativePath, 'upload', 'failed', file.size, 0, undefined, undefined, err?.message);
       session.filesFailed++;
     }
@@ -246,7 +273,6 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
 async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
   const { profile, driveService, session } = ctx;
 
-  // Step 1: Download new/changed remote files
   session.currentFile = 'Scanning remote files...';
   sendProgress(session);
   const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
@@ -255,7 +281,6 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
     return true;
   });
 
-  // Step 2: Scan local files
   session.currentFile = 'Scanning local files...';
   sendProgress(session);
   const localFiles = await listAllLocalFiles(profile.localPath);
@@ -264,21 +289,31 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
   const localByPath = new Map(localFiles.map((f) => [f.relativePath, f]));
 
   const allPaths = new Set([...remoteByPath.keys(), ...localByPath.keys()]);
+  session.totalFiles = allPaths.size;
   session.totalBytes = downloadable.reduce((s, f) => s + (f.size || 0), 0) + localFiles.reduce((s, f) => s + f.size, 0);
+
+  console.log(`[Sync] Bidirectional for "${profile.name}" — ${downloadable.length} remote, ${localFiles.length} local, ${allPaths.size} unique paths`);
+
+  if (allPaths.size === 0) {
+    session.currentFile = 'No files found on either side';
+  } else {
+    session.currentFile = `Found ${allPaths.size} files to check...`;
+  }
   sendProgress(session);
 
+  let idx = 0;
   for (const relPath of allPaths) {
     if (ctx.cancelled) break;
+    idx++;
 
     const remote = remoteByPath.get(relPath);
     const local = localByPath.get(relPath);
     const fileName = path.basename(relPath);
-    session.currentFile = fileName;
+    session.currentFile = `[${idx}/${session.totalFiles}] ${fileName}`;
     sendProgress(session);
 
     try {
       if (remote && !local) {
-        // Remote-only → download
         const localPath = path.join(profile.localPath, relPath.slice(1));
         await driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
           session.bytesTransferred += bytes;
@@ -287,7 +322,6 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
         logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0);
         session.filesSynced++;
       } else if (local && !remote) {
-        // Local-only → upload
         const relDir = path.dirname(relPath);
         let parentId = profile.driveFolderId;
         if (relDir !== '/') {
@@ -302,18 +336,16 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
         logFile(session.id, fileName, relPath, 'upload', 'completed', local.size, local.size);
         session.filesSynced++;
       } else if (remote && local) {
-        // Both exist — compare hashes, newer wins
         const localHash = await computeLocalMd5(local.path);
         if (remote.md5Checksum && localHash === remote.md5Checksum) {
+          session.filesSkipped++;
           logFile(session.id, fileName, relPath, 'download', 'skipped', 0, 0, localHash, remote.md5Checksum);
           continue;
         }
-        // Compare timestamps
         const remoteTime = remote.modifiedTime ? new Date(remote.modifiedTime).getTime() : 0;
         const localTime = local.modifiedTime.getTime();
 
         if (remoteTime > localTime) {
-          // Remote is newer → download
           const localPath = path.join(profile.localPath, relPath.slice(1));
           await driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
             session.bytesTransferred += bytes;
@@ -322,7 +354,6 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
           logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0, localHash, remote.md5Checksum);
           session.filesSynced++;
         } else {
-          // Local is newer → upload
           const relDir = path.dirname(relPath);
           let parentId = profile.driveFolderId;
           if (relDir !== '/') {
@@ -340,6 +371,7 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
         }
       }
     } catch (err: any) {
+      console.error(`[Sync] Failed to process ${fileName}:`, err?.message);
       logFile(session.id, fileName, relPath, 'download', 'failed', 0, 0, undefined, undefined, err?.message);
       session.filesFailed++;
     }
@@ -360,6 +392,10 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   const ctx: SyncContext = { profile, driveService, session, cancelled: false };
   activeSyncs.set(profileId, ctx);
 
+  console.log(`[Sync] Starting ${profile.syncDirection} sync for "${profile.name}"`);
+  console.log(`[Sync]   Drive: ${profile.driveName} (${profile.driveId}), folder: ${profile.driveFolderPath} (${profile.driveFolderId})`);
+  console.log(`[Sync]   Local: ${profile.localPath}`);
+
   sendProgress(session);
 
   try {
@@ -377,12 +413,20 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
 
     session.status = ctx.cancelled ? 'cancelled' : 'completed';
     session.completedAt = new Date().toISOString();
+
+    const summary = `${session.totalFiles} found, ${session.filesSynced} synced, ${session.filesSkipped} skipped, ${session.filesFailed} failed`;
     session.currentFile = undefined;
+    if (session.totalFiles === 0) {
+      session.errorMessage = 'No files found in source folder';
+    }
+
+    console.log(`[Sync] Completed: ${summary}`);
   } catch (err: any) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();
     session.errorMessage = err?.message || 'Sync failed';
     session.currentFile = undefined;
+    console.error(`[Sync] Failed:`, err?.message);
   } finally {
     updateSession(session);
     sendProgress(session);
@@ -426,7 +470,9 @@ export function getSessions(profileId?: number): SyncSession[] {
     status: r.status,
     startedAt: r.started_at,
     completedAt: r.completed_at ?? undefined,
+    totalFiles: r.total_files ?? 0,
     filesSynced: r.files_synced,
+    filesSkipped: r.files_skipped ?? 0,
     filesFailed: r.files_failed,
     bytesTransferred: r.bytes_transferred,
     totalBytes: r.total_bytes,

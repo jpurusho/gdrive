@@ -64,7 +64,9 @@ export function initDatabase(): void {
       status TEXT NOT NULL,
       started_at TEXT NOT NULL,
       completed_at TEXT,
+      total_files INTEGER DEFAULT 0,
       files_synced INTEGER DEFAULT 0,
+      files_skipped INTEGER DEFAULT 0,
       files_failed INTEGER DEFAULT 0,
       bytes_transferred INTEGER DEFAULT 0,
       total_bytes INTEGER DEFAULT 0,
@@ -96,6 +98,16 @@ export function initDatabase(): void {
       FOREIGN KEY (history_id) REFERENCES sync_history(id) ON DELETE CASCADE
     );
   `);
+
+  // Migrations for existing databases
+  const cols = db.pragma('table_info(sync_history)') as any[];
+  const colNames = new Set(cols.map((c: any) => c.name));
+  if (!colNames.has('total_files')) {
+    db.exec('ALTER TABLE sync_history ADD COLUMN total_files INTEGER DEFAULT 0');
+  }
+  if (!colNames.has('files_skipped')) {
+    db.exec('ALTER TABLE sync_history ADD COLUMN files_skipped INTEGER DEFAULT 0');
+  }
 }
 
 export function getDb(): Database.Database {

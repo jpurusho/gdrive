@@ -166,23 +166,31 @@ function ProfileCard({
           {isActive && session?.currentFile && (
             <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
               <Typography variant="caption" color="primary.main" noWrap>
-                Syncing: {session.currentFile}
+                {session.currentFile}
               </Typography>
-              {session.totalBytes > 0 && (
-                <Typography variant="caption" color="text.secondary" display="block">
-                  {Math.round((session.bytesTransferred / session.totalBytes) * 100)}% — {session.filesSynced} files
-                </Typography>
-              )}
+              <Typography variant="caption" color="text.secondary" display="block">
+                {session.totalFiles > 0
+                  ? `${session.filesSynced + session.filesSkipped + session.filesFailed}/${session.totalFiles} checked — ${session.filesSynced} synced, ${session.filesSkipped} skipped`
+                  : 'Scanning...'}
+              </Typography>
             </Box>
           )}
 
           {/* Completed status */}
           {isCompleted && !isActive && (
-            <Box mt={1.5} pt={1} display="flex" alignItems="center" gap={0.5} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
-              <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
-              <Typography variant="caption" color="success.main">
-                {session.filesSynced} files synced
-              </Typography>
+            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                <Typography variant="caption" color="success.main">
+                  {session.totalFiles} found — {session.filesSynced} synced, {session.filesSkipped} unchanged
+                  {session.filesFailed > 0 && `, ${session.filesFailed} failed`}
+                </Typography>
+              </Box>
+              {session.errorMessage && (
+                <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 0.25 }}>
+                  {session.errorMessage}
+                </Typography>
+              )}
             </Box>
           )}
 
@@ -193,6 +201,11 @@ function ProfileCard({
                 <ErrorOutlineIcon sx={{ fontSize: 14, color: 'error.main' }} />
                 <Typography variant="caption" color="error.main">Sync failed</Typography>
               </Box>
+              {session.totalFiles > 0 && (
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                  {session.totalFiles} found — {session.filesSynced} synced, {session.filesFailed} failed
+                </Typography>
+              )}
               {session.errorMessage && (
                 <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ mt: 0.25 }}>
                   {session.errorMessage}
