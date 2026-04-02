@@ -84,14 +84,14 @@ function ProfileCard({
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
-        border: `2px solid ${
+        border: `1.5px solid ${
           isActive
             ? fluorescent
             : isFailed
-              ? alpha(theme.palette.error.main, 0.5)
+              ? alpha(theme.palette.error.main, 0.6)
               : isCompleted
-                ? alpha(theme.palette.success.main, 0.3)
-                : alpha(theme.palette.divider, 0.2)
+                ? alpha(theme.palette.success.main, 0.5)
+                : alpha(theme.palette.primary.main, 0.25)
         }`,
         borderRadius: 3,
         transition: 'transform 0.2s, border-color 0.3s',
@@ -317,7 +317,7 @@ export default function SyncCards() {
         <Card
           sx={{
             width: 280,
-            border: (t) => `1px dashed ${alpha(t.palette.divider, 0.4)}`,
+            border: (t) => `1.5px dashed ${alpha(t.palette.primary.main, 0.3)}`,
             borderRadius: 3,
             display: 'flex',
             alignItems: 'center',

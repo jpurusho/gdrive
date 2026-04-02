@@ -115,7 +115,7 @@ export default function History() {
         <TableContainer
           sx={{
             borderRadius: 3,
-            border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
+            border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
           }}
         >
           <Table size="small">

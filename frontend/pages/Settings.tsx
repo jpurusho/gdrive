@@ -220,7 +220,7 @@ export default function Settings() {
         </Typography>
       ) : (
         <TableContainer
-          sx={{ borderRadius: 2, border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`, mb: 4 }}
+          sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`, mb: 4 }}
         >
           <Table size="small">
             <TableHead>

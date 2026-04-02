@@ -175,7 +175,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 flex={1}
                 sx={{
                   borderRadius: 3,
-                  border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
+                  border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
                   bgcolor: 'background.paper',
                   overflow: 'hidden',
                   display: 'flex',
@@ -188,7 +188,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 flex={1}
                 sx={{
                   borderRadius: 3,
-                  border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
+                  border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
                   bgcolor: 'background.paper',
                   overflow: 'hidden',
                   display: 'flex',

@@ -51,7 +51,7 @@ export default function About() {
           p: 4,
           borderRadius: 3,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.1)}, ${alpha(t.palette.secondary.main, 0.08)})`,
-          border: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
+          border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
           mb: 4,
           textAlign: 'center',
         }}
@@ -114,7 +114,7 @@ export default function About() {
             sx={{
               p: 2.5,
               borderRadius: 2,
-              border: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
+              border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
               bgcolor: 'background.paper',
               display: 'flex',
               gap: 2,
@@ -138,7 +138,7 @@ export default function About() {
         sx={{
           p: 2.5,
           borderRadius: 2,
-          border: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
+          border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
           bgcolor: 'background.paper',
           maxWidth: 450,
           mb: 4,

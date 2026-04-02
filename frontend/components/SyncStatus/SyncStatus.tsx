@@ -95,7 +95,7 @@ export default function SyncStatus() {
     <TableContainer
       sx={{
         borderRadius: 2,
-        border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
+        border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
         bgcolor: 'background.paper',
         overflow: 'hidden',
       }}
