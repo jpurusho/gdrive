@@ -46,4 +46,5 @@ nsis:
 
 publish:
   provider: github
-  releaseType: release
+  owner: jpurusho
+  repo: gdrive
