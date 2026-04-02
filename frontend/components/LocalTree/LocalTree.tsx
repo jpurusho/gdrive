@@ -174,12 +174,15 @@ export default function LocalTree() {
         alignItems="center"
         justifyContent="space-between"
         px={2}
-        py={1.5}
-        sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}` }}
+        py={1.25}
+        sx={{
+          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.success.main, 0.12)}, ${alpha(t.palette.primary.main, 0.08)})`,
+          borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
+        }}
       >
         <Box display="flex" alignItems="center" gap={1}>
           <ComputerIcon sx={{ fontSize: 18, color: 'success.main' }} />
-          <Typography variant="subtitle2" fontWeight={600}>Local Files</Typography>
+          <Typography variant="subtitle2" fontWeight={700}>Local Files</Typography>
         </Box>
         <Box display="flex" gap={0.5}>
           <IconButton

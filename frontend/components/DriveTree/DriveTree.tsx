@@ -157,12 +157,15 @@ export default function DriveTree() {
         alignItems="center"
         justifyContent="space-between"
         px={2}
-        py={1.5}
-        sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}` }}
+        py={1.25}
+        sx={{
+          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
+          borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
+        }}
       >
         <Box display="flex" alignItems="center" gap={1}>
           <CloudIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-          <Typography variant="subtitle2" fontWeight={600}>Google Drive</Typography>
+          <Typography variant="subtitle2" fontWeight={700}>Google Drive</Typography>
         </Box>
         <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>
           <RefreshIcon sx={{ fontSize: 18 }} />
