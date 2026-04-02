@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Typography, alpha } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, alpha } from '@mui/material';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
 import Sidebar from '../components/Layout/Sidebar';
 import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
@@ -17,6 +20,25 @@ interface DashboardProps {
 }
 
 type Page = 'dashboard' | 'profiles' | 'history' | 'settings' | 'about';
+
+const LAYOUT_KEY = 'gdrive-sync-layout';
+
+interface LayoutState {
+  swapExplorers: boolean;
+  statusOnTop: boolean;
+}
+
+function loadLayout(): LayoutState {
+  try {
+    const raw = localStorage.getItem(LAYOUT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { swapExplorers: false, statusOnTop: false };
+}
+
+function saveLayout(layout: LayoutState): void {
+  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch {}
+}
 
 function ResizeHandle({ onDrag }: { onDrag: (deltaY: number) => void }) {
   const dragging = useRef(false);
@@ -87,10 +109,29 @@ function formatDate(): string {
   });
 }
 
+function ExplorerPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <Box
+      flex={1}
+      sx={{
+        borderRadius: 3,
+        border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
+        bgcolor: 'background.paper',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [statusHeight, setStatusHeight] = useState(180);
   const [version, setVersion] = useState('');
+  const [layout, setLayoutState] = useState<LayoutState>(loadLayout);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
@@ -98,21 +139,110 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     window.api.app.getVersion().then(setVersion);
   }, []);
 
+  function setLayout(update: Partial<LayoutState>) {
+    setLayoutState((prev) => {
+      const next = { ...prev, ...update };
+      saveLayout(next);
+      return next;
+    });
+  }
+
   const handleResize = useCallback((deltaY: number) => {
     setStatusHeight((prev) => {
       const containerH = containerRef.current?.clientHeight || 600;
       const maxH = containerH - 200;
       const minH = 80;
+      // When status is on top, drag direction is inverted
       return Math.max(minH, Math.min(maxH, prev - deltaY));
     });
   }, []);
+
+  const handleResizeInverted = useCallback((deltaY: number) => {
+    setStatusHeight((prev) => {
+      const containerH = containerRef.current?.clientHeight || 600;
+      const maxH = containerH - 200;
+      const minH = 80;
+      return Math.max(minH, Math.min(maxH, prev + deltaY));
+    });
+  }, []);
+
+  const leftPanel = layout.swapExplorers ? <LocalTree /> : <DriveTree />;
+  const rightPanel = layout.swapExplorers ? <DriveTree /> : <LocalTree />;
+
+  const explorersSection = (
+    <Box flex={1} display="flex" gap={2} minHeight={150} position="relative">
+      <ExplorerPanel>{leftPanel}</ExplorerPanel>
+
+      {/* Swap button between panels */}
+      <Box
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: 6,
+          transform: 'translateX(-50%)',
+          zIndex: 10,
+        }}
+        className="titlebar-nodrag"
+      >
+        <Tooltip title="Swap panels">
+          <IconButton
+            size="small"
+            onClick={() => setLayout({ swapExplorers: !layout.swapExplorers })}
+            sx={{
+              bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
+              border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
+              backdropFilter: 'blur(8px)',
+              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
+              width: 28,
+              height: 28,
+            }}
+          >
+            <SwapHorizIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      <ExplorerPanel>{rightPanel}</ExplorerPanel>
+    </Box>
+  );
+
+  const statusSection = (
+    <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto', position: 'relative' }}>
+      {/* Move status toggle */}
+      <Box
+        sx={{ position: 'absolute', right: 8, top: 6, zIndex: 10 }}
+        className="titlebar-nodrag"
+      >
+        <Tooltip title={layout.statusOnTop ? 'Move status to bottom' : 'Move status to top'}>
+          <IconButton
+            size="small"
+            onClick={() => setLayout({ statusOnTop: !layout.statusOnTop })}
+            sx={{
+              bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
+              border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
+              backdropFilter: 'blur(8px)',
+              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
+              width: 28,
+              height: 28,
+            }}
+          >
+            {layout.statusOnTop
+              ? <VerticalAlignBottomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              : <VerticalAlignTopIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+            }
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <SyncStatus />
+    </Box>
+  );
 
   return (
     <Box display="flex" height="100vh" overflow="hidden">
       <Sidebar user={user} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
 
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden" sx={{ background: (t) => t.palette.background.default }}>
-        {/* Titlebar with app name, version, date */}
+        {/* Titlebar */}
         <Box
           className="titlebar-drag"
           sx={{
@@ -169,50 +299,25 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {currentPage === 'dashboard' && (
           <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3}>
-            {/* File trees */}
-            <Box flex={1} display="flex" gap={2} minHeight={150}>
-              <Box
-                flex={1}
-                sx={{
-                  borderRadius: 3,
-                  border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
-                  bgcolor: 'background.paper',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <DriveTree />
-              </Box>
-              <Box
-                flex={1}
-                sx={{
-                  borderRadius: 3,
-                  border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
-                  bgcolor: 'background.paper',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <LocalTree />
-              </Box>
-            </Box>
-
-            <ResizeHandle onDrag={handleResize} />
-
-            <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto' }}>
-              <SyncStatus />
-            </Box>
+            {layout.statusOnTop ? (
+              <>
+                {statusSection}
+                <ResizeHandle onDrag={handleResizeInverted} />
+                {explorersSection}
+              </>
+            ) : (
+              <>
+                {explorersSection}
+                <ResizeHandle onDrag={handleResize} />
+                {statusSection}
+              </>
+            )}
           </Box>
         )}
 
         {currentPage === 'profiles' && <Profiles />}
-
         {currentPage === 'history' && <History />}
-
         {currentPage === 'settings' && <Settings />}
-
         {currentPage === 'about' && <About />}
       </Box>
     </Box>
