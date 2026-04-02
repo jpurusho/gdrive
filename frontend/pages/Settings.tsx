@@ -220,18 +220,22 @@ export default function Settings() {
         </Typography>
       ) : (
         <TableContainer
-          sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`, mb: 4 }}
+          sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`, mb: 4, overflow: 'hidden' }}
         >
           <Table size="small">
             <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Direction</TableCell>
-                <TableCell>Drive Folder</TableCell>
-                <TableCell>Local Path</TableCell>
-                <TableCell>Schedule</TableCell>
-                <TableCell>Last Sync</TableCell>
-                <TableCell align="right">Actions</TableCell>
+              <TableRow
+                sx={{
+                  background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
+                }}
+              >
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Direction</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Drive Folder</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Local Path</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Schedule</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Last Sync</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
