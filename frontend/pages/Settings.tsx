@@ -8,6 +8,7 @@ import {
   Chip,
   Button,
   Divider,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -31,6 +32,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import { useThemeContext } from '../theme/ThemeContext';
+import { useAppSettings } from '../context/AppSettingsContext';
 import EditProfileDialog from '../components/EditProfileDialog/EditProfileDialog';
 import type { ThemeDefinition } from '../theme/themes';
 import type { SyncProfile, BackupInfo } from '../../shared/types';
@@ -99,6 +101,8 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
 
 export default function Settings() {
   const { themeId, setThemeId, availableThemes } = useThemeContext();
+  const { appTitle, setAppTitle } = useAppSettings();
+  const [titleInput, setTitleInput] = useState('');
   const [version, setVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [checking, setChecking] = useState(false);
@@ -107,13 +111,15 @@ export default function Settings() {
   const [backupInfo, setBackupInfo] = useState<BackupInfo>({ lastBackup: null, folderId: null });
   const [backupLoading, setBackupLoading] = useState('');
   const [backupMessage, setBackupMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [titleSaved, setTitleSaved] = useState(false);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
     window.api.app.getPlatform().then(setPlatform);
     loadProfiles();
     window.api.backup.getInfo().then(setBackupInfo);
-  }, []);
+    setTitleInput(appTitle);
+  }, [appTitle]);
 
   async function handleBackup() {
     setBackupLoading('backup');
@@ -294,6 +300,36 @@ export default function Settings() {
 
       <Divider sx={{ opacity: 0.3, mb: 3 }} />
 
+      {/* ── Application Title ── */}
+      <Typography variant="subtitle1" mb={1}>Application Title</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Customize the title shown in the top bar. Saved to database.
+      </Typography>
+      <Box display="flex" gap={1} mb={1} maxWidth={500}>
+        <TextField
+          size="small"
+          fullWidth
+          value={titleInput}
+          onChange={(e) => { setTitleInput(e.target.value); setTitleSaved(false); }}
+          placeholder="GDrive Sync App"
+        />
+        <Button
+          variant="contained"
+          onClick={async () => { await setAppTitle(titleInput); setTitleSaved(true); }}
+          disabled={titleInput === appTitle}
+          sx={{ whiteSpace: 'nowrap' }}
+        >
+          Save
+        </Button>
+      </Box>
+      {titleSaved && (
+        <Typography variant="caption" color="success.main" mb={2} display="block">
+          Title saved!
+        </Typography>
+      )}
+
+      <Divider sx={{ opacity: 0.3, my: 3 }} />
+
       {/* ── Database Backup ── */}
       <Typography variant="subtitle1" mb={1}>Database Backup & Restore</Typography>
       <Typography variant="body2" color="text.secondary" mb={2}>
@@ -364,17 +400,59 @@ export default function Settings() {
       <Typography variant="subtitle1" mb={2}>About</Typography>
       <Box
         sx={{
-          p: 2.5, borderRadius: 2,
-          border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
-          bgcolor: 'background.paper', maxWidth: 400,
+          p: 3, borderRadius: 3,
+          border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
+          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.06)}, ${alpha(t.palette.secondary.main, 0.04)})`,
+          maxWidth: 500,
         }}
       >
-        <Typography variant="body2" fontWeight={600} mb={1}>GDrive Sync v{version || '...'}</Typography>
-        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-          Platform: {platform || '...'} | Electron Desktop App
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          mb={1}
+          sx={{
+            background: 'linear-gradient(135deg, #00e5ff, #00bfa5, #64ffda)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          {appTitle}
         </Typography>
+        <Box display="flex" flexDirection="column" gap={0.75} mb={2}>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Version</Typography>
+            <Typography variant="caption">{version || '...'}</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Platform</Typography>
+            <Typography variant="caption">{platform || '...'}</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Runtime</Typography>
+            <Typography variant="caption">Electron + React + TypeScript</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>UI</Typography>
+            <Typography variant="caption">Material UI 5</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Database</Typography>
+            <Typography variant="caption">SQLite (better-sqlite3)</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>APIs</Typography>
+            <Typography variant="caption">Google Drive API v3</Typography>
+          </Box>
+          <Box display="flex" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 70 }}>Author</Typography>
+            <Typography variant="caption">Jerome Purushotham</Typography>
+          </Box>
+        </Box>
+        <Divider sx={{ opacity: 0.2, mb: 2 }} />
         <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-          Built with React, Material UI, and TypeScript
+          Sync your Google Drive files with local folders. Supports bidirectional sync,
+          scheduled auto-sync, MD5 checksum verification, Google Workspace file export,
+          and database backup/restore to Drive.
         </Typography>
         <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
           {checking ? 'Checking...' : 'Check for Updates'}

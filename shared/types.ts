@@ -182,6 +182,8 @@ export interface ElectronAPI {
     getVersion: () => Promise<string>;
     checkForUpdates: () => Promise<void>;
     getPlatform: () => Promise<string>;
+    getSetting: (key: string) => Promise<string | null>;
+    setSetting: (key: string, value: string) => Promise<void>;
   };
 }
 

@@ -43,6 +43,8 @@ const api: ElectronAPI = {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
     getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
+    getSetting: (key: string) => ipcRenderer.invoke('app:getSetting', key),
+    setSetting: (key: string, value: string) => ipcRenderer.invoke('app:setSetting', key, value),
   },
 };
 

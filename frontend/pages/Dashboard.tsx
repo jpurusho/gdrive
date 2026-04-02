@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Box, alpha } from '@mui/material';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Box, Typography, alpha } from '@mui/material';
 import Sidebar from '../components/Layout/Sidebar';
 import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
@@ -7,6 +7,7 @@ import SyncStatus from '../components/SyncStatus/SyncStatus';
 import Profiles from './Profiles';
 import Settings from './Settings';
 import History from './History';
+import { useAppSettings } from '../context/AppSettingsContext';
 import type { UserInfo } from '../../shared/types';
 
 interface DashboardProps {
@@ -76,15 +77,30 @@ function ResizeHandle({ onDrag }: { onDrag: (deltaY: number) => void }) {
   );
 }
 
+function formatDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [statusHeight, setStatusHeight] = useState(180);
+  const [version, setVersion] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const { appTitle } = useAppSettings();
+
+  useEffect(() => {
+    window.api.app.getVersion().then(setVersion);
+  }, []);
 
   const handleResize = useCallback((deltaY: number) => {
     setStatusHeight((prev) => {
       const containerH = containerRef.current?.clientHeight || 600;
-      const maxH = containerH - 200; // leave min 200px for trees
+      const maxH = containerH - 200;
       const minH = 80;
       return Math.max(minH, Math.min(maxH, prev - deltaY));
     });
@@ -95,12 +111,45 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       <Sidebar user={user} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
 
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden" sx={{ background: (t) => t.palette.background.default }}>
-        {/* Titlebar drag zone */}
-        <Box className="titlebar-drag" sx={{ height: 52, flexShrink: 0, pl: 10, pr: 2 }} />
+        {/* Titlebar with app name, version, date */}
+        <Box
+          className="titlebar-drag"
+          sx={{
+            height: 52,
+            flexShrink: 0,
+            pl: 10,
+            pr: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 800,
+              letterSpacing: 0.5,
+              background: 'linear-gradient(135deg, #00e5ff, #00bfa5, #64ffda)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: 15,
+            }}
+          >
+            {appTitle}
+          </Typography>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.6 }}>
+              {formatDate()}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ opacity: 0.4 }}>
+              v{version}
+            </Typography>
+          </Box>
+        </Box>
 
         {currentPage === 'dashboard' && (
           <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3}>
-            {/* File trees — takes remaining space */}
+            {/* File trees */}
             <Box flex={1} display="flex" gap={2} minHeight={150}>
               <Box
                 flex={1}
@@ -130,10 +179,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               </Box>
             </Box>
 
-            {/* Drag handle */}
             <ResizeHandle onDrag={handleResize} />
 
-            {/* Sync status table — resizable */}
             <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto' }}>
               <SyncStatus />
             </Box>

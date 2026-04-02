@@ -171,6 +171,17 @@ export function clearUserInfo(): void {
   db.prepare('DELETE FROM user_info').run();
 }
 
+// ─── App settings helpers ──────────────────────────────────────────────────
+
+export function getSetting(key: string): string | null {
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key) as any;
+  return row?.value ?? null;
+}
+
+export function setSetting(key: string, value: string): void {
+  db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(key, value);
+}
+
 // ─── Sync profile helpers ──────────────────────────────────────────────────
 
 function rowToProfile(row: any): SyncProfile {

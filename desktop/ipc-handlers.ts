@@ -2,7 +2,7 @@ import { ipcMain, app, dialog, BrowserWindow } from 'electron';
 import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
-import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile } from './services/database';
+import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting } from './services/database';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
@@ -139,8 +139,10 @@ export function registerIpcHandlers(): void {
     return getBackupInfo();
   });
 
-  // ─── App ──────────────────────────────────────────────────────────────────
+  // ─── App Settings ──────────────────────────────────────────────────────────
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {});
   ipcMain.handle('app:getPlatform', () => process.platform);
+  ipcMain.handle('app:getSetting', (_event, key: string) => getSetting(key));
+  ipcMain.handle('app:setSetting', (_event, key: string, value: string) => setSetting(key, value));
 }
