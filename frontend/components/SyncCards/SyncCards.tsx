@@ -4,6 +4,7 @@ import {
   Typography,
   Card,
   CardContent,
+  CardActionArea,
   IconButton,
   Chip,
   Tooltip,
@@ -22,7 +23,10 @@ import FolderIcon from '@mui/icons-material/Folder';
 import CloudIcon from '@mui/icons-material/Cloud';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CreateProfileDialog from '../CreateProfileDialog/CreateProfileDialog';
+import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
 
 const glowPulse = keyframes`
@@ -47,15 +51,19 @@ function ProfileCard({
   session,
   onDelete,
   onSync,
+  onClick,
 }: {
   profile: SyncProfile;
   session?: SyncSession;
   onDelete: () => void;
   onSync: () => void;
+  onClick: () => void;
 }) {
   const theme = useTheme();
   const DirIcon = directionIcons[profile.syncDirection];
   const isActive = session?.status === 'in_progress';
+  const isFailed = session?.status === 'failed';
+  const isCompleted = session?.status === 'completed';
   const glowColor = alpha(theme.palette.primary.main, 0.4);
 
   return (
@@ -65,7 +73,13 @@ function ProfileCard({
         flexShrink: 0,
         position: 'relative',
         overflow: 'visible',
-        border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+        border: `1px solid ${
+          isFailed
+            ? alpha(theme.palette.error.main, 0.5)
+            : isCompleted
+              ? alpha(theme.palette.success.main, 0.3)
+              : alpha(theme.palette.divider, 0.3)
+        }`,
         borderRadius: 3,
         transition: 'transform 0.2s, box-shadow 0.2s',
         '&:hover': { transform: 'translateY(-2px)' },
@@ -83,77 +97,105 @@ function ProfileCard({
           sx={{ position: 'absolute', top: 0, left: 0, right: 0, borderRadius: '12px 12px 0 0', height: 3 }}
         />
       )}
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1.5}>
-          <Box>
-            <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ maxWidth: 180 }}>
-              {profile.name}
-            </Typography>
-            <Chip
-              icon={<DirIcon sx={{ fontSize: '14px !important' }} />}
-              label={directionLabels[profile.syncDirection]}
-              size="small"
-              sx={{ height: 22, fontSize: 11, mt: 0.5 }}
-            />
+      <CardActionArea onClick={onClick} sx={{ p: 0 }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1.5}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} noWrap sx={{ maxWidth: 180 }}>
+                {profile.name}
+              </Typography>
+              <Chip
+                icon={<DirIcon sx={{ fontSize: '14px !important' }} />}
+                label={directionLabels[profile.syncDirection]}
+                size="small"
+                sx={{ height: 22, fontSize: 11, mt: 0.5 }}
+              />
+            </Box>
+            <Box display="flex" gap={0.25} onClick={(e) => e.stopPropagation()}>
+              <Tooltip title="Sync now">
+                <IconButton size="small" onClick={onSync} disabled={isActive}>
+                  <PlayArrowIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete">
+                <IconButton size="small" onClick={onDelete} disabled={isActive} sx={{ color: 'text.secondary' }}>
+                  <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
-          <Box display="flex" gap={0.25}>
-            <Tooltip title="Sync now">
-              <IconButton size="small" onClick={onSync} disabled={isActive}>
-                <PlayArrowIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton size="small" onClick={onDelete} disabled={isActive} sx={{ color: 'text.secondary' }}>
-                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
 
-        <Box display="flex" flexDirection="column" gap={0.75}>
-          <Box display="flex" alignItems="center" gap={0.75}>
-            <CloudIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-            <Typography variant="caption" color="text.secondary" noWrap title={`${profile.driveName}: ${profile.driveFolderPath}`}>
-              {profile.driveName}: {profile.driveFolderPath}
-            </Typography>
-          </Box>
-          <Box display="flex" alignItems="center" gap={0.75}>
-            <FolderIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-            <Typography variant="caption" color="text.secondary" noWrap title={profile.localPath}>
-              {profile.localPath}
-            </Typography>
-          </Box>
-          {profile.schedule && (
+          <Box display="flex" flexDirection="column" gap={0.75}>
             <Box display="flex" alignItems="center" gap={0.75}>
-              <ScheduleIcon sx={{ fontSize: 14, color: 'secondary.main' }} />
-              <Typography variant="caption" color="text.secondary">
-                {profile.schedule}
+              <CloudIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+              <Typography variant="caption" color="text.secondary" noWrap title={`${profile.driveName}: ${profile.driveFolderPath}`}>
+                {profile.driveName}: {profile.driveFolderPath}
               </Typography>
             </Box>
-          )}
-          {profile.lastSyncAt && (
             <Box display="flex" alignItems="center" gap={0.75}>
-              <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary">
-                Last: {new Date(profile.lastSyncAt).toLocaleString()}
+              <FolderIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+              <Typography variant="caption" color="text.secondary" noWrap title={profile.localPath}>
+                {profile.localPath}
               </Typography>
             </Box>
-          )}
-        </Box>
-
-        {isActive && session?.currentFile && (
-          <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
-            <Typography variant="caption" color="primary.main" noWrap>
-              Syncing: {session.currentFile}
-            </Typography>
-            {session.totalBytes > 0 && (
-              <Typography variant="caption" color="text.secondary" display="block">
-                {Math.round((session.bytesTransferred / session.totalBytes) * 100)}% — {session.filesSynced} files done
-              </Typography>
+            {profile.schedule && (
+              <Box display="flex" alignItems="center" gap={0.75}>
+                <ScheduleIcon sx={{ fontSize: 14, color: 'secondary.main' }} />
+                <Typography variant="caption" color="text.secondary">
+                  {profile.schedule}
+                </Typography>
+              </Box>
+            )}
+            {profile.lastSyncAt && (
+              <Box display="flex" alignItems="center" gap={0.75}>
+                <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="caption" color="text.secondary">
+                  Last: {new Date(profile.lastSyncAt).toLocaleString()}
+                </Typography>
+              </Box>
             )}
           </Box>
-        )}
-      </CardContent>
+
+          {/* Active sync status */}
+          {isActive && session?.currentFile && (
+            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Typography variant="caption" color="primary.main" noWrap>
+                Syncing: {session.currentFile}
+              </Typography>
+              {session.totalBytes > 0 && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {Math.round((session.bytesTransferred / session.totalBytes) * 100)}% — {session.filesSynced} files
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* Completed status */}
+          {isCompleted && !isActive && (
+            <Box mt={1.5} pt={1} display="flex" alignItems="center" gap={0.5} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
+              <Typography variant="caption" color="success.main">
+                {session.filesSynced} files synced
+              </Typography>
+            </Box>
+          )}
+
+          {/* Failed status */}
+          {isFailed && (
+            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <ErrorOutlineIcon sx={{ fontSize: 14, color: 'error.main' }} />
+                <Typography variant="caption" color="error.main">Sync failed</Typography>
+              </Box>
+              {session.errorMessage && (
+                <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ mt: 0.25 }}>
+                  {session.errorMessage}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 }
@@ -163,12 +205,17 @@ export default function SyncCards() {
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
   const [sessions, setSessions] = useState<Record<number, SyncSession>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editProfile, setEditProfile] = useState<SyncProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfiles();
     const unsub = window.api.sync.onSyncProgress((session) => {
       setSessions((prev) => ({ ...prev, [session.profileId]: session }));
+      // Refresh profile when sync completes to get updated lastSyncAt
+      if (session.status === 'completed' || session.status === 'failed') {
+        loadProfiles();
+      }
     });
     return unsub;
   }, []);
@@ -185,6 +232,7 @@ export default function SyncCards() {
   async function handleDelete(id: number) {
     await window.api.sync.deleteProfile(id);
     setProfiles((prev) => prev.filter((p) => p.id !== id));
+    setEditProfile(null);
   }
 
   async function handleSync(profileId: number) {
@@ -193,6 +241,12 @@ export default function SyncCards() {
 
   function handleCreate(profile: SyncProfile) {
     setProfiles((prev) => [profile, ...prev]);
+    // Auto-trigger first sync immediately
+    handleSync(profile.id);
+  }
+
+  function handleProfileSaved(updated: SyncProfile) {
+    setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   }
 
   if (loading) return null;
@@ -256,6 +310,7 @@ export default function SyncCards() {
             session={sessions[profile.id]}
             onDelete={() => handleDelete(profile.id)}
             onSync={() => handleSync(profile.id)}
+            onClick={() => setEditProfile(profile)}
           />
         ))}
       </Box>
@@ -264,6 +319,15 @@ export default function SyncCards() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <EditProfileDialog
+        open={!!editProfile}
+        profile={editProfile}
+        onClose={() => setEditProfile(null)}
+        onSave={handleProfileSaved}
+        onDelete={() => editProfile && handleDelete(editProfile.id)}
+        onSync={() => { if (editProfile) { handleSync(editProfile.id); setEditProfile(null); } }}
       />
     </>
   );
