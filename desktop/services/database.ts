@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import type { AuthTokens, UserInfo } from '../../shared/types';
+import type { AuthTokens, UserInfo, SyncProfile } from '../../shared/types';
 
 let db: Database.Database;
 
@@ -144,4 +144,71 @@ export function getUserInfo(): UserInfo | null {
 
 export function clearUserInfo(): void {
   db.prepare('DELETE FROM user_info').run();
+}
+
+// ─── Sync profile helpers ──────────────────────────────────────────────────
+
+function rowToProfile(row: any): SyncProfile {
+  return {
+    id: row.id,
+    name: row.name,
+    driveId: row.drive_id,
+    driveName: row.drive_name,
+    driveType: row.drive_type,
+    driveFolderId: row.drive_folder_id,
+    driveFolderPath: row.drive_folder_path,
+    localPath: row.local_path,
+    syncDirection: row.sync_direction,
+    schedule: row.schedule ?? undefined,
+    isActive: row.is_active === 1,
+    lastSyncAt: row.last_sync_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function getProfiles(): SyncProfile[] {
+  const rows = db.prepare('SELECT * FROM sync_profiles ORDER BY created_at DESC').all() as any[];
+  return rows.map(rowToProfile);
+}
+
+export function getProfile(id: number): SyncProfile | null {
+  const row = db.prepare('SELECT * FROM sync_profiles WHERE id = ?').get(id) as any;
+  return row ? rowToProfile(row) : null;
+}
+
+export function createProfile(p: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>): SyncProfile {
+  const stmt = db.prepare(`
+    INSERT INTO sync_profiles (name, drive_id, drive_name, drive_type, drive_folder_id, drive_folder_path, local_path, sync_direction, schedule, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    p.name, p.driveId, p.driveName, p.driveType,
+    p.driveFolderId, p.driveFolderPath, p.localPath,
+    p.syncDirection, p.schedule ?? null, p.isActive ? 1 : 0,
+  );
+  return getProfile(result.lastInsertRowid as number)!;
+}
+
+export function updateProfile(id: number, updates: Partial<SyncProfile>): SyncProfile | null {
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (updates.name !== undefined) { fields.push('name = ?'); values.push(updates.name); }
+  if (updates.syncDirection !== undefined) { fields.push('sync_direction = ?'); values.push(updates.syncDirection); }
+  if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule ?? null); }
+  if (updates.isActive !== undefined) { fields.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
+  if (updates.lastSyncAt !== undefined) { fields.push('last_sync_at = ?'); values.push(updates.lastSyncAt); }
+
+  if (fields.length === 0) return getProfile(id);
+
+  fields.push("updated_at = datetime('now')");
+  values.push(id);
+
+  db.prepare(`UPDATE sync_profiles SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  return getProfile(id);
+}
+
+export function deleteProfile(id: number): void {
+  db.prepare('DELETE FROM sync_profiles WHERE id = ?').run(id);
 }

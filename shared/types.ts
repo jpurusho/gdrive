@@ -128,6 +128,7 @@ export interface ElectronAPI {
   sync: {
     getProfiles: () => Promise<SyncProfile[]>;
     createProfile: (profile: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<SyncProfile>;
+    updateProfile: (id: number, updates: Partial<SyncProfile>) => Promise<SyncProfile>;
     deleteProfile: (id: number) => Promise<void>;
     startSync: (profileId: number) => Promise<void>;
     cancelSync: (sessionId: number) => Promise<void>;

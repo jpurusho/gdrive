@@ -2,7 +2,8 @@ import { ipcMain, app, dialog, BrowserWindow } from 'electron';
 import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
-import { getTokens } from './services/database';
+import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile } from './services/database';
+import type { SyncProfile } from '../shared/types';
 
 let authService: GoogleAuthService;
 let driveService: GoogleDriveService | null = null;
@@ -69,10 +70,24 @@ export function registerIpcHandlers(): void {
     return result.canceled ? null : result.filePaths[0];
   });
 
-  // ─── Sync (stubs for Phase 2) ────────────────────────────────────────────
-  ipcMain.handle('sync:getProfiles', async () => []);
-  ipcMain.handle('sync:createProfile', async () => null);
-  ipcMain.handle('sync:deleteProfile', async () => {});
+  // ─── Sync Profiles ───────────────────────────────────────────────────────
+  ipcMain.handle('sync:getProfiles', async () => {
+    return getProfiles();
+  });
+
+  ipcMain.handle('sync:createProfile', async (_event, profile: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
+    return createProfile(profile);
+  });
+
+  ipcMain.handle('sync:updateProfile', async (_event, id: number, updates: Partial<SyncProfile>) => {
+    return updateProfile(id, updates);
+  });
+
+  ipcMain.handle('sync:deleteProfile', async (_event, id: number) => {
+    deleteProfile(id);
+  });
+
+  // ─── Sync Engine (Phase 3 stubs) ───────────────────────────────────────
   ipcMain.handle('sync:startSync', async () => {});
   ipcMain.handle('sync:cancelSync', async () => {});
   ipcMain.handle('sync:getSessions', async () => []);

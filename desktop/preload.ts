@@ -22,6 +22,7 @@ const api: ElectronAPI = {
   sync: {
     getProfiles: () => ipcRenderer.invoke('sync:getProfiles'),
     createProfile: (profile) => ipcRenderer.invoke('sync:createProfile', profile),
+    updateProfile: (id, updates) => ipcRenderer.invoke('sync:updateProfile', id, updates),
     deleteProfile: (id) => ipcRenderer.invoke('sync:deleteProfile', id),
     startSync: (profileId) => ipcRenderer.invoke('sync:startSync', profileId),
     cancelSync: (sessionId) => ipcRenderer.invoke('sync:cancelSync', sessionId),
