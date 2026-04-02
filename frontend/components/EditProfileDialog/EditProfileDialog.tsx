@@ -40,6 +40,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const [name, setName] = useState('');
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
+  const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -48,6 +49,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       setName(profile.name);
       setLocalPath(profile.localPath);
       setDirection(profile.syncDirection);
+      setFileFilter(profile.fileFilter || '');
       setSchedule(profile.schedule || '');
     }
   }, [profile]);
@@ -65,6 +67,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       const updates: Partial<SyncProfile> = {
         name: name.trim(),
         syncDirection: direction,
+        fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
       };
       // Only include localPath if changed
@@ -171,6 +174,19 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
               <Typography variant="caption">Bidirectional</Typography>
             </ToggleButton>
           </ToggleButtonGroup>
+        </Box>
+
+        {/* File filter */}
+        <Box>
+          <Typography variant="subtitle2" mb={1}>File Filter</Typography>
+          <TextField
+            size="small"
+            fullWidth
+            value={fileFilter}
+            onChange={(e) => setFileFilter(e.target.value)}
+            placeholder="e.g. *.pdf, *.docx, reports/*"
+            helperText="Comma-separated patterns. Leave empty to sync all files."
+          />
         </Box>
 
         {/* Schedule */}

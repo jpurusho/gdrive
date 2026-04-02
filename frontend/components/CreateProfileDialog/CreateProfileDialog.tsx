@@ -211,6 +211,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [folderSel, setFolderSel] = useState<FolderSelection | null>(null);
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
+  const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -229,6 +230,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setFolderSel(null);
     setLocalPath('');
     setDirection('download');
+    setFileFilter('');
     setSchedule('');
     setError('');
   }
@@ -254,6 +256,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         driveFolderPath: folderSel.folderPath,
         localPath,
         syncDirection: direction,
+        fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
         isActive: true,
       });
@@ -345,6 +348,19 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
               This drive is read-only. Only download is available.
             </Typography>
           )}
+        </Box>
+
+        {/* File filter */}
+        <Box>
+          <Typography variant="subtitle2" mb={1}>File Filter (optional)</Typography>
+          <TextField
+            size="small"
+            fullWidth
+            value={fileFilter}
+            onChange={(e) => setFileFilter(e.target.value)}
+            placeholder="e.g. *.pdf, *.docx, reports/*"
+            helperText="Comma-separated patterns. Leave empty to sync all files."
+          />
         </Box>
 
         {/* Schedule */}

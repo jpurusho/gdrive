@@ -51,6 +51,7 @@ export function initDatabase(): void {
       drive_folder_path TEXT NOT NULL DEFAULT '/',
       local_path TEXT NOT NULL,
       sync_direction TEXT NOT NULL,
+      file_filter TEXT,
       schedule TEXT,
       is_active INTEGER DEFAULT 1,
       last_sync_at TEXT,
@@ -100,6 +101,12 @@ export function initDatabase(): void {
   `);
 
   // Migrations for existing databases
+  const profileCols = db.pragma('table_info(sync_profiles)') as any[];
+  const profileColNames = new Set(profileCols.map((c: any) => c.name));
+  if (!profileColNames.has('file_filter')) {
+    db.exec('ALTER TABLE sync_profiles ADD COLUMN file_filter TEXT');
+  }
+
   const cols = db.pragma('table_info(sync_history)') as any[];
   const colNames = new Set(cols.map((c: any) => c.name));
   if (!colNames.has('total_files')) {
@@ -177,6 +184,7 @@ function rowToProfile(row: any): SyncProfile {
     driveFolderPath: row.drive_folder_path,
     localPath: row.local_path,
     syncDirection: row.sync_direction,
+    fileFilter: row.file_filter ?? undefined,
     schedule: row.schedule ?? undefined,
     isActive: row.is_active === 1,
     lastSyncAt: row.last_sync_at ?? undefined,
@@ -197,13 +205,13 @@ export function getProfile(id: number): SyncProfile | null {
 
 export function createProfile(p: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>): SyncProfile {
   const stmt = db.prepare(`
-    INSERT INTO sync_profiles (name, drive_id, drive_name, drive_type, drive_folder_id, drive_folder_path, local_path, sync_direction, schedule, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sync_profiles (name, drive_id, drive_name, drive_type, drive_folder_id, drive_folder_path, local_path, sync_direction, file_filter, schedule, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     p.name, p.driveId, p.driveName, p.driveType,
     p.driveFolderId, p.driveFolderPath, p.localPath,
-    p.syncDirection, p.schedule ?? null, p.isActive ? 1 : 0,
+    p.syncDirection, p.fileFilter ?? null, p.schedule ?? null, p.isActive ? 1 : 0,
   );
   return getProfile(result.lastInsertRowid as number)!;
 }
@@ -217,6 +225,7 @@ export function updateProfile(id: number, updates: Partial<SyncProfile>): SyncPr
   if (updates.driveFolderId !== undefined) { fields.push('drive_folder_id = ?'); values.push(updates.driveFolderId); }
   if (updates.driveFolderPath !== undefined) { fields.push('drive_folder_path = ?'); values.push(updates.driveFolderPath); }
   if (updates.syncDirection !== undefined) { fields.push('sync_direction = ?'); values.push(updates.syncDirection); }
+  if (updates.fileFilter !== undefined) { fields.push('file_filter = ?'); values.push(updates.fileFilter ?? null); }
   if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule ?? null); }
   if (updates.isActive !== undefined) { fields.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
   if (updates.lastSyncAt !== undefined) { fields.push('last_sync_at = ?'); values.push(updates.lastSyncAt); }

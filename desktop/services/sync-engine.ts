@@ -5,6 +5,30 @@ import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportIn
 import { getProfile, updateProfile, getDb } from './database';
 import type { SyncProfile, SyncSession } from '../../shared/types';
 
+/** Apply glob-like file filter patterns (e.g., "*.pdf,*.docx" or "*.jpg,reports/*") */
+function applyFileFilter<T extends { name: string; relativePath: string }>(files: T[], filter: string): T[] {
+  const patterns = filter.split(',').map((p) => p.trim().toLowerCase()).filter(Boolean);
+  if (patterns.length === 0) return files;
+
+  return files.filter((f) => {
+    const name = f.name.toLowerCase();
+    const relPath = f.relativePath.toLowerCase();
+    return patterns.some((pattern) => {
+      if (pattern.startsWith('*.')) {
+        // Extension match: *.pdf
+        return name.endsWith(pattern.slice(1));
+      }
+      if (pattern.includes('*')) {
+        // Simple wildcard: reports/* or *.log
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+        return regex.test(relPath) || regex.test(name);
+      }
+      // Exact name match
+      return name === pattern || relPath.includes(pattern);
+    });
+  });
+}
+
 interface SyncContext {
   profile: SyncProfile;
   driveService: GoogleDriveService;
@@ -136,25 +160,43 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
   console.log(`[Sync] Found ${remoteFiles.length} total remote files`);
 
   // Filter out unsupported Google Workspace types
+  const filtered: string[] = [];
   const downloadable = remoteFiles.filter((f) => {
     if (isGoogleWorkspaceFile(f.mimeType)) {
-      return !!getExportInfo(f.mimeType);
+      if (!getExportInfo(f.mimeType)) {
+        filtered.push(`${f.name} (${f.mimeType})`);
+        return false;
+      }
     }
     return true;
   });
 
-  session.totalFiles = downloadable.length;
-  session.totalBytes = downloadable.reduce((sum, f) => sum + (f.size || 0), 0);
+  // Apply profile file filter (glob patterns like *.pdf, *.docx)
+  const profileFilter = profile.fileFilter;
+  const finalFiles = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
 
-  if (downloadable.length === 0) {
-    session.currentFile = 'No files found in source folder';
-    console.log(`[Sync] No downloadable files found. Remote had ${remoteFiles.length} files (${remoteFiles.length - downloadable.length} unsupported types filtered)`);
+  session.totalFiles = finalFiles.length;
+  session.totalBytes = finalFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+
+  if (filtered.length > 0) {
+    console.log(`[Sync] Filtered ${filtered.length} unsupported types:`);
+    filtered.forEach((f) => console.log(`[Sync]   - ${f}`));
+  }
+  if (profileFilter && finalFiles.length !== downloadable.length) {
+    console.log(`[Sync] Profile filter "${profileFilter}" matched ${finalFiles.length}/${downloadable.length} files`);
+  }
+
+  if (finalFiles.length === 0) {
+    session.currentFile = remoteFiles.length === 0
+      ? 'No files found in source folder'
+      : `No downloadable files (${filtered.length} unsupported: ${filtered.map(f => f.split(' (')[0]).join(', ')})`;
+    console.log(`[Sync] No downloadable files. ${remoteFiles.length} remote, ${filtered.length} unsupported`);
   } else {
-    session.currentFile = `Found ${downloadable.length} files to check...`;
+    session.currentFile = `Found ${finalFiles.length} files to check...`;
   }
   sendProgress(session);
 
-  for (const file of downloadable) {
+  for (const file of finalFiles) {
     if (ctx.cancelled) break;
 
     const localPath = path.join(profile.localPath, file.relativePath.slice(1));
@@ -203,8 +245,14 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
 
   console.log(`[Sync] Upload sync for "${profile.name}" — localPath=${profile.localPath}`);
 
-  const localFiles = await listAllLocalFiles(profile.localPath);
-  console.log(`[Sync] Found ${localFiles.length} local files`);
+  const allLocalFiles = await listAllLocalFiles(profile.localPath);
+  console.log(`[Sync] Found ${allLocalFiles.length} local files`);
+
+  const profileFilter = profile.fileFilter;
+  const localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  if (profileFilter && localFiles.length !== allLocalFiles.length) {
+    console.log(`[Sync] Profile filter "${profileFilter}" matched ${localFiles.length}/${allLocalFiles.length} local files`);
+  }
 
   session.totalFiles = localFiles.length;
   session.totalBytes = localFiles.reduce((sum, f) => sum + f.size, 0);

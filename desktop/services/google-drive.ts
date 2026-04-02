@@ -11,7 +11,19 @@ const EXPORT_MIME_TYPES: Record<string, { mime: string; ext: string }> = {
   'application/vnd.google-apps.spreadsheet': { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ext: '.xlsx' },
   'application/vnd.google-apps.presentation': { mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', ext: '.pptx' },
   'application/vnd.google-apps.drawing': { mime: 'image/png', ext: '.png' },
+  'application/vnd.google-apps.jam': { mime: 'application/pdf', ext: '.pdf' },
+  'application/vnd.google-apps.script': { mime: 'application/vnd.google-apps.script+json', ext: '.json' },
 };
+
+// Types that cannot be exported (skip silently)
+const SKIP_MIME_TYPES = new Set([
+  'application/vnd.google-apps.folder',
+  'application/vnd.google-apps.shortcut',
+  'application/vnd.google-apps.form',
+  'application/vnd.google-apps.site',
+  'application/vnd.google-apps.map',
+  'application/vnd.google-apps.fusiontable',
+]);
 
 export function isGoogleWorkspaceFile(mimeType: string): boolean {
   return mimeType.startsWith('application/vnd.google-apps.');
