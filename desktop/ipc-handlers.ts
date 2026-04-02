@@ -1,8 +1,10 @@
 import { ipcMain, app, dialog, BrowserWindow } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
 import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
-import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting } from './services/database';
+import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting, getDataDir, setDataDir } from './services/database';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
@@ -238,6 +240,37 @@ export function registerIpcHandlers(): void {
   });
 
   // ─── App Settings ──────────────────────────────────────────────────────────
+  ipcMain.handle('app:getDataDir', () => getDataDir());
+
+  ipcMain.handle('app:setDataDir', async (_event, newDir: string) => {
+    const oldDir = getDataDir();
+    const oldDbPath = path.join(oldDir, 'gdrive-sync.db');
+    const newDbPath = path.join(newDir, 'gdrive-sync.db');
+
+    // Ensure new directory exists
+    if (!fs.existsSync(newDir)) {
+      fs.mkdirSync(newDir, { recursive: true });
+    }
+
+    // Copy DB to new location if it exists and target doesn't
+    if (fs.existsSync(oldDbPath) && !fs.existsSync(newDbPath)) {
+      try {
+        const db = require('./services/database').getDb();
+        db.pragma('wal_checkpoint(TRUNCATE)');
+      } catch {}
+      fs.copyFileSync(oldDbPath, newDbPath);
+      // Copy WAL files if they exist
+      for (const ext of ['-shm', '-wal']) {
+        if (fs.existsSync(oldDbPath + ext)) {
+          fs.copyFileSync(oldDbPath + ext, newDbPath + ext);
+        }
+      }
+    }
+
+    setDataDir(newDir);
+    return { success: true, message: 'Data directory changed. Restart the app to apply.' };
+  });
+
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {});
   ipcMain.handle('app:getPlatform', () => process.platform);

@@ -42,6 +42,8 @@ const api: ElectronAPI = {
     getInfo: () => ipcRenderer.invoke('backup:getInfo'),
   },
   app: {
+    getDataDir: () => ipcRenderer.invoke('app:getDataDir'),
+    setDataDir: (dir: string) => ipcRenderer.invoke('app:setDataDir', dir),
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
     getPlatform: () => ipcRenderer.invoke('app:getPlatform'),

@@ -116,6 +116,8 @@ export default function Settings() {
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [googleCredsSaved, setGoogleCredsSaved] = useState(false);
+  const [dataDir, setDataDir] = useState('');
+  const [dataDirMessage, setDataDirMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
@@ -126,6 +128,7 @@ export default function Settings() {
     window.api.app.getSetting('github_token').then((val) => { if (val) setGhToken(val); });
     window.api.app.getSetting('google_client_id').then((val) => { if (val) setGoogleClientId(val); });
     window.api.app.getSetting('google_client_secret').then((val) => { if (val) setGoogleClientSecret('••••••••'); });
+    window.api.app.getDataDir().then(setDataDir);
   }, [appTitle]);
 
   async function handleBackup() {
@@ -338,6 +341,50 @@ export default function Settings() {
           Title saved!
         </Typography>
       )}
+
+      <Divider sx={{ opacity: 0.3, my: 3 }} />
+
+      {/* ── Data Directory ── */}
+      <Typography variant="subtitle1" mb={1}>Data Directory</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Where the database, settings, and sync history are stored. Change this if the default
+        location is not writable or to use a custom path.
+      </Typography>
+      <Box display="flex" gap={1} mb={1} maxWidth={500}>
+        <TextField
+          size="small"
+          fullWidth
+          value={dataDir}
+          InputProps={{ readOnly: true }}
+        />
+        <Button
+          variant="outlined"
+          onClick={async () => {
+            const dir = await window.api.localFs.selectDirectory();
+            if (dir) {
+              setDataDirMessage(null);
+              try {
+                const result = await window.api.app.setDataDir(dir);
+                setDataDir(dir);
+                setDataDirMessage({ type: 'success', text: result.message });
+              } catch (err: any) {
+                setDataDirMessage({ type: 'error', text: err?.message || 'Failed' });
+              }
+            }
+          }}
+          sx={{ whiteSpace: 'nowrap' }}
+        >
+          Change
+        </Button>
+      </Box>
+      {dataDirMessage && (
+        <Alert severity={dataDirMessage.type} sx={{ mb: 2, borderRadius: 2, maxWidth: 500 }} onClose={() => setDataDirMessage(null)}>
+          {dataDirMessage.text}
+        </Alert>
+      )}
+      <Typography variant="caption" color="text.secondary" mb={2} display="block">
+        Config stored at: ~/.gsync/config.json
+      </Typography>
 
       <Divider sx={{ opacity: 0.3, my: 3 }} />
 

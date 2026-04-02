@@ -1,14 +1,50 @@
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import * as path from 'path';
+import * as os from 'os';
 import * as fs from 'fs';
 import type { AuthTokens, UserInfo, SyncProfile } from '../../shared/types';
 
 let db: Database.Database;
 
+const CONFIG_DIR = path.join(os.homedir(), '.gsync');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+
+interface AppConfig {
+  dataDir?: string;
+}
+
+function loadConfig(): AppConfig {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+    }
+  } catch {}
+  return {};
+}
+
+function saveConfig(config: AppConfig): void {
+  try {
+    if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+  } catch (err) {
+    console.error('Failed to save config:', err);
+  }
+}
+
+export function getDataDir(): string {
+  const config = loadConfig();
+  return config.dataDir || app.getPath('userData');
+}
+
+export function setDataDir(dir: string): void {
+  const config = loadConfig();
+  config.dataDir = dir;
+  saveConfig(config);
+}
+
 function getDbPath(): string {
-  const userDataPath = app.getPath('userData');
-  return path.join(userDataPath, 'gdrive-sync.db');
+  return path.join(getDataDir(), 'gdrive-sync.db');
 }
 
 export function initDatabase(): void {

@@ -181,6 +181,8 @@ export interface ElectronAPI {
     getInfo: () => Promise<BackupInfo>;
   };
   app: {
+    getDataDir: () => Promise<string>;
+    setDataDir: (dir: string) => Promise<{ success: boolean; message: string }>;
     getVersion: () => Promise<string>;
     checkForUpdates: () => Promise<void>;
     getPlatform: () => Promise<string>;
