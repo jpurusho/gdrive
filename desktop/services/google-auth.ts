@@ -61,11 +61,6 @@ export class GoogleAuthService {
   }
 
   async login(parentWindow: BrowserWindow): Promise<UserInfo> {
-    // Clear the auth session so Google doesn't default to passkey verification
-    // (passkeys can't complete inside Electron since we disabled WebAuthentication)
-    const authSession = session.fromPartition('persist:google-auth');
-    await authSession.clearStorageData();
-
     const authUrl = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
