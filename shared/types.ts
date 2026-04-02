@@ -148,6 +148,8 @@ export interface BackupInfo {
 
 export interface ElectronAPI {
   auth: {
+    hasCredentials: () => Promise<boolean>;
+    setCredentials: (clientId: string, clientSecret: string) => Promise<void>;
     login: () => Promise<UserInfo>;
     logout: () => Promise<void>;
     getUser: () => Promise<UserInfo | null>;

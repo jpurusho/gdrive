@@ -33,6 +33,15 @@ export function registerIpcHandlers(): void {
   authService = new GoogleAuthService();
 
   // ─── Auth ────────────────────────────────────────────────────────────────
+  ipcMain.handle('auth:hasCredentials', () => {
+    return authService.hasCredentials();
+  });
+
+  ipcMain.handle('auth:setCredentials', (_event, clientId: string, clientSecret: string) => {
+    authService.setCredentials(clientId, clientSecret);
+    driveService = null;
+  });
+
   ipcMain.handle('auth:login', async () => {
     try {
       const window = BrowserWindow.getFocusedWindow();

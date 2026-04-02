@@ -3,6 +3,8 @@ import type { ElectronAPI } from '../shared/types';
 
 const api: ElectronAPI = {
   auth: {
+    hasCredentials: () => ipcRenderer.invoke('auth:hasCredentials'),
+    setCredentials: (clientId: string, clientSecret: string) => ipcRenderer.invoke('auth:setCredentials', clientId, clientSecret),
     login: () => ipcRenderer.invoke('auth:login'),
     logout: () => ipcRenderer.invoke('auth:logout'),
     getUser: () => ipcRenderer.invoke('auth:getUser'),

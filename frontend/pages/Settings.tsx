@@ -113,6 +113,9 @@ export default function Settings() {
   const [titleSaved, setTitleSaved] = useState(false);
   const [ghToken, setGhToken] = useState('');
   const [ghTokenSaved, setGhTokenSaved] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientSecret, setGoogleClientSecret] = useState('');
+  const [googleCredsSaved, setGoogleCredsSaved] = useState(false);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
@@ -121,6 +124,8 @@ export default function Settings() {
     window.api.backup.getInfo().then(setBackupInfo);
     setTitleInput(appTitle);
     window.api.app.getSetting('github_token').then((val) => { if (val) setGhToken(val); });
+    window.api.app.getSetting('google_client_id').then((val) => { if (val) setGoogleClientId(val); });
+    window.api.app.getSetting('google_client_secret').then((val) => { if (val) setGoogleClientSecret('••••••••'); });
   }, [appTitle]);
 
   async function handleBackup() {
@@ -331,6 +336,49 @@ export default function Settings() {
       {titleSaved && (
         <Typography variant="caption" color="success.main" mb={2} display="block">
           Title saved!
+        </Typography>
+      )}
+
+      <Divider sx={{ opacity: 0.3, my: 3 }} />
+
+      {/* ── Google OAuth ── */}
+      <Typography variant="subtitle1" mb={1}>Google OAuth Credentials</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Client ID and Secret from your Google Cloud project. Required for login.
+      </Typography>
+      <Box display="flex" flexDirection="column" gap={1.5} mb={1} maxWidth={500}>
+        <TextField
+          size="small"
+          label="Client ID"
+          value={googleClientId}
+          onChange={(e) => { setGoogleClientId(e.target.value); setGoogleCredsSaved(false); }}
+          fullWidth
+        />
+        <TextField
+          size="small"
+          label="Client Secret"
+          type="password"
+          value={googleClientSecret}
+          onChange={(e) => { setGoogleClientSecret(e.target.value); setGoogleCredsSaved(false); }}
+          placeholder={googleClientSecret ? undefined : 'Not set'}
+          fullWidth
+        />
+        <Button
+          variant="contained"
+          onClick={async () => {
+            if (googleClientId.trim() && googleClientSecret.trim() && !googleClientSecret.startsWith('••')) {
+              await window.api.auth.setCredentials(googleClientId.trim(), googleClientSecret.trim());
+              setGoogleCredsSaved(true);
+            }
+          }}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          Save Credentials
+        </Button>
+      </Box>
+      {googleCredsSaved && (
+        <Typography variant="caption" color="success.main" mb={2} display="block">
+          Credentials saved! Sign out and back in to use new credentials.
         </Typography>
       )}
 

@@ -2,7 +2,7 @@ import { BrowserWindow, session } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import * as path from 'path';
-import { saveTokens, getTokens, clearTokens, saveUserInfo, getUserInfo, clearUserInfo } from './database';
+import { saveTokens, getTokens, clearTokens, saveUserInfo, getUserInfo, clearUserInfo, getSetting, setSetting } from './database';
 import type { UserInfo, AuthTokens } from '../../shared/types';
 
 const SCOPES = [
@@ -17,16 +17,13 @@ export class GoogleAuthService {
   private oauth2Client: OAuth2Client;
 
   constructor() {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-      console.warn('Google OAuth credentials not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env');
-    }
+    // Read credentials: DB first (user-configured), then env (dev mode)
+    const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID || '';
+    const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET || '';
 
     this.oauth2Client = new OAuth2Client({
-      clientId: clientId || '',
-      clientSecret: clientSecret || '',
+      clientId,
+      clientSecret,
       redirectUri: REDIRECT_URI,
     });
 
@@ -58,6 +55,49 @@ export class GoogleAuthService {
 
   getOAuth2Client(): OAuth2Client {
     return this.oauth2Client;
+  }
+
+  /** Check if Google OAuth credentials are configured */
+  hasCredentials(): boolean {
+    const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET;
+    return !!(clientId && clientSecret);
+  }
+
+  /** Save credentials and reinitialize the OAuth2 client */
+  setCredentials(clientId: string, clientSecret: string): void {
+    setSetting('google_client_id', clientId);
+    setSetting('google_client_secret', clientSecret);
+
+    this.oauth2Client = new OAuth2Client({
+      clientId,
+      clientSecret,
+      redirectUri: REDIRECT_URI,
+    });
+
+    // Re-restore tokens if they exist
+    const tokens = getTokens();
+    if (tokens) {
+      this.oauth2Client.setCredentials({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_type: tokens.token_type,
+        expiry_date: tokens.expiry_date,
+        scope: tokens.scope,
+      });
+    }
+
+    this.oauth2Client.on('tokens', (newTokens) => {
+      const existing = getTokens();
+      const merged = {
+        access_token: newTokens.access_token || existing?.access_token || '',
+        refresh_token: newTokens.refresh_token || existing?.refresh_token,
+        token_type: newTokens.token_type || existing?.token_type,
+        expiry_date: newTokens.expiry_date || existing?.expiry_date,
+        scope: newTokens.scope || existing?.scope,
+      };
+      saveTokens(merged);
+    });
   }
 
   async login(parentWindow: BrowserWindow): Promise<UserInfo> {
