@@ -28,7 +28,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {currentPage === 'dashboard' && (
           <Box flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={2}>
-            <Box flex={1} display="flex" gap={2} minHeight={0}>
+            {/* File trees — takes remaining space, min 200px */}
+            <Box flex={1} display="flex" gap={2} minHeight={200}>
               <Box
                 flex={1}
                 sx={{
@@ -56,7 +57,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 <LocalTree />
               </Box>
             </Box>
-            <SyncCards />
+            {/* Sync cards — wraps and scrolls when many profiles */}
+            <Box sx={{ maxHeight: '40vh', overflowY: 'auto', flexShrink: 0 }}>
+              <SyncCards />
+            </Box>
           </Box>
         )}
 

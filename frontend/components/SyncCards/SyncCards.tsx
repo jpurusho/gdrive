@@ -306,10 +306,9 @@ export default function SyncCards() {
     <>
       <Box
         sx={{
-          minHeight: 140,
           display: 'flex',
+          flexWrap: 'wrap',
           gap: 2,
-          overflowX: 'auto',
           pb: 1,
           alignItems: 'stretch',
         }}
@@ -318,7 +317,6 @@ export default function SyncCards() {
         <Card
           sx={{
             width: 280,
-            flexShrink: 0,
             border: (t) => `1px dashed ${alpha(t.palette.divider, 0.4)}`,
             borderRadius: 3,
             display: 'flex',
