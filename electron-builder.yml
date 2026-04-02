@@ -1,0 +1,48 @@
+appId: com.gdrivesync.app
+productName: GDrive Sync
+copyright: Copyright © 2024 Jerome Purushotham
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - node_modules/**/*
+  - "!node_modules/**/{test,tests,__tests__}/**"
+  - "!node_modules/**/*.{md,ts,map}"
+  - "!frontend/**"
+  - "!desktop/**"
+  - "!shared/**"
+  - "!docs/**"
+  - "!scripts/**"
+  - "!src/**"
+
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  darkModeSupport: true
+  hardenedRuntime: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Utility
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+publish:
+  provider: github
+  releaseType: release

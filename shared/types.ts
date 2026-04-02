@@ -1,0 +1,148 @@
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+export interface UserInfo {
+  email: string;
+  name: string;
+  picture: string;
+}
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token?: string;
+  token_type?: string;
+  expiry_date?: number;
+  scope?: string;
+}
+
+// ─── Google Drive ────────────────────────────────────────────────────────────
+
+export type DriveType = 'my_drive' | 'shared_drive';
+
+export interface DriveInfo {
+  id: string;
+  name: string;
+  type: DriveType;
+  permission: DrivePermission;
+  colorRgb?: string;
+}
+
+export type DrivePermission = 'owner' | 'writer' | 'reader';
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+  modifiedTime?: string;
+  parents?: string[];
+  shared?: boolean;
+  isFolder: boolean;
+  md5Checksum?: string;
+  capabilities?: {
+    canEdit: boolean;
+    canDelete: boolean;
+    canDownload: boolean;
+  };
+}
+
+// ─── Local Filesystem ────────────────────────────────────────────────────────
+
+export interface LocalFile {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedTime: string;
+  isHidden: boolean;
+}
+
+// ─── Sync ────────────────────────────────────────────────────────────────────
+
+export type SyncDirection = 'download' | 'upload' | 'bidirectional';
+export type SyncStatus = 'idle' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+
+export interface SyncProfile {
+  id: number;
+  name: string;
+  driveId: string;
+  driveName: string;
+  driveType: DriveType;
+  driveFolderId: string;
+  driveFolderPath: string;
+  localPath: string;
+  syncDirection: SyncDirection;
+  schedule?: string;
+  isActive: boolean;
+  lastSyncAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SyncSession {
+  id: number;
+  profileId: number;
+  profileName: string;
+  status: SyncStatus;
+  startedAt: string;
+  completedAt?: string;
+  filesSynced: number;
+  filesFailed: number;
+  bytesTransferred: number;
+  totalBytes: number;
+  currentFile?: string;
+  errorMessage?: string;
+}
+
+export interface SyncFileEntry {
+  id: number;
+  sessionId: number;
+  fileName: string;
+  filePath: string;
+  direction: 'download' | 'upload';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+  fileSize: number;
+  bytesTransferred: number;
+  localHash?: string;
+  remoteHash?: string;
+  errorMessage?: string;
+}
+
+// ─── IPC API ─────────────────────────────────────────────────────────────────
+
+export interface ElectronAPI {
+  auth: {
+    login: () => Promise<UserInfo>;
+    logout: () => Promise<void>;
+    getUser: () => Promise<UserInfo | null>;
+    isLoggedIn: () => Promise<boolean>;
+  };
+  drive: {
+    listDrives: () => Promise<DriveInfo[]>;
+    listFiles: (driveId: string, folderId: string) => Promise<DriveFile[]>;
+  };
+  localFs: {
+    listDirectory: (dirPath: string) => Promise<LocalFile[]>;
+    getHomeDir: () => Promise<string>;
+    selectDirectory: () => Promise<string | null>;
+  };
+  sync: {
+    getProfiles: () => Promise<SyncProfile[]>;
+    createProfile: (profile: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<SyncProfile>;
+    deleteProfile: (id: number) => Promise<void>;
+    startSync: (profileId: number) => Promise<void>;
+    cancelSync: (sessionId: number) => Promise<void>;
+    getSessions: (profileId?: number) => Promise<SyncSession[]>;
+    onSyncProgress: (callback: (session: SyncSession) => void) => () => void;
+  };
+  app: {
+    getVersion: () => Promise<string>;
+    checkForUpdates: () => Promise<void>;
+    getPlatform: () => Promise<string>;
+  };
+}
+
+declare global {
+  interface Window {
+    api: ElectronAPI;
+  }
+}

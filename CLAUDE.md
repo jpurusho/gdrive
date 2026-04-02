@@ -1,182 +1,72 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-This is a desktop-like web application for Google Drive synchronization that allows bidirectional sync between local folders and Google Drive (both user drives and shared drives). The application runs entirely via Docker Compose with an intuitive, desktop-like UI experience.
+GDrive Sync is a standalone Electron desktop application for bidirectional Google Drive synchronization. It provides an intuitive, polished dark-theme UI for syncing files between Google Drive (personal + shared drives) and the local filesystem.
 
-## Key Requirements & Constraints
+## Architecture
 
-### Core Functionality
-- **Authentication**: Google OAuth login with credentials stored via Docker secrets/volumes
-- **Browse**: Navigate both local filesystem and Google Drive (user drives and shared drives)
-- **Sync Profiles**: Support multiple sync configurations with per-profile filtering
-- **Conflict Resolution**: When files exist in both locations, offer user choice (keep newer, keep both, create copy)
-- **Filtering**: Per sync profile/folder pair filtering by folder, file type, or filename patterns
-- **Progress**: Display progress bars showing sync status and file counts with chunked/resumable transfers
-- **Activity Tracking**: Log all sync operations with timestamp, source, destination, and user info
-- **Scheduling**: Both cron-like scheduling and event-based triggers for automatic synchronization
-- **Deletion Handling**: Prompt user for permission before any deletion operations
-- **Google Workspace Files**: User-selectable export format (docx/xlsx/pptx, PDF, etc.)
-- **Performance**: Highly performant with chunked/resumable transfers for large files
-- **Nested Folders**: Sync entire folder hierarchies unless filtered otherwise
+- **Electron** main process (`desktop/`) — handles OAuth, Google Drive API, local filesystem, SQLite
+- **React + MUI** renderer (`frontend/`) — dashboard UI with drive trees, sync cards, activity history
+- **Shared types** (`shared/`) — TypeScript interfaces used by both processes
+- **SQLite** (better-sqlite3) — stores auth tokens, sync profiles, sync history, file checksums
+- **electron-builder** — packaging for macOS, Windows, Linux
+- **electron-updater** — auto-update from GitHub Releases
 
-### Technical Constraints
-- **Deployment**: Must run via `docker compose up` with zero additional setup after first run
-- **First Run**: Auto-open browser for OAuth or provide QR code option
-- **State Management**: Track last sync timestamp and sync profiles in SQLite
-- **No LLM Dependency**: Application must not require LLMs for any processing
-- **Metadata**: Display file/folder sizes, bytes transferred, and other relevant information
+## Project Structure
 
-## Architecture Notes
-
-When implementing this application, consider:
-
-### Technology Stack
-- **Backend**: Python with FastAPI or Flask (Google Drive API, OAuth2, chunked transfer support)
-- **Frontend**: Desktop-like web app using Electron-style framework (e.g., Tauri with React/Vue or Electron itself)
-- **Database**: SQLite for sync profiles, state, settings, and activity logs
-- **Storage**: Docker volumes/secrets for OAuth credentials
-- **Scheduler**: APScheduler for cron-like scheduling + Watchdog for file system events
-- **Containerization**: Docker Compose with proper volume mounting for local folder access
-
-### Project Structure
-The codebase should be organized into:
-- **API Layer**: Google Drive API integration and OAuth handling
-- **Sync Engine**: Core bidirectional sync logic with conflict resolution
-- **UI Layer**: Web interface for browsing, configuration, and monitoring
-- **Scheduler**: Background task system for periodic syncs
-- **Storage**: Database models for sync state, settings, and activity logs
-
-### Security Considerations
-- OAuth tokens and credentials must be securely stored and never committed to version control
-- Use environment variables or encrypted storage for sensitive data
-- Implement proper error handling for authentication failures
-
-### Development Commands
-
-Once the codebase is developed, typical commands will be:
-```bash
-# Start the application
-docker compose up
-
-# Start in development mode (with live reload if configured)
-docker compose up --build
-
-# Run tests
-docker compose run app pytest
-
-# View logs
-docker compose logs -f
-
-# Stop the application
-docker compose down
+```
+gdrive/
+├── desktop/              # Electron main process (TypeScript → CJS)
+│   ├── index.ts          # App entry, window creation
+│   ├── preload.ts        # contextBridge API for renderer
+│   ├── ipc-handlers.ts   # IPC channel registration
+│   └── services/
+│       ├── google-auth.ts
+│       ├── google-drive.ts
+│       ├── local-fs.ts
+│       └── database.ts
+├── frontend/             # React renderer (TypeScript → Vite bundle)
+│   ├── index.html
+│   ├── main.tsx / App.tsx
+│   ├── pages/
+│   ├── components/
+│   └── theme/
+├── shared/types.ts       # Shared TypeScript types + IPC API interface
+├── docs/                 # Architecture docs (Mermaid diagrams)
+├── scripts/              # Test and utility scripts
+├── .github/workflows/    # CI/CD
+├── dist/                 # Build output (gitignored)
+└── release/              # Packaged app (gitignored)
 ```
 
-## Context Files
+## Development Commands
 
-- **requirements.txt**: Contains the full project specification and requirements
-- **README.md**: Basic project description
-- **.gitignore**: Standard Python gitignore with Docker and environment exclusions
+```bash
+npm run dev          # Start Vite dev server + Electron
+npm run build        # Compile main (tsc) + build renderer (vite)
+npm run dist         # Build + package macOS .dmg
+npm run dist:all     # Build + package all platforms
+```
 
-## Development Guidelines
+## Key Design Decisions
 
-### When Building Features
-- Always prioritize user experience and intuitive design choices
-- Show clear progress indicators for long-running operations
-- Provide meaningful error messages with actionable guidance
-- Implement proper logging for debugging and activity tracking
-- Handle Google API rate limits and quota errors gracefully
+- **Full Node.js stack** — no Python backend; Google Drive API via `googleapis` npm package
+- **IPC bridge** — renderer communicates with main process via typed IPC channels (contextBridge)
+- **macOS-first** — hidden inset titlebar, traffic light positioning, dark mode
+- **No Docker** — standalone desktop app distributed as .dmg/.exe/.AppImage
+- **Single CI job per platform** — one job produces artifacts; no multi-stage builds
 
-### Sync Logic Implementation Details
+## Phased Implementation
 
-#### Conflict Resolution
-- Present UI dialog when conflicts detected with options:
-  - Keep newer version (show timestamps)
-  - Keep both (rename with suffix)
-  - Create backup copy
-  - Preview differences (for text files)
+1. **Phase 1** (complete): OAuth + Dashboard + Drive/Local tree browsing
+2. **Phase 2**: Sync profile creation, card-based UI with glowing progress indicators
+3. **Phase 3**: Sync engine with chunked transfers, hash checksums, resumable ops
+4. **Phase 4**: Scheduling (cron), activity history, conflict resolution
+5. **Phase 5**: CI/CD pipeline, auto-update, polish
 
-#### Deletion Handling
-- Never auto-delete files
-- Show confirmation dialog with file details
-- Option to move to trash vs permanent delete
-- Maintain deletion log for recovery
+## Google OAuth Setup
 
-#### Performance Optimizations
-- Implement chunked transfers (5-10MB chunks)
-- Support resumable uploads/downloads
-- Parallel transfers for multiple small files
-- Delta sync for modified portions of large files
-- Progress tracking at chunk level
+See [docs/oauth-setup.md](docs/oauth-setup.md) for full instructions.
 
-#### Google Workspace Handling
-- Detect Google Docs/Sheets/Slides
-- Present export format options:
-  - Microsoft Office formats (docx, xlsx, pptx)
-  - PDF for archival
-  - OpenDocument formats
-  - Plain text/CSV where applicable
-- Cache user's format preferences per file type
-
-### Testing Strategy
-- Test OAuth flow end-to-end
-- Test sync scenarios: create, update, delete, rename
-- Test filtering and nested folder traversal
-- Test error conditions: network failures, API errors, permission issues
-- Test scheduler reliability
-
-## Sync Profiles & Scheduling
-
-### Sync Profile Structure
-Each sync profile should contain:
-- Profile name and description
-- Source path (local or Drive)
-- Destination path (Drive or local)
-- Sync direction (bidirectional, upload-only, download-only)
-- Filter rules (include/exclude patterns)
-- Conflict resolution preference
-- Schedule configuration
-- Last sync timestamp
-- Active/inactive status
-
-### Scheduling Features
-- **Cron-like scheduling**: Standard cron expressions (e.g., "0 */2 * * *" for every 2 hours)
-- **Event-based triggers**:
-  - File system watch on local folders
-  - Webhook listener for Drive changes (if available)
-  - Manual trigger via UI
-- **Schedule management**: Enable/disable, modify intervals, blackout periods
-
-## UI/UX Specifications
-
-### Desktop-like Interface Components
-- **Dual-pane file browser**: Local on left, Drive on right (or configurable)
-- **Drag-and-drop support**: Between panes for quick sync setup
-- **Context menus**: Right-click for sync options
-- **Status bar**: Current operations, connection status, last sync time
-- **System tray integration**: If possible within Docker, for background operation
-- **Native-like styling**: Material Design or similar for familiar experience
-
-### First-Run Experience
-1. Welcome screen explaining the app
-2. OAuth setup with options:
-   - "Connect with Google" button (auto-opens browser)
-   - QR code for mobile device authentication
-   - Manual URL copy option
-3. Initial profile creation wizard
-4. Tutorial overlay for main features
-
-## Current State
-
-This is an early-stage project. The requirements are fully specified in `requirements.txt` but no implementation code exists yet. The first steps should be:
-
-1. Set up Docker Compose configuration with proper volumes
-2. Implement Google OAuth flow with browser auto-open and QR code options
-3. Build desktop-like web UI with dual-pane browser
-4. Implement sync profile management system
-5. Build chunked transfer engine with resume capability
-6. Add conflict resolution UI dialogs
-7. Implement cron scheduler and file watchers
-8. Add comprehensive activity logging and progress tracking
+Quick: Create a Desktop app OAuth client at console.cloud.google.com, copy Client ID and Secret to `.env`.
