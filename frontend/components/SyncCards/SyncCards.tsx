@@ -83,7 +83,7 @@ function ProfileCard({
         width: 280,
         flexShrink: 0,
         position: 'relative',
-        overflow: 'visible',
+        overflow: 'hidden',
         border: `2px solid ${
           isActive
             ? fluorescent
