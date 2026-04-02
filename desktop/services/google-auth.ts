@@ -1,7 +1,7 @@
-import { BrowserWindow, session } from 'electron';
+import { shell } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import * as path from 'path';
+import * as http from 'http';
 import { saveTokens, getTokens, clearTokens, saveUserInfo, getUserInfo, clearUserInfo, getSetting, setSetting } from './database';
 import type { UserInfo, AuthTokens } from '../../shared/types';
 
@@ -11,23 +11,41 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
-const REDIRECT_URI = 'http://localhost/oauth2callback';
+// Local callback server port range
+const PORT_MIN = 48620;
+const PORT_MAX = 48640;
+
+function setupTokenListener(client: OAuth2Client): void {
+  client.on('tokens', (newTokens) => {
+    const existing = getTokens();
+    const merged: AuthTokens = {
+      access_token: newTokens.access_token || existing?.access_token || '',
+      refresh_token: newTokens.refresh_token || existing?.refresh_token,
+      token_type: newTokens.token_type || existing?.token_type,
+      expiry_date: newTokens.expiry_date || existing?.expiry_date,
+      scope: newTokens.scope || existing?.scope,
+    };
+    saveTokens(merged);
+  });
+}
 
 export class GoogleAuthService {
   private oauth2Client: OAuth2Client;
+  private redirectUri: string = '';
 
   constructor() {
-    // Read credentials: DB first (user-configured), then env (dev mode)
     const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID || '';
     const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET || '';
+
+    // Will be set to actual port when login starts
+    this.redirectUri = `http://localhost:${PORT_MIN}/callback`;
 
     this.oauth2Client = new OAuth2Client({
       clientId,
       clientSecret,
-      redirectUri: REDIRECT_URI,
+      redirectUri: this.redirectUri,
     });
 
-    // Restore tokens from database
     const tokens = getTokens();
     if (tokens) {
       this.oauth2Client.setCredentials({
@@ -39,32 +57,19 @@ export class GoogleAuthService {
       });
     }
 
-    // Auto-refresh tokens
-    this.oauth2Client.on('tokens', (newTokens) => {
-      const existing = getTokens();
-      const merged: AuthTokens = {
-        access_token: newTokens.access_token || existing?.access_token || '',
-        refresh_token: newTokens.refresh_token || existing?.refresh_token,
-        token_type: newTokens.token_type || existing?.token_type,
-        expiry_date: newTokens.expiry_date || existing?.expiry_date,
-        scope: newTokens.scope || existing?.scope,
-      };
-      saveTokens(merged);
-    });
+    setupTokenListener(this.oauth2Client);
   }
 
   getOAuth2Client(): OAuth2Client {
     return this.oauth2Client;
   }
 
-  /** Check if Google OAuth credentials are configured */
   hasCredentials(): boolean {
     const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID;
     const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET;
     return !!(clientId && clientSecret);
   }
 
-  /** Save credentials and reinitialize the OAuth2 client */
   setCredentials(clientId: string, clientSecret: string): void {
     setSetting('google_client_id', clientId);
     setSetting('google_client_secret', clientSecret);
@@ -72,10 +77,9 @@ export class GoogleAuthService {
     this.oauth2Client = new OAuth2Client({
       clientId,
       clientSecret,
-      redirectUri: REDIRECT_URI,
+      redirectUri: this.redirectUri,
     });
 
-    // Re-restore tokens if they exist
     const tokens = getTokens();
     if (tokens) {
       this.oauth2Client.setCredentials({
@@ -87,32 +91,14 @@ export class GoogleAuthService {
       });
     }
 
-    this.oauth2Client.on('tokens', (newTokens) => {
-      const existing = getTokens();
-      const merged = {
-        access_token: newTokens.access_token || existing?.access_token || '',
-        refresh_token: newTokens.refresh_token || existing?.refresh_token,
-        token_type: newTokens.token_type || existing?.token_type,
-        expiry_date: newTokens.expiry_date || existing?.expiry_date,
-        scope: newTokens.scope || existing?.scope,
-      };
-      saveTokens(merged);
-    });
+    setupTokenListener(this.oauth2Client);
   }
 
-  async login(parentWindow: BrowserWindow): Promise<UserInfo> {
-    const authUrl = this.oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: SCOPES,
-      prompt: 'consent',
-      redirect_uri: REDIRECT_URI,
-    });
+  async login(): Promise<UserInfo> {
+    const { port, code } = await this.getAuthCodeViaBrowser();
 
-    const code = await this.openAuthWindow(parentWindow, authUrl);
-    const { tokens } = await this.oauth2Client.getToken({
-      code,
-      redirect_uri: REDIRECT_URI,
-    });
+    const redirectUri = `http://localhost:${port}/callback`;
+    const { tokens } = await this.oauth2Client.getToken({ code, redirect_uri: redirectUri });
 
     this.oauth2Client.setCredentials(tokens);
 
@@ -147,9 +133,6 @@ export class GoogleAuthService {
     this.oauth2Client.setCredentials({});
     clearTokens();
     clearUserInfo();
-    // Clear the persistent auth session so next login starts fresh
-    const authSession = session.fromPartition('persist:google-auth');
-    await authSession.clearStorageData();
   }
 
   async getCurrentUser(): Promise<UserInfo | null> {
@@ -183,112 +166,143 @@ export class GoogleAuthService {
     return tokens !== null;
   }
 
-  private openAuthWindow(parent: BrowserWindow, authUrl: string): Promise<string> {
+  /**
+   * Open system browser for Google OAuth, run a local HTTP server to catch the redirect.
+   * Returns the authorization code and the port used.
+   */
+  private getAuthCodeViaBrowser(): Promise<{ code: string; port: number }> {
     return new Promise((resolve, reject) => {
       let resolved = false;
+      let server: http.Server;
 
-      // Use a persistent partition so Google remembers the device across logins
-      // (avoids repeated "verify it's you" challenges)
-      const authSession = session.fromPartition('persist:google-auth');
+      const successHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                   display: flex; align-items: center; justify-content: center; height: 100vh;
+                   margin: 0; background: #0f0f23; color: #e2e8f0; }
+            .card { text-align: center; padding: 3rem; border-radius: 1rem;
+                    background: #1a1a2e; border: 1px solid #2a2a4e; max-width: 400px; }
+            h2 { color: #64ffda; margin-bottom: 0.5rem; }
+            p { color: #94a3b8; margin-top: 0.5rem; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h2>Signed in successfully</h2>
+            <p>You can close this tab and return to gsync.</p>
+          </div>
+        </body>
+        </html>`;
 
-      // Preload that disables WebAuthn/Passkey APIs so Google falls back
-      // to password + standard 2FA (phone prompt, authenticator app, SMS).
-      // contextIsolation must be false so the preload modifies the PAGE's
-      // navigator object, not an isolated copy.
-      const authPreload = path.join(__dirname, 'auth-preload.js');
+      const errorHtml = (msg: string) => `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                   display: flex; align-items: center; justify-content: center; height: 100vh;
+                   margin: 0; background: #0f0f23; color: #e2e8f0; }
+            .card { text-align: center; padding: 3rem; border-radius: 1rem;
+                    background: #1a1a2e; border: 1px solid #4a2020; max-width: 400px; }
+            h2 { color: #ef4444; margin-bottom: 0.5rem; }
+            p { color: #94a3b8; margin-top: 0.5rem; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h2>Authentication failed</h2>
+            <p>${msg}</p>
+            <p>Close this tab and try again in gsync.</p>
+          </div>
+        </body>
+        </html>`;
 
-      const authWindow = new BrowserWindow({
-        width: 500,
-        height: 700,
-        parent,
-        modal: true,
-        show: false,
-        title: 'Sign in with Google',
-        webPreferences: {
-          session: authSession,
-          preload: authPreload,
-          nodeIntegration: false,
-          contextIsolation: false,
-          sandbox: false,
-        },
-      });
+      // Try to find an available port
+      const tryPort = (port: number) => {
+        server = http.createServer((req, res) => {
+          const url = new URL(req.url || '/', `http://localhost:${port}`);
 
-      authWindow.setMenuBarVisibility(false);
-      authWindow.once('ready-to-show', () => authWindow.show());
+          if (url.pathname === '/callback') {
+            const code = url.searchParams.get('code');
+            const error = url.searchParams.get('error');
 
-      // Allow Google to open popup windows for 2FA, security prompts, etc.
-      authWindow.webContents.setWindowOpenHandler(({ url }) => {
-        return {
-          action: 'allow',
-          overrideBrowserWindowOptions: {
-            width: 500,
-            height: 600,
-            parent: authWindow,
-            modal: true,
-            webPreferences: {
-              session: authSession,
-              preload: authPreload,
-              nodeIntegration: false,
-              contextIsolation: false,
-              sandbox: false,
-            },
-          },
-        };
-      });
-
-      // When a child popup is created, wire up the same redirect interception
-      authWindow.webContents.on('did-create-window', (childWindow) => {
-        wireRedirectCapture(childWindow);
-      });
-
-      // Capture the OAuth redirect on the main auth window
-      wireRedirectCapture(authWindow);
-
-      authWindow.on('closed', () => {
-        if (!resolved) {
-          resolved = true;
-          reject(new Error('Authentication window was closed'));
-        }
-      });
-
-      authWindow.loadURL(authUrl);
-
-      // --- helpers scoped to this login attempt ---
-
-      function wireRedirectCapture(win: BrowserWindow): void {
-        // Intercept any navigation to the redirect URI
-        win.webContents.on('will-navigate', (_event, url) => {
-          checkForCode(url, win);
-        });
-
-        win.webContents.on('will-redirect', (_event, url) => {
-          checkForCode(url, win);
-        });
-      }
-
-      function checkForCode(url: string, win: BrowserWindow): void {
-        if (resolved) return;
-        if (!url.startsWith(REDIRECT_URI)) return;
-
-        try {
-          const parsed = new URL(url);
-          const code = parsed.searchParams.get('code');
-          const error = parsed.searchParams.get('error');
-
-          if (code) {
-            resolved = true;
-            // Close all auth windows
-            if (!authWindow.isDestroyed()) authWindow.close();
-            resolve(code);
-          } else if (error) {
-            resolved = true;
-            if (!authWindow.isDestroyed()) authWindow.close();
-            reject(new Error(`OAuth error: ${error}`));
+            if (code && !resolved) {
+              resolved = true;
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              res.end(successHtml);
+              setTimeout(() => server.close(), 1000);
+              resolve({ code, port });
+            } else if (error) {
+              resolved = true;
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              res.end(errorHtml(error));
+              setTimeout(() => server.close(), 1000);
+              reject(new Error(`OAuth error: ${error}`));
+            } else {
+              res.writeHead(400, { 'Content-Type': 'text/html' });
+              res.end(errorHtml('No authorization code received'));
+            }
+          } else {
+            res.writeHead(404);
+            res.end('Not found');
           }
-        } catch {
-          // Malformed URL, ignore
-        }
-      }
+        });
+
+        server.listen(port, '127.0.0.1', () => {
+          console.log(`[Auth] Callback server listening on http://localhost:${port}/callback`);
+
+          const redirectUri = `http://localhost:${port}/callback`;
+          // Update the OAuth client with the actual redirect URI
+          this.oauth2Client = new OAuth2Client({
+            clientId: getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID || '',
+            clientSecret: getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET || '',
+            redirectUri,
+          });
+          this.redirectUri = redirectUri;
+          setupTokenListener(this.oauth2Client);
+
+          // Restore existing tokens
+          const tokens = getTokens();
+          if (tokens) {
+            this.oauth2Client.setCredentials({
+              access_token: tokens.access_token,
+              refresh_token: tokens.refresh_token,
+            });
+          }
+
+          const authUrl = this.oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: SCOPES,
+            prompt: 'consent',
+            redirect_uri: redirectUri,
+          });
+
+          // Open in system browser
+          shell.openExternal(authUrl);
+        });
+
+        server.on('error', (err: any) => {
+          if (err.code === 'EADDRINUSE' && port < PORT_MAX) {
+            tryPort(port + 1);
+          } else {
+            reject(new Error(`Cannot start callback server: ${err.message}`));
+          }
+        });
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            server.close();
+            reject(new Error('Login timed out. Please try again.'));
+          }
+        }, 5 * 60 * 1000);
+      };
+
+      tryPort(PORT_MIN);
     });
   }
 }

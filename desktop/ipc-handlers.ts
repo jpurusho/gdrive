@@ -46,9 +46,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('auth:login', async () => {
     try {
-      const window = BrowserWindow.getFocusedWindow();
-      if (!window) throw new Error('No active window');
-      const user = await authService.login(window);
+      const user = await authService.login();
       driveService = null;
       return user;
     } catch (err: any) {

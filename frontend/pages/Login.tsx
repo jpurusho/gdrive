@@ -182,9 +182,9 @@ export default function Login({ onLogin }: LoginProps) {
             >
               <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
                 1. Go to <strong>Google Cloud Console</strong> &gt; APIs &amp; Services &gt; Credentials<br />
-                2. Create an <strong>OAuth 2.0 Client ID</strong> (type: Desktop app)<br />
+                2. Create an <strong>OAuth 2.0 Client ID</strong> (type: <strong>Desktop app</strong>)<br />
                 3. Enable the <strong>Google Drive API</strong> in APIs &amp; Services &gt; Library<br />
-                4. Add your email as a <strong>test user</strong> in OAuth consent screen<br />
+                4. In OAuth consent screen, add your email as a <strong>test user</strong><br />
                 5. Copy the Client ID and Client Secret below
               </Typography>
             </Box>
@@ -225,13 +225,16 @@ export default function Login({ onLogin }: LoginProps) {
         {hasCredentials && (
           <Box sx={{ width: '100%', textAlign: 'center' }}>
             {credentialsSaved && (
-              <Box display="flex" alignItems="center" justifyContent="center" gap={0.75} mb={2}>
+              <Box display="flex" alignItems="center" justifyContent="center" gap={0.75} mb={1.5}>
                 <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
                 <Typography variant="body2" color="success.main" fontWeight={500}>
                   Credentials saved
                 </Typography>
               </Box>
             )}
+            <Typography variant="caption" color="text.secondary" mb={2} display="block">
+              Your browser will open for Google sign-in. After approval, you'll be redirected back automatically.
+            </Typography>
             <Button
               variant="contained"
               size="large"
