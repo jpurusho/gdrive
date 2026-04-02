@@ -4,6 +4,7 @@ import Sidebar from '../components/Layout/Sidebar';
 import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
 import SyncCards from '../components/SyncCards/SyncCards';
+import Settings from './Settings';
 import type { UserInfo } from '../../shared/types';
 
 interface DashboardProps {
@@ -64,11 +65,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </Box>
         )}
 
-        {currentPage === 'settings' && (
-          <Box flex={1} display="flex" alignItems="center" justifyContent="center" color="text.secondary">
-            Settings will be available in a future update.
-          </Box>
-        )}
+        {currentPage === 'settings' && <Settings />}
       </Box>
     </Box>
   );
