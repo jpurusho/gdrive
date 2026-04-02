@@ -111,6 +111,8 @@ export default function Settings() {
   const [backupLoading, setBackupLoading] = useState('');
   const [backupMessage, setBackupMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [titleSaved, setTitleSaved] = useState(false);
+  const [ghToken, setGhToken] = useState('');
+  const [ghTokenSaved, setGhTokenSaved] = useState(false);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
@@ -118,6 +120,7 @@ export default function Settings() {
     loadProfiles();
     window.api.backup.getInfo().then(setBackupInfo);
     setTitleInput(appTitle);
+    window.api.app.getSetting('github_token').then((val) => { if (val) setGhToken(val); });
   }, [appTitle]);
 
   async function handleBackup() {
@@ -328,6 +331,39 @@ export default function Settings() {
       {titleSaved && (
         <Typography variant="caption" color="success.main" mb={2} display="block">
           Title saved!
+        </Typography>
+      )}
+
+      <Divider sx={{ opacity: 0.3, my: 3 }} />
+
+      {/* ── GitHub Token ── */}
+      <Typography variant="subtitle1" mb={1}>GitHub Token</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Required for auto-updates from GitHub Releases. Create a personal access token with <code>repo</code> scope.
+      </Typography>
+      <Box display="flex" gap={1} mb={1} maxWidth={500}>
+        <TextField
+          size="small"
+          fullWidth
+          type="password"
+          value={ghToken}
+          onChange={(e) => { setGhToken(e.target.value); setGhTokenSaved(false); }}
+          placeholder="ghp_..."
+        />
+        <Button
+          variant="contained"
+          onClick={async () => {
+            await window.api.app.setSetting('github_token', ghToken.trim());
+            setGhTokenSaved(true);
+          }}
+          sx={{ whiteSpace: 'nowrap' }}
+        >
+          Save
+        </Button>
+      </Box>
+      {ghTokenSaved && (
+        <Typography variant="caption" color="success.main" mb={2} display="block">
+          Token saved! Restart the app for auto-update to use it.
         </Typography>
       )}
 

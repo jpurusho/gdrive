@@ -1,10 +1,10 @@
-# GDrive Sync
+# gsync
 
 A standalone desktop application for bidirectional Google Drive synchronization. Browse your drives, create sync profiles, and keep your files in sync with an elegant, daily-driver UI.
 
 ```mermaid
 graph LR
-    A[Google Drive] <-->|Sync Engine| B[GDrive Sync App]
+    A[Google Drive] <-->|Sync Engine| B[gsync App]
     B <-->|File Operations| C[Local Filesystem]
     D[Shared Drives] <-->|Sync Engine| B
 
@@ -21,6 +21,9 @@ graph LR
 - **Hash checksums** -- MD5 comparison to detect changes and determine which file is newer
 - **Activity history** -- Full log of every sync operation with bytes transferred, duration, errors
 - **Scheduling** -- Cron-like schedules or manual triggers per sync profile
+- **Pause & Resume** -- Pause large transfers and resume later; partial downloads saved to disk
+- **6 Themes** -- Midnight, GitHub Dark, Dracula, Nord, One Dark Pro, Light
+- **Database backup** -- Backup/restore/merge settings to Google Drive
 - **Auto-update** -- Built-in update mechanism via GitHub Releases
 - **macOS-native feel** -- Hidden titlebar, traffic light integration, dark theme
 
@@ -48,11 +51,21 @@ npm run dev
 ### Build for Distribution
 
 ```bash
-npm run dist        # macOS .dmg
+npm run dist        # macOS .dmg + .zip
 npm run dist:win    # Windows .exe
 npm run dist:linux  # Linux .AppImage
 npm run dist:all    # All platforms
 ```
+
+### macOS Installation (unsigned)
+
+Since the app is not code-signed, macOS Gatekeeper will block it. After installing:
+
+```bash
+xattr -rc /Applications/gsync.app
+```
+
+Or right-click the app and select **Open** to bypass Gatekeeper on first launch.
 
 ## Architecture
 

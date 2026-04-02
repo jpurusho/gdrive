@@ -41,10 +41,11 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: gdrive-sync-${{ matrix.platform }}
+          name: gsync-${{ matrix.platform }}
           path: |
             release/*.dmg
             release/*.zip
+            release/*.yml
             release/*.exe
             release/*.AppImage
           retention-days: 30
@@ -66,6 +67,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: false
+          generate_release_notes: true
+          body: |
+            ## gsync ${{ github.ref_name }}
+
+            ### macOS (unsigned)
+            After downloading, run this command to clear the quarantine flag:
+            ```bash
+            xattr -rc /Applications/gsync.app
+            ```
+            Or right-click the app and select "Open" to bypass Gatekeeper on first launch.
+
+            ### Auto-Update
+            If you have a previous version installed, the app will auto-update to this release.
           files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
