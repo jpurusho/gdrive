@@ -116,20 +116,25 @@ export default function History() {
           sx={{
             borderRadius: 3,
             border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
+            overflow: 'hidden',
           }}
         >
           <Table size="small">
             <TableHead>
-              <TableRow>
-                <TableCell>Profile</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Started</TableCell>
-                <TableCell>Duration</TableCell>
-                <TableCell align="right">Found</TableCell>
-                <TableCell align="right">Synced</TableCell>
-                <TableCell align="right">Skipped</TableCell>
-                <TableCell align="right">Transferred</TableCell>
-                <TableCell>Error</TableCell>
+              <TableRow
+                sx={{
+                  background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
+                }}
+              >
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Profile</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Started</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Duration</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Found</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Synced</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Skipped</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }} align="right">Transferred</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>Error</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
