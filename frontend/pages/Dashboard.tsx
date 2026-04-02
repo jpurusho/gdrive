@@ -3,7 +3,8 @@ import { Box, alpha } from '@mui/material';
 import Sidebar from '../components/Layout/Sidebar';
 import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
-import SyncCards from '../components/SyncCards/SyncCards';
+import SyncStatus from '../components/SyncStatus/SyncStatus';
+import Profiles from './Profiles';
 import Settings from './Settings';
 import History from './History';
 import type { UserInfo } from '../../shared/types';
@@ -13,7 +14,7 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-type Page = 'dashboard' | 'history' | 'settings';
+type Page = 'dashboard' | 'profiles' | 'history' | 'settings';
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -28,7 +29,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {currentPage === 'dashboard' && (
           <Box flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={2}>
-            {/* File trees — takes remaining space, min 200px */}
+            {/* File trees */}
             <Box flex={1} display="flex" gap={2} minHeight={200}>
               <Box
                 flex={1}
@@ -57,12 +58,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 <LocalTree />
               </Box>
             </Box>
-            {/* Sync cards — wraps and scrolls when many profiles */}
-            <Box sx={{ maxHeight: '40vh', overflowY: 'auto', flexShrink: 0 }}>
-              <SyncCards />
+            {/* Compact sync status */}
+            <Box flexShrink={0}>
+              <SyncStatus />
             </Box>
           </Box>
         )}
+
+        {currentPage === 'profiles' && <Profiles />}
 
         {currentPage === 'history' && <History />}
 

@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import HistoryIcon from '@mui/icons-material/History';
+import SyncIcon from '@mui/icons-material/Sync';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
@@ -28,6 +29,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { id: 'profiles', label: 'Profiles', icon: SyncIcon },
   { id: 'history', label: 'History', icon: HistoryIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
