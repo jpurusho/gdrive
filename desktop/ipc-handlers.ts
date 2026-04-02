@@ -3,6 +3,7 @@ import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile } from './services/database';
+import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import type { SyncProfile } from '../shared/types';
 
 let authService: GoogleAuthService;
@@ -87,10 +88,22 @@ export function registerIpcHandlers(): void {
     deleteProfile(id);
   });
 
-  // ─── Sync Engine (Phase 3 stubs) ───────────────────────────────────────
-  ipcMain.handle('sync:startSync', async () => {});
-  ipcMain.handle('sync:cancelSync', async () => {});
-  ipcMain.handle('sync:getSessions', async () => []);
+  // ─── Sync Engine ────────────────────────────────────────────────────────
+  ipcMain.handle('sync:startSync', async (_event, profileId: number) => {
+    const driveService = getDriveService();
+    // Run sync in background — don't await, just fire and forget
+    startSync(profileId, driveService).catch((err) => {
+      console.error('Sync failed:', err);
+    });
+  });
+
+  ipcMain.handle('sync:cancelSync', async (_event, profileId: number) => {
+    cancelSync(profileId);
+  });
+
+  ipcMain.handle('sync:getSessions', async (_event, profileId?: number) => {
+    return getSessions(profileId);
+  });
 
   // ─── App ──────────────────────────────────────────────────────────────────
   ipcMain.handle('app:getVersion', () => app.getVersion());
