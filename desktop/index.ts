@@ -56,6 +56,14 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Set dock icon (needed for dev mode — packaged app uses resources/icon.icns)
+  if (process.platform === 'darwin') {
+    const iconPath = isDev
+      ? path.join(__dirname, '../resources/icon.png')
+      : path.join(__dirname, '../resources/icon.png');
+    try { app.dock.setIcon(iconPath); } catch {}
+  }
+
   initDatabase();
   registerIpcHandlers();
   initScheduler(new GoogleAuthService());
