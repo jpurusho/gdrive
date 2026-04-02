@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import StatusMessage, { classifyError } from '../StatusMessage/StatusMessage';
 import {
   Box,
   Typography,
@@ -179,14 +180,7 @@ export default function DriveTree() {
         {loading ? (
           <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
         ) : error ? (
-          <Box display="flex" flexDirection="column" alignItems="center" py={4} gap={1}>
-            <Typography variant="body2" color="error.main" textAlign="center">{error}</Typography>
-            <Typography variant="caption" color="text.secondary" textAlign="center"
-              sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-              onClick={loadDrives}>
-              Click to retry
-            </Typography>
-          </Box>
+          (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={loadDrives} />; })()
         ) : drives.length === 0 ? (
           <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
             No drives found. Sign in to see your drives.

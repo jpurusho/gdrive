@@ -28,7 +28,15 @@ export default function Login({ onLogin }: LoginProps) {
       onLogin(user);
     } catch (err: any) {
       const msg = err?.message || 'Login failed';
-      if (!msg.includes('window was closed')) {
+      if (msg === 'Authentication window was closed') {
+        // User closed the window — not an error
+      } else if (msg.includes('ENOTFOUND') || msg.includes('ENETUNREACH')) {
+        setError('No internet connection. Please check your network.');
+      } else if (msg.includes('401') || msg.includes('Unauthorized')) {
+        setError('Authentication failed. Please try again.');
+      } else if (msg.includes('access_denied')) {
+        setError('Access denied. Make sure your email is added as a test user in Google Cloud Console.');
+      } else {
         setError(msg);
       }
     } finally {

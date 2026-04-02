@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import StatusMessage, { classifyError } from '../components/StatusMessage/StatusMessage';
 import {
   Box,
   Typography,
@@ -49,11 +50,16 @@ export default function History() {
   const [sessions, setSessions] = useState<SyncSession[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       const result = await window.api.sync.getSessions();
       setSessions(result);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load history');
     } finally {
       setLoading(false);
     }
@@ -96,6 +102,8 @@ export default function History() {
         <Box display="flex" justifyContent="center" py={6}>
           <CircularProgress size={28} />
         </Box>
+      ) : error ? (
+        (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={load} />; })()
       ) : sessions.length === 0 ? (
         <Box
           display="flex"

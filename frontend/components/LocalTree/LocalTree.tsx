@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import StatusMessage, { classifyError } from '../StatusMessage/StatusMessage';
 import {
   Box,
   Typography,
@@ -118,18 +119,21 @@ export default function LocalTree() {
   const [files, setFiles] = useState<LocalFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showHidden, setShowHidden] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { loadHome(); }, []);
 
   async function loadHome() {
     setLoading(true);
+    setError(null);
     try {
       const home = await window.api.localFs.getHomeDir();
       setRootPath(home);
       const result = await window.api.localFs.listDirectory(home);
       setFiles(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load home directory:', err);
+      setError(err?.message || 'Failed to load directory');
     } finally {
       setLoading(false);
     }
@@ -152,9 +156,12 @@ export default function LocalTree() {
   async function navigateTo(path: string) {
     setRootPath(path);
     setLoading(true);
+    setError(null);
     try {
       const result = await window.api.localFs.listDirectory(path);
       setFiles(result);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load directory');
     } finally {
       setLoading(false);
     }
@@ -219,6 +226,8 @@ export default function LocalTree() {
       <Box flex={1} overflow="auto">
         {loading ? (
           <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
+        ) : error ? (
+          (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={loadHome} />; })()
         ) : (
           <List dense disablePadding>
             {visibleFiles.map((file) =>
