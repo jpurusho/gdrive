@@ -215,15 +215,22 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
       }
 
       if (needsDownload) {
+        const cancelToken = { get cancelled() { return ctx.cancelled; } };
         const hash = await driveService.downloadFile(
           file.id,
           file.mimeType,
           localPath,
           (bytes) => {
-            session.bytesTransferred += bytes;
+            session.bytesTransferred = bytes;
             sendProgress(session);
           },
+          cancelToken,
         );
+        if (ctx.cancelled) {
+          // Paused — partial file saved for resume
+          logFile(session.id, file.name, file.relativePath, 'download', 'paused', file.size || 0, 0);
+          break;
+        }
         logFile(session.id, file.name, file.relativePath, 'download', 'completed', file.size || 0, file.size || 0, hash, file.md5Checksum);
         session.filesSynced++;
       }
@@ -459,16 +466,20 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
         break;
     }
 
-    session.status = ctx.cancelled ? 'cancelled' : 'completed';
-    session.completedAt = new Date().toISOString();
-
-    const summary = `${session.totalFiles} found, ${session.filesSynced} synced, ${session.filesSkipped} skipped, ${session.filesFailed} failed`;
-    session.currentFile = undefined;
-    if (session.totalFiles === 0) {
-      session.errorMessage = 'No files found in source folder';
+    if (ctx.cancelled) {
+      session.status = 'paused';
+      session.currentFile = undefined;
+      session.errorMessage = `Paused — ${session.filesSynced} synced, ${session.filesSkipped} skipped. Resume to continue.`;
+      console.log(`[Sync] Paused: ${session.filesSynced} synced, ${session.filesSkipped} skipped, partial files saved for resume`);
+    } else {
+      session.status = 'completed';
+      session.completedAt = new Date().toISOString();
+      session.currentFile = undefined;
+      if (session.totalFiles === 0) {
+        session.errorMessage = 'No files found in source folder';
+      }
+      console.log(`[Sync] Completed: ${session.totalFiles} found, ${session.filesSynced} synced, ${session.filesSkipped} skipped, ${session.filesFailed} failed`);
     }
-
-    console.log(`[Sync] Completed: ${summary}`);
   } catch (err: any) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();

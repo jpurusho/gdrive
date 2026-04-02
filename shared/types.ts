@@ -59,7 +59,7 @@ export interface LocalFile {
 // ─── Sync ────────────────────────────────────────────────────────────────────
 
 export type SyncDirection = 'download' | 'upload' | 'bidirectional';
-export type SyncStatus = 'idle' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+export type SyncStatus = 'idle' | 'in_progress' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 export interface SyncProfile {
   id: number;

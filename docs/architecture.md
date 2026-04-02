@@ -81,13 +81,19 @@ sequenceDiagram
 | `sync:createProfile` | Renderer -> Main | Create a new sync profile |
 | `sync:updateProfile` | Renderer -> Main | Update an existing profile |
 | `sync:deleteProfile` | Renderer -> Main | Delete a sync profile |
-| `sync:startSync` | Renderer -> Main | Begin sync for a profile |
-| `sync:cancelSync` | Renderer -> Main | Cancel an active sync |
+| `sync:startSync` | Renderer -> Main | Begin/resume sync for a profile |
+| `sync:cancelSync` | Renderer -> Main | Pause an active sync (partial files saved) |
 | `sync:getSessions` | Renderer -> Main | Get sync history sessions |
 | `sync:progress` | Main -> Renderer | Real-time sync progress updates |
+| `backup:backup` | Renderer -> Main | Upload database to Google Drive |
+| `backup:restore` | Renderer -> Main | Download and replace local database |
+| `backup:syncMerge` | Renderer -> Main | Merge remote DB into local (last-write-wins) |
+| `backup:getInfo` | Renderer -> Main | Get last backup timestamp |
 | `app:getVersion` | Renderer -> Main | Get app version string |
 | `app:checkForUpdates` | Renderer -> Main | Trigger auto-update check |
 | `app:getPlatform` | Renderer -> Main | Get OS platform string |
+| `app:getSetting` | Renderer -> Main | Read app setting from database |
+| `app:setSetting` | Renderer -> Main | Write app setting to database |
 
 ## Sync Engine Flow
 

@@ -17,6 +17,8 @@ import {
   Chip,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -74,6 +76,10 @@ export default function SyncStatus() {
     await window.api.sync.startSync(profileId);
   }
 
+  async function handlePause(profileId: number) {
+    await window.api.sync.cancelSync(profileId);
+  }
+
   if (profiles.length === 0) {
     return (
       <Box
@@ -119,6 +125,7 @@ export default function SyncStatus() {
           {profiles.map((profile) => {
             const session = sessions[profile.id];
             const isActive = session?.status === 'in_progress';
+            const isPaused = session?.status === 'paused';
             const isFailed = session?.status === 'failed';
             const isCompleted = session?.status === 'completed';
             const DirIcon = directionIcons[profile.syncDirection];
@@ -148,6 +155,15 @@ export default function SyncStatus() {
                         )}
                       </Box>
                     </Box>
+                  ) : isPaused ? (
+                    <Chip
+                      icon={<PauseCircleOutlineIcon sx={{ fontSize: '14px !important' }} />}
+                      label="Paused"
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                      sx={{ height: 22, fontSize: 11 }}
+                    />
                   ) : isFailed ? (
                     <Chip
                       icon={<ErrorOutlineIcon sx={{ fontSize: '14px !important' }} />}
@@ -200,11 +216,19 @@ export default function SyncStatus() {
                   </Typography>
                 </TableCell>
                 <TableCell sx={{ py: 0.75 }} align="right">
-                  <Tooltip title="Sync now">
-                    <IconButton size="small" onClick={() => handleSync(profile.id)} disabled={isActive} sx={{ color: 'text.secondary' }}>
-                      <PlayArrowIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Tooltip>
+                  {isActive ? (
+                    <Tooltip title="Pause">
+                      <IconButton size="small" onClick={() => handlePause(profile.id)} sx={{ color: 'warning.main' }}>
+                        <PauseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title={isPaused ? 'Resume' : 'Sync now'}>
+                      <IconButton size="small" onClick={() => handleSync(profile.id)} sx={{ color: isPaused ? 'warning.main' : 'text.secondary' }}>
+                        <PlayArrowIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             );

@@ -157,18 +157,48 @@ export class GoogleDriveService {
     return result;
   }
 
-  /** Download a file to a local path. Returns the MD5 hash of downloaded content. */
-  async downloadFile(fileId: string, mimeType: string, destPath: string, onProgress?: (bytes: number) => void): Promise<string> {
+  /**
+   * Download a file to a local path. Supports resuming from a byte offset.
+   * Uses .partial temp file so interrupted downloads can be continued.
+   * Returns the MD5 hash of the complete downloaded content.
+   */
+  async downloadFile(
+    fileId: string,
+    mimeType: string,
+    destPath: string,
+    onProgress?: (bytes: number) => void,
+    cancelToken?: { cancelled: boolean },
+  ): Promise<string> {
     const dir = path.dirname(destPath);
     await fs.promises.mkdir(dir, { recursive: true });
 
+    const partialPath = destPath + '.partial';
     const exportInfo = getExportInfo(mimeType);
-    let response;
 
+    // Check for existing partial download (only for binary files, not exports)
+    let startByte = 0;
+    if (!exportInfo && fs.existsSync(partialPath)) {
+      const stat = fs.statSync(partialPath);
+      startByte = stat.size;
+    }
+
+    let response;
     if (exportInfo) {
+      // Exports don't support Range headers — always start fresh
       response = await this.drive.files.export(
         { fileId, mimeType: exportInfo.mime },
         { responseType: 'stream' },
+      );
+      startByte = 0;
+    } else if (startByte > 0) {
+      // Resume download with Range header
+      console.log(`[Download] Resuming ${path.basename(destPath)} from byte ${startByte}`);
+      response = await this.drive.files.get(
+        { fileId, alt: 'media', supportsAllDrives: true },
+        {
+          responseType: 'stream',
+          headers: { Range: `bytes=${startByte}-` },
+        },
       );
     } else {
       response = await this.drive.files.get(
@@ -178,20 +208,50 @@ export class GoogleDriveService {
     }
 
     return new Promise((resolve, reject) => {
-      const hash = crypto.createHash('md5');
-      const dest = fs.createWriteStream(destPath);
-      let bytesWritten = 0;
+      // Append to partial file if resuming, otherwise create new
+      const dest = fs.createWriteStream(partialPath, startByte > 0 ? { flags: 'a' } : undefined);
+      let bytesWritten = startByte;
 
-      (response.data as NodeJS.ReadableStream)
-        .on('data', (chunk: Buffer) => {
-          bytesWritten += chunk.length;
-          hash.update(chunk);
-          if (onProgress) onProgress(bytesWritten);
-        })
-        .on('error', reject)
-        .pipe(dest);
+      const stream = response.data as NodeJS.ReadableStream & { destroy?: () => void };
 
-      dest.on('finish', () => resolve(hash.digest('hex')));
+      stream.on('data', (chunk: Buffer) => {
+        if (cancelToken?.cancelled) {
+          if (stream.destroy) stream.destroy();
+          dest.end();
+          return;
+        }
+        bytesWritten += chunk.length;
+        if (onProgress) onProgress(bytesWritten);
+      });
+
+      stream.on('error', (err) => {
+        dest.end();
+        reject(err);
+      });
+
+      stream.pipe(dest);
+
+      dest.on('finish', () => {
+        if (cancelToken?.cancelled) {
+          // Leave .partial file for resume on next run
+          resolve('');
+          return;
+        }
+        // Move .partial to final destination and compute hash
+        try {
+          if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+          fs.renameSync(partialPath, destPath);
+          // Compute MD5 of completed file
+          const hash = crypto.createHash('md5');
+          const readStream = fs.createReadStream(destPath);
+          readStream.on('data', (chunk) => hash.update(chunk));
+          readStream.on('end', () => resolve(hash.digest('hex')));
+          readStream.on('error', reject);
+        } catch (err) {
+          reject(err);
+        }
+      });
+
       dest.on('error', reject);
     });
   }

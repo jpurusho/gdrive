@@ -15,8 +15,10 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -58,17 +60,20 @@ function ProfileCard({
   session,
   onDelete,
   onSync,
+  onPause,
   onClick,
 }: {
   profile: SyncProfile;
   session?: SyncSession;
   onDelete: () => void;
   onSync: () => void;
+  onPause: () => void;
   onClick: () => void;
 }) {
   const theme = useTheme();
   const DirIcon = directionIcons[profile.syncDirection];
   const isActive = session?.status === 'in_progress';
+  const isPaused = session?.status === 'paused';
   const isFailed = session?.status === 'failed';
   const isCompleted = session?.status === 'completed';
 
@@ -87,11 +92,13 @@ function ProfileCard({
         border: `1.5px solid ${
           isActive
             ? fluorescent
-            : isFailed
-              ? alpha(theme.palette.error.main, 0.6)
-              : isCompleted
-                ? alpha(theme.palette.success.main, 0.5)
-                : alpha(theme.palette.primary.main, 0.25)
+            : isPaused
+              ? alpha(theme.palette.warning.main, 0.6)
+              : isFailed
+                ? alpha(theme.palette.error.main, 0.6)
+                : isCompleted
+                  ? alpha(theme.palette.success.main, 0.5)
+                  : alpha(theme.palette.primary.main, 0.25)
         }`,
         borderRadius: 3,
         transition: 'transform 0.2s, border-color 0.3s',
@@ -131,11 +138,19 @@ function ProfileCard({
             </Typography>
           </Box>
           <Box display="flex" gap={0.25} flexShrink={0} onClick={(e) => e.stopPropagation()}>
-            <Tooltip title="Sync now">
-              <IconButton size="small" onClick={onSync} disabled={isActive} sx={{ color: 'text.secondary' }}>
-                <PlayArrowIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
+            {isActive ? (
+              <Tooltip title="Pause sync">
+                <IconButton size="small" onClick={onPause} sx={{ color: 'warning.main' }}>
+                  <PauseIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip title={isPaused ? 'Resume sync' : 'Sync now'}>
+                <IconButton size="small" onClick={onSync} sx={{ color: isPaused ? 'warning.main' : 'text.secondary' }}>
+                  <PlayArrowIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Edit">
               <IconButton size="small" onClick={onClick} sx={{ color: 'text.secondary' }}>
                 <EditIcon sx={{ fontSize: 16 }} />
@@ -226,6 +241,21 @@ function ProfileCard({
             </Box>
           )}
 
+          {/* Paused status */}
+          {isPaused && (
+            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box display="flex" alignItems="center" gap={0.5}>
+                <PauseCircleOutlineIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                <Typography variant="caption" color="warning.main">
+                  Paused — {session.filesSynced} synced, {session.filesSkipped} skipped
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                Partial downloads saved. Click play to resume.
+              </Typography>
+            </Box>
+          )}
+
           {/* Failed status */}
           {isFailed && (
             <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
@@ -288,6 +318,10 @@ export default function SyncCards() {
 
   async function handleSync(profileId: number) {
     await window.api.sync.startSync(profileId);
+  }
+
+  async function handlePause(profileId: number) {
+    await window.api.sync.cancelSync(profileId);
   }
 
   function handleCreate(profile: SyncProfile) {
@@ -359,6 +393,7 @@ export default function SyncCards() {
             session={sessions[profile.id]}
             onDelete={() => handleDelete(profile.id)}
             onSync={() => handleSync(profile.id)}
+            onPause={() => handlePause(profile.id)}
             onClick={() => setEditProfile(profile)}
           />
         ))}

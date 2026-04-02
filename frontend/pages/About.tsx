@@ -11,6 +11,7 @@ import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import StorageIcon from '@mui/icons-material/Storage';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -21,6 +22,7 @@ const features = [
   { icon: CloudSyncIcon, title: 'Bidirectional Sync', desc: 'Download, upload, or sync both ways between Google Drive and local folders' },
   { icon: SecurityIcon, title: 'MD5 Checksums', desc: 'Verifies file integrity with hash comparison — only transfers changed files' },
   { icon: SpeedIcon, title: 'Streaming Transfers', desc: 'Efficient streaming downloads and uploads with real-time progress tracking' },
+  { icon: PauseCircleOutlineIcon, title: 'Pause & Resume', desc: 'Pause large transfers mid-sync and resume later — partial downloads are saved automatically' },
   { icon: StorageIcon, title: 'Google Workspace Export', desc: 'Auto-exports Docs, Sheets, Slides, and Drawings to DOCX, XLSX, PPTX, PNG' },
   { icon: ScheduleIcon, title: 'Scheduled Auto-Sync', desc: 'Cron-based schedules — every 15 min, hourly, daily, or custom intervals' },
   { icon: PaletteIcon, title: '6 Themes', desc: 'Midnight, GitHub Dark, Dracula, Nord, One Dark Pro, and Light' },
@@ -93,6 +95,7 @@ export default function About() {
         You create sync profiles that map a Drive folder to a local folder, choose a direction (download, upload, or bidirectional),
         and the app takes care of the rest — comparing files by MD5 checksum, transferring only what changed,
         exporting Google Workspace files to standard formats, and logging every operation.
+        Large transfers can be paused and resumed — partial downloads are saved to disk and continued from where they left off.
         Schedules let you automate syncs, and the database backup feature ensures your settings travel with you.
       </Typography>
 
