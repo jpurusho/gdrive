@@ -213,6 +213,9 @@ export function updateProfile(id: number, updates: Partial<SyncProfile>): SyncPr
   const values: any[] = [];
 
   if (updates.name !== undefined) { fields.push('name = ?'); values.push(updates.name); }
+  if (updates.localPath !== undefined) { fields.push('local_path = ?'); values.push(updates.localPath); }
+  if (updates.driveFolderId !== undefined) { fields.push('drive_folder_id = ?'); values.push(updates.driveFolderId); }
+  if (updates.driveFolderPath !== undefined) { fields.push('drive_folder_path = ?'); values.push(updates.driveFolderPath); }
   if (updates.syncDirection !== undefined) { fields.push('sync_direction = ?'); values.push(updates.syncDirection); }
   if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule ?? null); }
   if (updates.isActive !== undefined) { fields.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }

@@ -23,6 +23,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudIcon from '@mui/icons-material/Cloud';
 import FolderIcon from '@mui/icons-material/Folder';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { SyncProfile, SyncDirection } from '../../../shared/types';
 
 interface Props {
@@ -37,6 +38,7 @@ interface Props {
 export default function EditProfileDialog({ open, profile, onClose, onSave, onDelete, onSync }: Props) {
   const theme = useTheme();
   const [name, setName] = useState('');
+  const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   useEffect(() => {
     if (profile) {
       setName(profile.name);
+      setLocalPath(profile.localPath);
       setDirection(profile.syncDirection);
       setSchedule(profile.schedule || '');
     }
@@ -51,20 +54,32 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
   if (!profile) return null;
 
+  async function handleBrowseLocal() {
+    const selected = await window.api.localFs.selectDirectory();
+    if (selected) setLocalPath(selected);
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      const updated = await window.api.sync.updateProfile(profile!.id, {
+      const updates: Partial<SyncProfile> = {
         name: name.trim(),
         syncDirection: direction,
         schedule: schedule || undefined,
-      });
+      };
+      // Only include localPath if changed
+      if (localPath !== profile!.localPath) {
+        updates.localPath = localPath;
+      }
+      const updated = await window.api.sync.updateProfile(profile!.id, updates);
       onSave(updated);
       onClose();
     } finally {
       setSaving(false);
     }
   }
+
+  const localChanged = localPath !== profile.localPath;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -78,33 +93,59 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
           fullWidth
         />
 
-        {/* Read-only drive/local info */}
+        {/* Locations */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Locations</Typography>
+          <Typography variant="subtitle2" mb={1}>Google Drive Folder</Typography>
           <Box
             sx={{
-              p: 2,
+              p: 1.5,
               borderRadius: 2,
               border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
               bgcolor: 'background.default',
               display: 'flex',
-              flexDirection: 'column',
+              alignItems: 'center',
               gap: 1,
             }}
           >
-            <Box display="flex" alignItems="center" gap={1}>
-              <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-              <Typography variant="body2" color="text.secondary">
-                {profile.driveName}: {profile.driveFolderPath}
-              </Typography>
-            </Box>
-            <Box display="flex" alignItems="center" gap={1}>
-              <FolderIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-              <Typography variant="body2" color="text.secondary">
-                {profile.localPath}
-              </Typography>
-            </Box>
+            <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+            <Typography variant="body2" color="text.secondary" flex={1} noWrap>
+              {profile.driveName}: {profile.driveFolderPath}
+            </Typography>
           </Box>
+          <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
+            To change the Drive folder, delete this profile and create a new one.
+          </Typography>
+        </Box>
+
+        <Box>
+          <Typography variant="subtitle2" mb={1}>Local Folder</Typography>
+          <Box display="flex" gap={1}>
+            <TextField
+              size="small"
+              fullWidth
+              value={localPath}
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <FolderIcon sx={{ fontSize: 16, color: localChanged ? 'primary.main' : 'warning.main', mr: 1 }} />
+                ),
+              }}
+              sx={localChanged ? { '& .MuiOutlinedInput-root': { borderColor: theme.palette.primary.main } } : {}}
+            />
+            <Button
+              variant="outlined"
+              onClick={handleBrowseLocal}
+              startIcon={<FolderOpenIcon />}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Change
+            </Button>
+          </Box>
+          {localChanged && (
+            <Typography variant="caption" color="primary.main" mt={0.5} display="block">
+              Changed from: {profile.localPath}
+            </Typography>
+          )}
         </Box>
 
         {/* Sync direction */}
