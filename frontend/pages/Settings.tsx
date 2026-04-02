@@ -8,15 +8,36 @@ import {
   Chip,
   Button,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useThemeContext } from '../theme/ThemeContext';
+import EditProfileDialog from '../components/EditProfileDialog/EditProfileDialog';
 import type { ThemeDefinition } from '../theme/themes';
+import type { SyncProfile } from '../../shared/types';
+
+const directionIcons: Record<string, React.ElementType> = {
+  download: CloudDownloadIcon,
+  upload: CloudUploadIcon,
+  bidirectional: SyncIcon,
+};
 
 function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected: boolean; onSelect: () => void }) {
   const { colors, mode } = def;
-
   return (
     <Card
       variant="outlined"
@@ -31,9 +52,7 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
       <CardActionArea onClick={onSelect} sx={{ p: 0 }}>
         <Box sx={{ background: colors.background, p: 1.5, position: 'relative' }}>
           {selected && (
-            <CheckCircleIcon
-              sx={{ position: 'absolute', top: 6, right: 6, fontSize: 18, color: colors.primary }}
-            />
+            <CheckCircleIcon sx={{ position: 'absolute', top: 6, right: 6, fontSize: 18, color: colors.primary }} />
           )}
           <Box display="flex" gap={0.75} mb={1}>
             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff5f57' }} />
@@ -56,19 +75,13 @@ function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected
             </Box>
           </Box>
         </Box>
-        <Box
-          sx={{ bgcolor: colors.paper, px: 1.5, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}
-        >
-          <Typography sx={{ fontSize: 13, fontWeight: 600, color: colors.text }}>
-            {def.name}
-          </Typography>
+        <Box sx={{ bgcolor: colors.paper, px: 1.5, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{def.name}</Typography>
           <Chip
             label={mode}
             size="small"
             sx={{
-              height: 18,
-              fontSize: 10,
-              ml: 'auto',
+              height: 18, fontSize: 10, ml: 'auto',
               bgcolor: mode === 'dark' ? alpha(colors.textSecondary, 0.15) : alpha(colors.primary, 0.1),
               color: mode === 'dark' ? colors.textSecondary : colors.primary,
             }}
@@ -84,19 +97,38 @@ export default function Settings() {
   const [version, setVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [checking, setChecking] = useState(false);
+  const [profiles, setProfiles] = useState<SyncProfile[]>([]);
+  const [editProfile, setEditProfile] = useState<SyncProfile | null>(null);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
     window.api.app.getPlatform().then(setPlatform);
+    loadProfiles();
   }, []);
+
+  async function loadProfiles() {
+    const result = await window.api.sync.getProfiles();
+    setProfiles(result);
+  }
+
+  async function handleDelete(id: number) {
+    await window.api.sync.deleteProfile(id);
+    setProfiles((prev) => prev.filter((p) => p.id !== id));
+    setEditProfile(null);
+  }
+
+  async function handleSync(id: number) {
+    await window.api.sync.startSync(id);
+    setEditProfile(null);
+  }
+
+  function handleSaved(updated: SyncProfile) {
+    setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  }
 
   async function checkUpdates() {
     setChecking(true);
-    try {
-      await window.api.app.checkForUpdates();
-    } finally {
-      setChecking(false);
-    }
+    try { await window.api.app.checkForUpdates(); } finally { setChecking(false); }
   }
 
   return (
@@ -106,49 +138,132 @@ export default function Settings() {
         Customize your GDrive Sync experience.
       </Typography>
 
+      {/* ── Sync Profiles ── */}
+      <Typography variant="subtitle1" mb={2}>Sync Profiles</Typography>
+      {profiles.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" mb={3}>
+          No profiles yet. Create one from the Dashboard.
+        </Typography>
+      ) : (
+        <TableContainer
+          sx={{ borderRadius: 2, border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`, mb: 4 }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Direction</TableCell>
+                <TableCell>Drive Folder</TableCell>
+                <TableCell>Local Path</TableCell>
+                <TableCell>Schedule</TableCell>
+                <TableCell>Last Sync</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {profiles.map((p) => {
+                const DirIcon = directionIcons[p.syncDirection];
+                return (
+                  <TableRow key={p.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>{p.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={<DirIcon sx={{ fontSize: '14px !important' }} />}
+                        label={p.syncDirection}
+                        size="small"
+                        sx={{ height: 22, fontSize: 11 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 150, display: 'block' }}>
+                        {p.driveName}: {p.driveFolderPath}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 150, display: 'block' }}>
+                        {p.localPath}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary">
+                        {p.schedule || 'Manual'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption" color="text.secondary">
+                        {p.lastSyncAt ? new Date(p.lastSyncAt).toLocaleString() : 'Never'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" gap={0.25} justifyContent="flex-end">
+                        <Tooltip title="Sync now">
+                          <IconButton size="small" onClick={() => handleSync(p.id)}>
+                            <PlayArrowIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => setEditProfile(p)}>
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" onClick={() => handleDelete(p.id)} sx={{ color: 'text.secondary' }}>
+                            <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      <Divider sx={{ opacity: 0.3, mb: 3 }} />
+
+      {/* ── Theme ── */}
       <Typography variant="subtitle1" mb={2}>Theme</Typography>
       <Box display="flex" flexWrap="wrap" gap={2} mb={4}>
         {availableThemes.map((def) => (
-          <ThemeCard
-            key={def.id}
-            def={def}
-            selected={themeId === def.id}
-            onSelect={() => setThemeId(def.id)}
-          />
+          <ThemeCard key={def.id} def={def} selected={themeId === def.id} onSelect={() => setThemeId(def.id)} />
         ))}
       </Box>
 
       <Divider sx={{ opacity: 0.3, mb: 3 }} />
 
+      {/* ── About ── */}
       <Typography variant="subtitle1" mb={2}>About</Typography>
       <Box
         sx={{
-          p: 2.5,
-          borderRadius: 2,
+          p: 2.5, borderRadius: 2,
           border: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
-          bgcolor: 'background.paper',
-          maxWidth: 400,
+          bgcolor: 'background.paper', maxWidth: 400,
         }}
       >
-        <Typography variant="body2" fontWeight={600} mb={1}>
-          GDrive Sync v{version || '...'}
-        </Typography>
+        <Typography variant="body2" fontWeight={600} mb={1}>GDrive Sync v{version || '...'}</Typography>
         <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
           Platform: {platform || '...'} | Electron Desktop App
         </Typography>
         <Typography variant="caption" color="text.secondary" display="block" mb={2}>
           Built with React, Material UI, and TypeScript
         </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<SystemUpdateIcon />}
-          onClick={checkUpdates}
-          disabled={checking}
-        >
+        <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
           {checking ? 'Checking...' : 'Check for Updates'}
         </Button>
       </Box>
+
+      <EditProfileDialog
+        open={!!editProfile}
+        profile={editProfile}
+        onClose={() => setEditProfile(null)}
+        onSave={handleSaved}
+        onDelete={() => editProfile && handleDelete(editProfile.id)}
+        onSync={() => editProfile && handleSync(editProfile.id)}
+      />
     </Box>
   );
 }
