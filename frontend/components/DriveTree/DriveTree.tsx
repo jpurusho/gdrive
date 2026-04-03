@@ -211,7 +211,7 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
               disabled={!selectedFolder}
               sx={{ height: 28, fontSize: 12, textTransform: 'none', px: 2 }}
             >
-              {selectedFolder ? `Select "${selectedFolder.folderPath}"` : 'Click a folder'}
+              {selectedFolder ? 'Select folder' : 'Click a folder'}
             </Button>
           )}
           <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>

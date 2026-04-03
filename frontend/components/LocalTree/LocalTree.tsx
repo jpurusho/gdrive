@@ -213,7 +213,7 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
               disabled={!rootPath}
               sx={{ height: 28, fontSize: 12, textTransform: 'none', px: 2 }}
             >
-              {rootPath ? `Select "${rootPath.split('/').filter(Boolean).pop()}"` : 'Navigate first'}
+              {rootPath ? 'Select folder' : 'Navigate first'}
             </Button>
           )}
           <IconButton
