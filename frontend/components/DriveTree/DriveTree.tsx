@@ -23,7 +23,31 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import type { DriveInfo, DriveFile } from '../../../shared/types';
+
+function groupByMonth(files: DriveFile[]): { label: string; files: DriveFile[] }[] {
+  const groups = new Map<string, DriveFile[]>();
+  const now = new Date();
+
+  for (const f of files) {
+    const date = f.sharedWithMeTime ? new Date(f.sharedWithMeTime) : f.modifiedTime ? new Date(f.modifiedTime) : now;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(f);
+  }
+
+  // Sort by key descending (newest first)
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([, files], i, arr) => ({
+      label: files.length > 0
+        ? new Date(files[0].sharedWithMeTime || files[0].modifiedTime || '').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+        : 'Unknown',
+      files,
+    }));
+}
 
 function formatSize(bytes?: number): string {
   if (!bytes) return '';
@@ -120,6 +144,58 @@ function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, se
           <Typography variant="caption" color="text.secondary" sx={{ pl: 4 + (depth + 1) * 2, py: 0.5, display: 'block' }}>
             Empty folder
           </Typography>
+        )}
+      </Collapse>
+    </>
+  );
+}
+
+function SharedMonthGroup({ label, files, driveId, driveName, driveType, selectionMode, selectedFolderId, onSelect }: {
+  label: string;
+  files: DriveFile[];
+  driveId: string;
+  driveName: string;
+  driveType: 'my_drive' | 'shared_drive';
+  selectionMode?: boolean;
+  selectedFolderId?: string;
+  onSelect?: (info: any) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <ListItemButton onClick={() => setOpen(!open)} sx={{ pl: 4, py: 0.5 }}>
+        <ListItemIcon sx={{ minWidth: 28 }}>
+          {open ? <ExpandMoreIcon sx={{ fontSize: 16, color: 'text.secondary' }} /> : <ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
+        </ListItemIcon>
+        <ListItemIcon sx={{ minWidth: 28 }}>
+          <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+        </ListItemIcon>
+        <ListItemText
+          primary={label}
+          secondary={`${files.length} item${files.length !== 1 ? 's' : ''}`}
+          primaryTypographyProps={{ fontSize: 12, fontWeight: 600 }}
+          secondaryTypographyProps={{ fontSize: 10 }}
+        />
+      </ListItemButton>
+      <Collapse in={open} timeout="auto">
+        {files.map((file) =>
+          file.isFolder ? (
+            <FolderNode key={file.id} file={file} driveId={driveId} driveName={driveName} driveType={driveType} depth={2} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolderId} onSelect={onSelect} />
+          ) : (
+            <ListItemButton key={file.id} sx={{ pl: 8, py: 0.5 }}>
+              <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={file.name}
+                secondary={formatSize(file.size)}
+                primaryTypographyProps={{ fontSize: 13, noWrap: true }}
+                secondaryTypographyProps={{ fontSize: 11 }}
+              />
+            </ListItemButton>
+          ),
         )}
       </Collapse>
     </>
@@ -279,23 +355,30 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                   />
                 </ListItemButton>
                 <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
-                  {(driveFiles[drive.id] || []).map((file) =>
-                    file.isFolder ? (
-                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
-                    ) : (
-                      <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
-                        <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
-                        <ListItemIcon sx={{ minWidth: 28 }}>
-                          <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={formatSize(file.size)}
-                          primaryTypographyProps={{ fontSize: 13, noWrap: true }}
-                          secondaryTypographyProps={{ fontSize: 11 }}
-                        />
-                      </ListItemButton>
-                    ),
+                  {drive.id === 'shared_with_me' ? (
+                    // Grouped by month for "Shared with me"
+                    groupByMonth(driveFiles[drive.id] || []).map((group) => (
+                      <SharedMonthGroup key={group.label} label={group.label} files={group.files} driveId={drive.id} driveName={drive.name} driveType={drive.type} selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
+                    ))
+                  ) : (
+                    (driveFiles[drive.id] || []).map((file) =>
+                      file.isFolder ? (
+                        <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
+                      ) : (
+                        <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+                          <ListItemIcon sx={{ minWidth: 28 }}>
+                            <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={file.name}
+                            secondary={formatSize(file.size)}
+                            primaryTypographyProps={{ fontSize: 13, noWrap: true }}
+                            secondaryTypographyProps={{ fontSize: 11 }}
+                          />
+                        </ListItemButton>
+                      ),
+                    )
                   )}
                 </Collapse>
               </React.Fragment>

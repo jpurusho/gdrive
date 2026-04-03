@@ -38,6 +38,7 @@ export interface DriveFile {
   shared?: boolean;
   isFolder: boolean;
   md5Checksum?: string;
+  sharedWithMeTime?: string;
   capabilities?: {
     canEdit: boolean;
     canDelete: boolean;

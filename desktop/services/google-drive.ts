@@ -114,11 +114,11 @@ export class GoogleDriveService {
           q: query,
           pageSize: 200,
           pageToken,
-          fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,parents,shared,md5Checksum,capabilities)',
+          fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,parents,shared,md5Checksum,capabilities,sharedWithMeTime)',
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
           ...(isSharedDrive ? { driveId, corpora: 'drive' } : {}),
-          orderBy: 'folder,name',
+          orderBy: isSharedWithMe && folderId === 'shared_with_me' ? 'sharedWithMeTime desc' : 'folder,name',
         });
 
         for (const f of res.data.files || []) {
@@ -132,6 +132,7 @@ export class GoogleDriveService {
             shared: f.shared ?? undefined,
             isFolder: f.mimeType === 'application/vnd.google-apps.folder',
             md5Checksum: f.md5Checksum ?? undefined,
+            sharedWithMeTime: (f as any).sharedWithMeTime ?? undefined,
             capabilities: f.capabilities
               ? {
                   canEdit: f.capabilities.canEdit ?? false,
