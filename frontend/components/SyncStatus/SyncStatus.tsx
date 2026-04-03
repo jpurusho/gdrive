@@ -82,7 +82,7 @@ export default function SyncStatus() {
   }
 
   if (profiles.length === 0) {
-    return <WorkflowGuide />;
+    return <WorkflowGuide onProfileCreated={() => loadProfiles()} />;
   }
 
   return (

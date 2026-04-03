@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
+  TextField,
+  Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
   alpha,
   useTheme,
 } from '@mui/material';
@@ -10,117 +20,401 @@ import FolderIcon from '@mui/icons-material/Folder';
 import SyncIcon from '@mui/icons-material/Sync';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../shared/types';
 
-const steps = [
-  {
-    icon: AddCircleOutlineIcon,
-    title: 'Create Profile',
-    desc: 'Go to Profiles and click "New Sync Profile"',
-    color: 'primary',
-  },
-  {
-    icon: CloudIcon,
-    title: 'Select Drive Folder',
-    desc: 'Pick a folder from your Google Drive or shared drives',
-    color: 'primary',
-  },
-  {
-    icon: FolderIcon,
-    title: 'Select Local Folder',
-    desc: 'Choose where files will be synced on your machine',
-    color: 'warning',
-  },
-  {
-    icon: SyncIcon,
-    title: 'Choose Direction',
-    desc: 'Download, upload, or bidirectional sync',
-    color: 'secondary',
-  },
-  {
-    icon: ScheduleIcon,
-    title: 'Set Schedule',
-    desc: 'Optional — auto-sync every 15 min, hourly, daily',
-    color: 'info',
-  },
-  {
-    icon: CheckCircleOutlineIcon,
-    title: 'Sync!',
-    desc: 'Files sync automatically. Check status here.',
-    color: 'success',
-  },
+interface Props {
+  onProfileCreated: (profile: SyncProfile) => void;
+}
+
+interface StepDef {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  color: string;
+}
+
+const STEPS: StepDef[] = [
+  { id: 'name', icon: AddCircleOutlineIcon, title: 'Name', color: 'primary' },
+  { id: 'drive', icon: CloudIcon, title: 'Drive Folder', color: 'primary' },
+  { id: 'local', icon: FolderIcon, title: 'Local Folder', color: 'warning' },
+  { id: 'direction', icon: SyncIcon, title: 'Direction', color: 'secondary' },
+  { id: 'schedule', icon: ScheduleIcon, title: 'Schedule', color: 'info' },
+  { id: 'sync', icon: PlayArrowIcon, title: 'Sync!', color: 'success' },
 ];
 
-export default function WorkflowGuide() {
+export default function WorkflowGuide({ onProfileCreated }: Props) {
   const theme = useTheme();
+  const [activeStep, setActiveStep] = useState<string | null>(null);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [creating, setCreating] = useState(false);
+
+  // Form state
+  const [name, setName] = useState('');
+  const [driveId, setDriveId] = useState('');
+  const [driveName, setDriveName] = useState('');
+  const [driveType, setDriveType] = useState<'my_drive' | 'shared_drive'>('my_drive');
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [driveFolderPath, setDriveFolderPath] = useState('');
+  const [localPath, setLocalPath] = useState('');
+  const [direction, setDirection] = useState<SyncDirection>('download');
+  const [useSourceFolder, setUseSourceFolder] = useState(true);
+  const [schedule, setSchedule] = useState('');
+
+  // Drive listing for inline picker
+  const [drives, setDrives] = useState<DriveInfo[]>([]);
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [loadingDrives, setLoadingDrives] = useState(false);
+  const [selectedDriveForFiles, setSelectedDriveForFiles] = useState('');
+
+  function completeStep(step: string) {
+    setCompleted((prev) => new Set(prev).add(step));
+  }
+
+  function handleStepClick(stepId: string) {
+    setActiveStep(activeStep === stepId ? null : stepId);
+  }
+
+  // Step handlers
+  function handleNameDone() {
+    if (name.trim()) {
+      completeStep('name');
+      setActiveStep('drive');
+    }
+  }
+
+  async function loadDrives() {
+    setLoadingDrives(true);
+    try {
+      const result = await window.api.drive.listDrives();
+      setDrives(result);
+    } finally {
+      setLoadingDrives(false);
+    }
+  }
+
+  async function handleDriveSelect(drive: DriveInfo) {
+    setDriveId(drive.id);
+    setDriveName(drive.name);
+    setDriveType(drive.type);
+    setSelectedDriveForFiles(drive.id);
+    // List root files
+    const fid = drive.id === 'root' ? 'root' : drive.id;
+    const files = await window.api.drive.listFiles(drive.id, fid);
+    setDriveFiles(files.filter((f) => f.isFolder));
+    // Default to drive root
+    setDriveFolderId(fid);
+    setDriveFolderPath('/');
+  }
+
+  function handleFolderSelect(folder: DriveFile) {
+    setDriveFolderId(folder.id);
+    setDriveFolderPath('/' + folder.name + '/');
+  }
+
+  function handleDriveDone() {
+    if (driveFolderId) {
+      completeStep('drive');
+      setActiveStep('local');
+    }
+  }
+
+  async function handleBrowseLocal() {
+    const dir = await window.api.localFs.selectDirectory();
+    if (dir) {
+      setLocalPath(dir);
+      completeStep('local');
+      setActiveStep('direction');
+    }
+  }
+
+  function handleDirectionDone() {
+    completeStep('direction');
+    setActiveStep('schedule');
+  }
+
+  function handleScheduleDone() {
+    completeStep('schedule');
+    setActiveStep('sync');
+  }
+
+  async function handleCreateAndSync() {
+    if (!name.trim() || !driveFolderId || !localPath) return;
+    setCreating(true);
+    try {
+      const profile = await window.api.sync.createProfile({
+        name: name.trim(),
+        driveId,
+        driveName,
+        driveType,
+        driveFolderId,
+        driveFolderPath,
+        localPath,
+        syncDirection: direction,
+        useSourceFolderName: useSourceFolder,
+        fileFilter: undefined,
+        schedule: schedule || undefined,
+        isActive: true,
+      });
+      completeStep('sync');
+      await window.api.sync.startSync(profile.id);
+      onProfileCreated(profile);
+
+      // Reset
+      setTimeout(() => {
+        setActiveStep(null);
+        setCompleted(new Set());
+        setName('');
+        setDriveFolderId('');
+        setLocalPath('');
+        setDirection('download');
+        setSchedule('');
+      }, 1500);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  const allReady = name.trim() && driveFolderId && localPath;
 
   return (
     <Box
       sx={{
-        p: 3,
         borderRadius: 3,
         border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.15)}`,
         bgcolor: 'background.paper',
+        overflow: 'hidden',
       }}
     >
-      <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-        How to get started
-      </Typography>
-      <Typography variant="body2" color="text.secondary" mb={3}>
-        Create a sync profile to start syncing files between Google Drive and your local folders.
-      </Typography>
-
+      {/* Header */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1,
-          overflowX: 'auto',
-          pb: 1,
+          px: 2.5,
+          py: 1.5,
+          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
+          borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        {steps.map((step, i) => (
-          <React.Fragment key={step.title}>
-            <Box
-              sx={{
-                minWidth: 130,
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
+        <Typography variant="subtitle2" fontWeight={700}>Create your first sync profile</Typography>
+      </Box>
+
+      {/* Step indicators */}
+      <Box display="flex" alignItems="center" gap={0.5} px={2} py={1.5} sx={{ overflowX: 'auto' }}>
+        {STEPS.map((step, i) => {
+          const isDone = completed.has(step.id);
+          const isActive = activeStep === step.id;
+          const paletteColor = (theme.palette as any)[step.color]?.main || theme.palette.primary.main;
+
+          return (
+            <React.Fragment key={step.id}>
               <Box
+                onClick={() => handleStepClick(step.id)}
                 sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '14px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: alpha((theme.palette as any)[step.color]?.main || theme.palette.primary.main, 0.1),
-                  border: `1.5px solid ${alpha((theme.palette as any)[step.color]?.main || theme.palette.primary.main, 0.2)}`,
+                  gap: 0.75,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: 2,
+                  cursor: 'pointer',
+                  bgcolor: isActive ? alpha(paletteColor, 0.1) : 'transparent',
+                  border: isActive ? `1.5px solid ${alpha(paletteColor, 0.3)}` : '1.5px solid transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: alpha(paletteColor, 0.06) },
+                  flexShrink: 0,
                 }}
               >
-                <step.icon sx={{ fontSize: 24, color: `${step.color}.main` }} />
+                {isDone ? (
+                  <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                ) : (
+                  <step.icon sx={{ fontSize: 20, color: isActive ? paletteColor : 'text.secondary' }} />
+                )}
+                <Typography
+                  variant="caption"
+                  fontWeight={isActive ? 700 : 500}
+                  color={isDone ? 'success.main' : isActive ? paletteColor : 'text.secondary'}
+                  sx={{ textDecoration: isDone ? 'line-through' : 'none' }}
+                >
+                  {step.title}
+                </Typography>
               </Box>
-              <Typography variant="caption" fontWeight={600} lineHeight={1.3}>
-                {step.title}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" lineHeight={1.4} sx={{ fontSize: 11 }}>
-                {step.desc}
-              </Typography>
-            </Box>
-            {i < steps.length - 1 && (
-              <ArrowForwardIcon
-                sx={{ fontSize: 16, color: 'text.secondary', opacity: 0.3, mt: 2, flexShrink: 0 }}
-              />
-            )}
-          </React.Fragment>
-        ))}
+              {i < STEPS.length - 1 && (
+                <ArrowForwardIcon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.2, flexShrink: 0 }} />
+              )}
+            </React.Fragment>
+          );
+        })}
       </Box>
+
+      {/* Active step panel */}
+      {activeStep && (
+        <Box sx={{ px: 2.5, py: 2, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
+
+          {activeStep === 'name' && (
+            <Box display="flex" gap={1} alignItems="flex-end">
+              <TextField
+                size="small"
+                label="Profile Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Work Documents"
+                sx={{ flex: 1, maxWidth: 300 }}
+                onKeyDown={(e) => e.key === 'Enter' && handleNameDone()}
+                autoFocus
+              />
+              <Button variant="contained" size="small" onClick={handleNameDone} disabled={!name.trim()}>
+                Next
+              </Button>
+            </Box>
+          )}
+
+          {activeStep === 'drive' && (
+            <Box>
+              {drives.length === 0 ? (
+                <Button variant="outlined" size="small" onClick={loadDrives} disabled={loadingDrives}>
+                  {loadingDrives ? 'Loading...' : 'Load My Drives'}
+                </Button>
+              ) : (
+                <Box>
+                  <Box display="flex" gap={1} flexWrap="wrap" mb={1.5}>
+                    {drives.map((d) => (
+                      <Button
+                        key={d.id}
+                        variant={selectedDriveForFiles === d.id ? 'contained' : 'outlined'}
+                        size="small"
+                        onClick={() => handleDriveSelect(d)}
+                        startIcon={<CloudIcon sx={{ fontSize: 16 }} />}
+                      >
+                        {d.name}
+                      </Button>
+                    ))}
+                  </Box>
+                  {driveFiles.length > 0 && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                        Select a folder (or use drive root):
+                      </Typography>
+                      <Box display="flex" gap={0.5} flexWrap="wrap" mb={1.5}>
+                        <Button
+                          variant={driveFolderPath === '/' ? 'contained' : 'outlined'}
+                          size="small"
+                          onClick={() => { setDriveFolderId(driveId === 'root' ? 'root' : driveId); setDriveFolderPath('/'); }}
+                        >
+                          / (root)
+                        </Button>
+                        {driveFiles.map((f) => (
+                          <Button
+                            key={f.id}
+                            variant={driveFolderId === f.id ? 'contained' : 'outlined'}
+                            size="small"
+                            onClick={() => handleFolderSelect(f)}
+                            startIcon={<FolderIcon sx={{ fontSize: 14 }} />}
+                          >
+                            {f.name}
+                          </Button>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  <Button variant="contained" size="small" onClick={handleDriveDone} disabled={!driveFolderId}>
+                    Next
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {activeStep === 'local' && (
+            <Box display="flex" gap={1} alignItems="center">
+              <Button variant="outlined" size="small" onClick={handleBrowseLocal} startIcon={<FolderOpenIcon />}>
+                Choose Local Folder
+              </Button>
+              {localPath && (
+                <Typography variant="caption" color="success.main">{localPath}</Typography>
+              )}
+            </Box>
+          )}
+
+          {activeStep === 'direction' && (
+            <Box>
+              <ToggleButtonGroup
+                value={direction}
+                exclusive
+                onChange={(_e, val) => val && setDirection(val)}
+                size="small"
+                sx={{ mb: 1.5 }}
+              >
+                <ToggleButton value="download">
+                  <CloudDownloadIcon sx={{ fontSize: 16, mr: 0.5 }} /> Download
+                </ToggleButton>
+                <ToggleButton value="upload">
+                  <CloudUploadIcon sx={{ fontSize: 16, mr: 0.5 }} /> Upload
+                </ToggleButton>
+                <ToggleButton value="bidirectional">
+                  <SyncIcon sx={{ fontSize: 16, mr: 0.5 }} /> Bidirectional
+                </ToggleButton>
+              </ToggleButtonGroup>
+              <Box mb={1.5}>
+                <FormControlLabel
+                  control={<Checkbox checked={useSourceFolder} onChange={(e) => setUseSourceFolder(e.target.checked)} size="small" />}
+                  label={<Typography variant="caption">Create source folder in destination</Typography>}
+                />
+              </Box>
+              <Button variant="contained" size="small" onClick={handleDirectionDone}>Next</Button>
+            </Box>
+          )}
+
+          {activeStep === 'schedule' && (
+            <Box display="flex" gap={1} alignItems="flex-end">
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Schedule</InputLabel>
+                <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
+                  <MenuItem value="">Manual only</MenuItem>
+                  <MenuItem value="*/15 * * * *">Every 15 minutes</MenuItem>
+                  <MenuItem value="*/30 * * * *">Every 30 minutes</MenuItem>
+                  <MenuItem value="0 * * * *">Every hour</MenuItem>
+                  <MenuItem value="0 */6 * * *">Every 6 hours</MenuItem>
+                  <MenuItem value="0 0 * * *">Daily at midnight</MenuItem>
+                </Select>
+              </FormControl>
+              <Button variant="contained" size="small" onClick={handleScheduleDone}>Next</Button>
+            </Box>
+          )}
+
+          {activeStep === 'sync' && (
+            <Box>
+              {allReady ? (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" mb={1.5}>
+                    <strong>{name}</strong> — {driveName}: {driveFolderPath} → {localPath}
+                    {useSourceFolder && ` / ${driveFolderPath.split('/').filter(Boolean).pop() || driveName}`}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={handleCreateAndSync}
+                    disabled={creating}
+                    startIcon={<PlayArrowIcon />}
+                    sx={{
+                      background: `linear-gradient(135deg, ${theme.palette.success.main}, ${theme.palette.primary.main})`,
+                    }}
+                  >
+                    {creating ? 'Creating...' : 'Create Profile & Sync Now'}
+                  </Button>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="warning.main">
+                  Complete the previous steps first.
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
