@@ -11,7 +11,7 @@
     "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.main.json && electron .",
     "prebuild": "node -e \"const{config}=require('dotenv');config();const fs=require('fs');const c={clientId:process.env.GOOGLE_CLIENT_ID||'',clientSecret:process.env.GOOGLE_CLIENT_SECRET||''};if(c.clientId){fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/oauth-config.json',JSON.stringify(c));}\"",
     "build": "tsc -p tsconfig.main.json && vite build",
-    "dist": "npm run build && electron-builder build --mac",
+    "dist": "npm run build && electron-builder build --mac --publish never",
     "dist:win": "npm run build && electron-builder build --win",
     "dist:linux": "npm run build && electron-builder build --linux",
     "dist:all": "npm run build && electron-builder build --mac --win --linux",
