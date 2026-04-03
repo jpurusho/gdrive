@@ -270,7 +270,28 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('app:getVersion', () => app.getVersion());
-  ipcMain.handle('app:checkForUpdates', async () => {});
+  ipcMain.handle('app:checkForUpdates', async () => {
+    const { autoUpdater } = require('electron-updater');
+    const { getSetting } = require('./services/database');
+
+    const ghToken = getSetting('github_token') || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+    if (ghToken) {
+      autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'jpurusho',
+        repo: 'gdrive',
+        token: ghToken,
+      });
+    }
+
+    try {
+      const result = await autoUpdater.checkForUpdatesAndNotify();
+      return result?.updateInfo?.version || null;
+    } catch (err: any) {
+      console.error('[Update] Check failed:', err?.message);
+      throw new Error(err?.message || 'Update check failed');
+    }
+  });
   ipcMain.handle('app:getPlatform', () => process.platform);
   ipcMain.handle('app:getSetting', (_event, key: string) => {
     try { return getSetting(key); } catch { return null; }

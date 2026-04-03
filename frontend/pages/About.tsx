@@ -34,6 +34,7 @@ export default function About() {
   const [version, setVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [checking, setChecking] = useState(false);
+  const [updateResult, setUpdateResult] = useState<string | null>(null);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
@@ -42,7 +43,19 @@ export default function About() {
 
   async function checkUpdates() {
     setChecking(true);
-    try { await window.api.app.checkForUpdates(); } finally { setChecking(false); }
+    setUpdateResult(null);
+    try {
+      const newVersion = await window.api.app.checkForUpdates();
+      if (newVersion) {
+        setUpdateResult(`Update available: v${newVersion}. Downloading...`);
+      } else {
+        setUpdateResult('You are on the latest version.');
+      }
+    } catch (err: any) {
+      setUpdateResult(err?.message || 'Update check failed');
+    } finally {
+      setChecking(false);
+    }
   }
 
   return (
@@ -166,9 +179,14 @@ export default function About() {
       </Box>
 
       {/* Update */}
-      <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
-        {checking ? 'Checking...' : 'Check for Updates'}
-      </Button>
+      <Box display="flex" alignItems="center" gap={2}>
+        <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
+          {checking ? 'Checking...' : 'Check for Updates'}
+        </Button>
+        {updateResult && (
+          <Typography variant="caption" color="text.secondary">{updateResult}</Typography>
+        )}
+      </Box>
     </Box>
   );
 }
