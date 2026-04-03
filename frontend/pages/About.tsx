@@ -41,15 +41,21 @@ export default function About() {
     window.api.app.getPlatform().then(setPlatform);
   }, []);
 
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+
   async function checkUpdates() {
     setChecking(true);
     setUpdateResult(null);
+    setUpdateUrl(null);
     try {
-      const newVersion = await window.api.app.checkForUpdates();
-      if (newVersion) {
-        setUpdateResult(`Update available: v${newVersion}. Downloading...`);
+      const result = await window.api.app.checkForUpdates();
+      if (result.status === 'available') {
+        setUpdateResult(`Update available: v${result.version}`);
+        setUpdateUrl(result.url || null);
+      } else if (result.status === 'latest') {
+        setUpdateResult(`You're on the latest version (v${result.version}).`);
       } else {
-        setUpdateResult('You are on the latest version.');
+        setUpdateResult(result.message || 'Update check failed');
       }
     } catch (err: any) {
       setUpdateResult(err?.message || 'Update check failed');
@@ -179,12 +185,24 @@ export default function About() {
       </Box>
 
       {/* Update */}
-      <Box display="flex" alignItems="center" gap={2}>
+      <Box display="flex" flexDirection="column" gap={1} alignItems="flex-start">
         <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
           {checking ? 'Checking...' : 'Check for Updates'}
         </Button>
         {updateResult && (
-          <Typography variant="caption" color="text.secondary">{updateResult}</Typography>
+          <Typography variant="caption" color={updateUrl ? 'primary.main' : 'text.secondary'} fontWeight={updateUrl ? 600 : 400}>
+            {updateResult}
+          </Typography>
+        )}
+        {updateUrl && (
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => window.api.app.openExternal(updateUrl)}
+            sx={{ textTransform: 'none' }}
+          >
+            Download from GitHub
+          </Button>
         )}
       </Box>
     </Box>

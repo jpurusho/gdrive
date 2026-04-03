@@ -42,6 +42,7 @@ const api: ElectronAPI = {
     getInfo: () => ipcRenderer.invoke('backup:getInfo'),
   },
   app: {
+    openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
     getDataDir: () => ipcRenderer.invoke('app:getDataDir'),
     setDataDir: (dir: string) => ipcRenderer.invoke('app:setDataDir', dir),
     getVersion: () => ipcRenderer.invoke('app:getVersion'),

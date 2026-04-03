@@ -183,8 +183,9 @@ export interface ElectronAPI {
   app: {
     getDataDir: () => Promise<string>;
     setDataDir: (dir: string) => Promise<{ success: boolean; message: string }>;
+    openExternal: (url: string) => Promise<void>;
     getVersion: () => Promise<string>;
-    checkForUpdates: () => Promise<string | null>;
+    checkForUpdates: () => Promise<{ status: 'available' | 'latest' | 'error'; version?: string; url?: string; message?: string }>;
     getPlatform: () => Promise<string>;
     getSetting: (key: string) => Promise<string | null>;
     setSetting: (key: string, value: string) => Promise<void>;

@@ -269,27 +269,56 @@ export function registerIpcHandlers(): void {
     return { success: true, message: 'Data directory changed. Restart the app to apply.' };
   });
 
+  ipcMain.handle('app:openExternal', (_event, url: string) => {
+    const { shell } = require('electron');
+    shell.openExternal(url);
+  });
+
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
-    const { autoUpdater } = require('electron-updater');
-    const { getSetting } = require('./services/database');
-
+    const currentVersion = app.getVersion();
     const ghToken = getSetting('github_token') || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-    if (ghToken) {
-      autoUpdater.setFeedURL({
-        provider: 'github',
-        owner: 'jpurusho',
-        repo: 'gdrive',
-        token: ghToken,
-      });
-    }
 
     try {
-      const result = await autoUpdater.checkForUpdatesAndNotify();
-      return result?.updateInfo?.version || null;
+      // Fetch latest release from GitHub API
+      const https = require('https');
+      const options: any = {
+        hostname: 'api.github.com',
+        path: '/repos/jpurusho/gdrive/releases/latest',
+        headers: { 'User-Agent': 'gsync-updater' },
+      };
+      if (ghToken) options.headers['Authorization'] = `token ${ghToken}`;
+
+      const release: any = await new Promise((resolve, reject) => {
+        https.get(options, (res: any) => {
+          let data = '';
+          res.on('data', (chunk: string) => { data += chunk; });
+          res.on('end', () => {
+            if (res.statusCode === 200) resolve(JSON.parse(data));
+            else reject(new Error(`GitHub API ${res.statusCode}: ${data.slice(0, 200)}`));
+          });
+        }).on('error', reject);
+      });
+
+      const latestVersion = release.tag_name?.replace(/^v/, '') || '';
+      const downloadUrl = release.html_url || '';
+
+      if (!latestVersion) return { status: 'error', message: 'Could not determine latest version' };
+
+      // Simple semver comparison
+      const current = currentVersion.split('.').map(Number);
+      const latest = latestVersion.split('.').map(Number);
+      const isNewer = latest[0] > current[0]
+        || (latest[0] === current[0] && latest[1] > current[1])
+        || (latest[0] === current[0] && latest[1] === current[1] && latest[2] > current[2]);
+
+      if (isNewer) {
+        return { status: 'available', version: latestVersion, url: downloadUrl };
+      }
+      return { status: 'latest', version: currentVersion };
     } catch (err: any) {
       console.error('[Update] Check failed:', err?.message);
-      throw new Error(err?.message || 'Update check failed');
+      return { status: 'error', message: err?.message || 'Update check failed' };
     }
   });
   ipcMain.handle('app:getPlatform', () => process.platform);
