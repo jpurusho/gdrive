@@ -51,6 +51,13 @@ export class GoogleDriveService {
         type: 'my_drive',
         permission: 'owner',
       });
+      // "Shared with me" virtual drive
+      drives.push({
+        id: 'shared_with_me',
+        name: 'Shared with me',
+        type: 'my_drive',
+        permission: 'reader',
+      });
     } catch (err) {
       console.error('Failed to get My Drive info:', err);
     }
@@ -91,14 +98,20 @@ export class GoogleDriveService {
 
   async listFiles(driveId: string, folderId: string): Promise<DriveFile[]> {
     const files: DriveFile[] = [];
-    const isSharedDrive = driveId !== 'root';
+    const isSharedWithMe = driveId === 'shared_with_me';
+    const isSharedDrive = !isSharedWithMe && driveId !== 'root';
     const parentId = folderId || (isSharedDrive ? driveId : 'root');
 
     try {
       let pageToken: string | undefined;
       do {
+        // "Shared with me" uses a special query
+        const query = isSharedWithMe && folderId === 'shared_with_me'
+          ? 'sharedWithMe = true and trashed = false'
+          : `'${parentId}' in parents and trashed = false`;
+
         const res = await this.drive.files.list({
-          q: `'${parentId}' in parents and trashed = false`,
+          q: query,
           pageSize: 200,
           pageToken,
           fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,parents,shared,md5Checksum,capabilities)',

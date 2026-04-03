@@ -17,6 +17,7 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import CloudIcon from '@mui/icons-material/Cloud';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import PeopleIcon from '@mui/icons-material/People';
 import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -251,7 +252,9 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                     )}
                   </ListItemIcon>
                   <ListItemIcon sx={{ minWidth: 28 }}>
-                    {drive.type === 'shared_drive' ? (
+                    {drive.id === 'shared_with_me' ? (
+                      <PeopleIcon sx={{ fontSize: 18, color: '#10b981' }} />
+                    ) : drive.type === 'shared_drive' ? (
                       <GroupWorkIcon sx={{ fontSize: 18, color: drive.colorRgb || '#8b5cf6' }} />
                     ) : (
                       <CloudIcon sx={{ fontSize: 18, color: '#6366f1' }} />
