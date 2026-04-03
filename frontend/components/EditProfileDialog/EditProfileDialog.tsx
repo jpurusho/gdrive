@@ -11,6 +11,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   FormControl,
+  FormControlLabel,
+  Checkbox,
   InputLabel,
   Select,
   MenuItem,
@@ -40,6 +42,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const [name, setName] = useState('');
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
+  const [useSourceFolderName, setUseSourceFolderName] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
@@ -49,6 +52,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       setName(profile.name);
       setLocalPath(profile.localPath);
       setDirection(profile.syncDirection);
+      setUseSourceFolderName(profile.useSourceFolderName);
       setFileFilter(profile.fileFilter || '');
       setSchedule(profile.schedule || '');
     }
@@ -67,6 +71,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       const updates: Partial<SyncProfile> = {
         name: name.trim(),
         syncDirection: direction,
+        useSourceFolderName,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
       };
@@ -173,6 +178,11 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
             </Typography>
           )}
         </Box>
+
+        <FormControlLabel
+          control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
+          label={<Typography variant="body2">Create source folder in destination</Typography>}
+        />
 
         {/* Sync direction */}
         <Box>

@@ -7,6 +7,8 @@ import Sidebar from '../components/Layout/Sidebar';
 import DriveTree from '../components/DriveTree/DriveTree';
 import LocalTree from '../components/LocalTree/LocalTree';
 import SyncStatus from '../components/SyncStatus/SyncStatus';
+import WorkflowGuide from '../components/WorkflowGuide/WorkflowGuide';
+import WelcomeSplash from '../components/WelcomeSplash/WelcomeSplash';
 import Profiles from './Profiles';
 import Settings from './Settings';
 import History from './History';
@@ -338,6 +340,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         {currentPage === 'history' && <History />}
         {currentPage === 'settings' && <Settings />}
         {currentPage === 'about' && <About />}
+
+        <WelcomeSplash />
       </Box>
     </Box>
   );

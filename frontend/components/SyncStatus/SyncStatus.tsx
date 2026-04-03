@@ -25,6 +25,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import WorkflowGuide from '../WorkflowGuide/WorkflowGuide';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
 
 const spin = keyframes`
@@ -81,20 +82,7 @@ export default function SyncStatus() {
   }
 
   if (profiles.length === 0) {
-    return (
-      <Box
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          border: (t) => `1px dashed ${alpha(t.palette.divider, 0.3)}`,
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          No sync profiles yet. Go to Profiles to create one.
-        </Typography>
-      </Box>
-    );
+    return <WorkflowGuide />;
   }
 
   return (

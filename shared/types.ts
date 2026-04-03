@@ -71,6 +71,7 @@ export interface SyncProfile {
   driveFolderPath: string;
   localPath: string;
   syncDirection: SyncDirection;
+  useSourceFolderName: boolean;
   fileFilter?: string;
   schedule?: string;
   isActive: boolean;

@@ -496,13 +496,21 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     throw new Error('Sync already in progress for this profile');
   }
 
-  const session = createSession(profileId, profile.name);
-  const ctx: SyncContext = { profile, driveService, session, cancelled: false };
+  // If useSourceFolderName is enabled, append the drive folder name to the local path
+  let effectiveProfile = profile;
+  if (profile.useSourceFolderName) {
+    const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
+    const effectivePath = path.join(profile.localPath, folderName);
+    effectiveProfile = { ...profile, localPath: effectivePath };
+  }
+
+  const session = createSession(profileId, effectiveProfile.name);
+  const ctx: SyncContext = { profile: effectiveProfile, driveService, session, cancelled: false };
   activeSyncs.set(profileId, ctx);
 
-  console.log(`[Sync] Starting ${profile.syncDirection} sync for "${profile.name}"`);
-  console.log(`[Sync]   Drive: ${profile.driveName} (${profile.driveId}), folder: ${profile.driveFolderPath} (${profile.driveFolderId})`);
-  console.log(`[Sync]   Local: ${profile.localPath}`);
+  console.log(`[Sync] Starting ${effectiveProfile.syncDirection} sync for "${effectiveProfile.name}"`);
+  console.log(`[Sync]   Drive: ${effectiveProfile.driveName} (${effectiveProfile.driveId}), folder: ${effectiveProfile.driveFolderPath} (${effectiveProfile.driveFolderId})`);
+  console.log(`[Sync]   Local: ${effectiveProfile.localPath}${profile.useSourceFolderName ? ' (source folder name)' : ''}`);
 
   sendProgress(session);
 

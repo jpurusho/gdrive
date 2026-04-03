@@ -3,6 +3,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  FormControlLabel,
+  Checkbox,
   DialogActions,
   Button,
   TextField,
@@ -211,6 +213,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [folderSel, setFolderSel] = useState<FolderSelection | null>(null);
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
+  const [useSourceFolderName, setUseSourceFolderName] = useState(true);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
@@ -230,6 +233,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setFolderSel(null);
     setLocalPath('');
     setDirection('download');
+    setUseSourceFolderName(true);
     setFileFilter('');
     setSchedule('');
     setError('');
@@ -256,6 +260,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         driveFolderPath: folderSel.folderPath,
         localPath,
         syncDirection: direction,
+        useSourceFolderName,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
         isActive: true,
@@ -319,6 +324,12 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
             </Button>
           </Box>
         </Box>
+
+        {/* Source folder name option */}
+        <FormControlLabel
+          control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
+          label={<Typography variant="body2">Create source folder in destination (e.g., <code>{folderSel ? folderSel.folderPath.split('/').filter(Boolean).pop() || folderSel.driveName : 'My Folder'}/</code>)</Typography>}
+        />
 
         {/* Sync direction */}
         <Box>
