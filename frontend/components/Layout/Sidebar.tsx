@@ -29,8 +29,7 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
-  { id: 'profiles', label: 'Profiles', icon: SyncIcon },
+  { id: 'home', label: 'Home', icon: DashboardIcon },
   { id: 'history', label: 'History', icon: HistoryIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
   { id: 'about', label: 'About', icon: InfoOutlinedIcon },

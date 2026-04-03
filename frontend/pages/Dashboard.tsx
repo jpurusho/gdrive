@@ -1,106 +1,24 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, alpha } from '@mui/material';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
-import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, alpha } from '@mui/material';
 import Sidebar from '../components/Layout/Sidebar';
-import DriveTree from '../components/DriveTree/DriveTree';
-import LocalTree from '../components/LocalTree/LocalTree';
-import SyncStatus from '../components/SyncStatus/SyncStatus';
-import WorkflowGuide from '../components/WorkflowGuide/WorkflowGuide';
-import WelcomeSplash from '../components/WelcomeSplash/WelcomeSplash';
-import Profiles from './Profiles';
+import StatsBar from '../components/StatsBar/StatsBar';
+import ProfileList from '../components/ProfileList/ProfileList';
+import ProfileDetail from '../components/ProfileDetail/ProfileDetail';
+import EmptyState from '../components/EmptyState/EmptyState';
+import CreateProfileDialog from '../components/CreateProfileDialog/CreateProfileDialog';
 import Settings from './Settings';
 import History from './History';
 import About from './About';
+import WelcomeSplash from '../components/WelcomeSplash/WelcomeSplash';
 import { useAppSettings } from '../context/AppSettingsContext';
-import type { UserInfo } from '../../shared/types';
+import type { UserInfo, SyncProfile, SyncSession } from '../../shared/types';
 
 interface DashboardProps {
   user: UserInfo;
   onLogout: () => void;
 }
 
-type Page = 'dashboard' | 'profiles' | 'history' | 'settings' | 'about';
-
-const LAYOUT_KEY = 'gdrive-sync-layout';
-
-interface LayoutState {
-  swapExplorers: boolean;
-  statusOnTop: boolean;
-}
-
-function loadLayout(): LayoutState {
-  try {
-    const raw = localStorage.getItem(LAYOUT_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { swapExplorers: false, statusOnTop: false };
-}
-
-function saveLayout(layout: LayoutState): void {
-  try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout)); } catch {}
-}
-
-function ResizeHandle({ onDrag }: { onDrag: (deltaY: number) => void }) {
-  const dragging = useRef(false);
-  const lastY = useRef(0);
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-    lastY.current = e.clientY;
-
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!dragging.current) return;
-      const delta = ev.clientY - lastY.current;
-      lastY.current = ev.clientY;
-      onDrag(delta);
-    };
-
-    const onMouseUp = () => {
-      dragging.current = false;
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none';
-  }, [onDrag]);
-
-  return (
-    <Box
-      onMouseDown={onMouseDown}
-      sx={{
-        height: 8,
-        cursor: 'row-resize',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        mx: 2,
-        '&:hover > div, &:active > div': {
-          bgcolor: (t) => alpha(t.palette.primary.main, 0.5),
-          width: 60,
-        },
-      }}
-    >
-      <Box
-        sx={{
-          width: 40,
-          height: 3,
-          borderRadius: 1.5,
-          bgcolor: (t) => alpha(t.palette.divider, 0.4),
-          transition: 'all 0.2s',
-        }}
-      />
-    </Box>
-  );
-}
+type Page = 'home' | 'history' | 'settings' | 'about';
 
 function formatDate(): string {
   return new Date().toLocaleDateString('en-US', {
@@ -111,131 +29,78 @@ function formatDate(): string {
   });
 }
 
-function ExplorerPanel({ children, highlight }: { children: React.ReactNode; highlight?: boolean }) {
-  return (
-    <Box
-      flex={1}
-      sx={{
-        borderRadius: 3,
-        border: (t) => highlight
-          ? `2px solid ${t.palette.primary.main}`
-          : `1.5px solid ${alpha(t.palette.primary.light, 0.35)}`,
-        bgcolor: 'background.paper',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        boxShadow: highlight ? (t: any) => `0 0 12px ${alpha(t.palette.primary.main, 0.2)}` : 'none',
-        transition: 'border 0.3s, box-shadow 0.3s',
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
-
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [statusHeight, setStatusHeight] = useState(180);
+  const [currentPage, setCurrentPage] = useState<Page>('home');
   const [version, setVersion] = useState('');
-  const [layout, setLayoutState] = useState<LayoutState>(loadLayout);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [hasProfiles, setHasProfiles] = useState<boolean | null>(null);
-  const [workflowStep, setWorkflowStep] = useState<string | null>(null);
-  const [driveSelection, setDriveSelection] = useState<{ data: any; ts: number } | null>(null);
-  const [localSelection, setLocalSelection] = useState<{ path: string; ts: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [profiles, setProfiles] = useState<SyncProfile[]>([]);
+  const [sessions, setSessions] = useState<Record<number, SyncSession>>({});
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { appTitle } = useAppSettings();
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
-    window.api.sync.getProfiles().then((p) => setHasProfiles(p.length > 0));
+    window.api.app.onFullscreenChange(setIsFullScreen);
+    loadProfiles();
 
-    // Listen for native fullscreen events from Electron main process
-    const unsub = window.api.app.onFullscreenChange(setIsFullScreen);
+    const unsub = window.api.sync.onSyncProgress((session) => {
+      setSessions((prev) => ({ ...prev, [session.profileId]: session }));
+      if (session.status === 'completed' || session.status === 'failed') {
+        loadProfiles();
+      }
+    });
     return unsub;
   }, []);
 
-  function setLayout(update: Partial<LayoutState>) {
-    setLayoutState((prev) => {
-      const next = { ...prev, ...update };
-      saveLayout(next);
-      return next;
-    });
+  async function loadProfiles() {
+    try {
+      const result = await window.api.sync.getProfiles();
+      setProfiles(result);
+      // Auto-select first profile if none selected
+      if (result.length > 0 && !selectedProfileId) {
+        setSelectedProfileId(result[0].id);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const handleResize = useCallback((deltaY: number) => {
-    setStatusHeight((prev) => {
-      const containerH = containerRef.current?.clientHeight || 600;
-      const maxH = containerH - 200;
-      const minH = 80;
-      // When status is on top, drag direction is inverted
-      return Math.max(minH, Math.min(maxH, prev - deltaY));
-    });
-  }, []);
+  async function handleSync(profileId: number) {
+    await window.api.sync.startSync(profileId);
+  }
 
-  const handleResizeInverted = useCallback((deltaY: number) => {
-    setStatusHeight((prev) => {
-      const containerH = containerRef.current?.clientHeight || 600;
-      const maxH = containerH - 200;
-      const minH = 80;
-      return Math.max(minH, Math.min(maxH, prev + deltaY));
-    });
-  }, []);
+  async function handlePause(profileId: number) {
+    await window.api.sync.cancelSync(profileId);
+  }
 
-  const driveSelectionMode = workflowStep === 'drive';
-  const localSelectionMode = workflowStep === 'local';
+  async function handleDelete(profileId: number) {
+    await window.api.sync.deleteProfile(profileId);
+    setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+    if (selectedProfileId === profileId) {
+      setSelectedProfileId(profiles.find((p) => p.id !== profileId)?.id || null);
+    }
+  }
 
-  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => setDriveSelection({ data: info, ts: Date.now() })} />;
-  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => setLocalSelection({ path: p, ts: Date.now() })} />;
+  function handleCreate(profile: SyncProfile) {
+    setProfiles((prev) => [profile, ...prev]);
+    setSelectedProfileId(profile.id);
+    handleSync(profile.id);
+  }
 
-  const leftPanel = layout.swapExplorers ? localTree : driveTree;
-  const rightPanel = layout.swapExplorers ? driveTree : localTree;
+  function handleUpdated(updated: SyncProfile) {
+    setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+  }
 
-  const explorersSection = (
-    <Box flex={1} display="flex" gap={2} minHeight={150} position="relative">
-      <ExplorerPanel highlight={layout.swapExplorers ? localSelectionMode : driveSelectionMode}>{leftPanel}</ExplorerPanel>
-
-      {/* Swap button between panels */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: '50%',
-          top: 6,
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-        }}
-        className="titlebar-nodrag"
-      >
-        <Tooltip title="Swap panels">
-          <IconButton
-            size="small"
-            onClick={() => setLayout({ swapExplorers: !layout.swapExplorers })}
-            sx={{
-              bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
-              border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
-              backdropFilter: 'blur(8px)',
-              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
-              width: 28,
-              height: 28,
-            }}
-          >
-            <SwapHorizIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      <ExplorerPanel highlight={layout.swapExplorers ? driveSelectionMode : localSelectionMode}>{rightPanel}</ExplorerPanel>
-    </Box>
-  );
-
-  // statusSection is now inlined in the dashboard layout
+  const selectedProfile = profiles.find((p) => p.id === selectedProfileId);
 
   return (
     <Box display="flex" height="100vh" overflow="hidden">
       <Sidebar user={user} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
 
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden" sx={{ background: (t) => t.palette.background.default }}>
-        {/* Titlebar — reduced padding when fullscreen (traffic lights hidden) */}
+        {/* Titlebar */}
         <Box
           className="titlebar-drag"
           sx={{
@@ -291,42 +156,56 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           </Box>
         </Box>
 
-        {currentPage === 'dashboard' && (
-          <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={0}>
-            {/* Workflow wizard — always on top */}
-            <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: hasProfiles ? '30vh' : '45vh', mb: 0 }}>
-              <WorkflowGuide
-                onProfileCreated={() => { setHasProfiles(true); setWorkflowStep(null); }}
-                onActiveStepChange={(step) => setWorkflowStep(step)}
-                externalDriveSelection={driveSelection}
-                externalLocalSelection={localSelection}
-              />
-            </Box>
-
-            <ResizeHandle onDrag={hasProfiles ? handleResizeInverted : handleResize} />
-
-            {/* File explorers — middle */}
-            {explorersSection}
-
-            {/* Status table — bottom, when profiles exist */}
-            {hasProfiles && (
+        {/* Home page — profile command center */}
+        {currentPage === 'home' && (
+          <Box flex={1} display="flex" flexDirection="column" overflow="hidden">
+            {profiles.length === 0 && !loading ? (
+              <EmptyState onCreateProfile={() => setCreateOpen(true)} />
+            ) : (
               <>
-                <ResizeHandle onDrag={handleResize} />
-                <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto' }}>
-                  <SyncStatus />
+                <StatsBar profiles={profiles} sessions={sessions} />
+                <Box flex={1} display="flex" overflow="hidden">
+                  <ProfileList
+                    profiles={profiles}
+                    sessions={sessions}
+                    selectedId={selectedProfileId}
+                    onSelect={setSelectedProfileId}
+                    onAdd={() => setCreateOpen(true)}
+                  />
+                  {selectedProfile ? (
+                    <ProfileDetail
+                      profile={selectedProfile}
+                      session={sessions[selectedProfile.id]}
+                      onSync={() => handleSync(selectedProfile.id)}
+                      onPause={() => handlePause(selectedProfile.id)}
+                      onDelete={() => handleDelete(selectedProfile.id)}
+                      onUpdated={handleUpdated}
+                    />
+                  ) : (
+                    <Box flex={1} display="flex" alignItems="center" justifyContent="center">
+                      <Typography variant="body2" color="text.secondary">
+                        Select a profile to view details
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </>
             )}
           </Box>
         )}
 
-        {currentPage === 'profiles' && <Profiles />}
         {currentPage === 'history' && <History />}
         {currentPage === 'settings' && <Settings />}
         {currentPage === 'about' && <About />}
 
         <WelcomeSplash />
       </Box>
+
+      <CreateProfileDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={handleCreate}
+      />
     </Box>
   );
 }
