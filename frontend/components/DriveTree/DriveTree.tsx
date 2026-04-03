@@ -197,17 +197,15 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
         <Box display="flex" alignItems="center" gap={1}>
           <CloudIcon sx={{ fontSize: 18, color: 'primary.main' }} />
           <Typography variant="subtitle2" fontWeight={700}>Google Drive</Typography>
-          {selectionMode && !selectedFolder && (
-            <Chip label="Navigate & select" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
-          )}
         </Box>
         <Box display="flex" alignItems="center" gap={0.5}>
-          {selectionMode && selectedFolder && (
+          {selectionMode && (
             <Button
               size="small"
               variant="contained"
               color="success"
-              onClick={() => onFolderSelect?.(selectedFolder)}
+              disabled={!selectedFolder}
+              onClick={() => selectedFolder && onFolderSelect?.(selectedFolder)}
               sx={{ height: 24, fontSize: 11, textTransform: 'none', px: 1.5 }}
             >
               Use this folder

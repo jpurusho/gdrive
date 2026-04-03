@@ -203,12 +203,13 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
           )}
         </Box>
         <Box display="flex" gap={0.5}>
-          {selectionMode && rootPath && (
+          {selectionMode && (
             <Button
               size="small"
               variant="contained"
               color="success"
-              onClick={() => onFolderSelect?.(rootPath)}
+              disabled={!rootPath}
+              onClick={() => rootPath && onFolderSelect?.(rootPath)}
               sx={{ height: 24, fontSize: 11, textTransform: 'none', px: 1.5 }}
             >
               Use this folder
