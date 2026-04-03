@@ -12,6 +12,7 @@ import {
   MenuItem,
   FormControlLabel,
   Checkbox,
+  Chip,
   alpha,
   useTheme,
 } from '@mui/material';
@@ -277,10 +278,65 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
         })}
       </Box>
 
-      {/* Active step panel */}
-      {activeStep && (
-        <Box sx={{ px: 2.5, py: 2, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
+      {/* Summary + active step panel */}
+      {(activeStep || name || driveFolderId || localPath) && (
+        <Box sx={{ px: 2.5, py: 1.5, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
 
+          {/* Always-visible summary of completed selections */}
+          <Box display="flex" flexWrap="wrap" gap={1} mb={activeStep ? 1.5 : 0}>
+            {name && (
+              <Chip
+                icon={<AddCircleOutlineIcon sx={{ fontSize: '14px !important' }} />}
+                label={name}
+                size="small"
+                variant="outlined"
+                onDelete={() => { setName(''); completed.delete('name'); setCompleted(new Set(completed)); }}
+                sx={{ height: 24, fontSize: 11 }}
+              />
+            )}
+            {driveFolderId && (
+              <Chip
+                icon={<CloudIcon sx={{ fontSize: '14px !important' }} />}
+                label={`${driveName}: ${driveFolderPath}`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                onDelete={() => { setDriveFolderId(''); setDriveFolderPath(''); completed.delete('drive'); setCompleted(new Set(completed)); }}
+                sx={{ height: 24, fontSize: 11 }}
+              />
+            )}
+            {localPath && (
+              <Chip
+                icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
+                label={localPath}
+                size="small"
+                color="success"
+                variant="outlined"
+                onDelete={() => { setLocalPath(''); completed.delete('local'); setCompleted(new Set(completed)); }}
+                sx={{ height: 24, fontSize: 11 }}
+              />
+            )}
+            {completed.has('direction') && (
+              <Chip
+                icon={<SyncIcon sx={{ fontSize: '14px !important' }} />}
+                label={direction}
+                size="small"
+                variant="outlined"
+                sx={{ height: 24, fontSize: 11 }}
+              />
+            )}
+            {completed.has('schedule') && schedule && (
+              <Chip
+                icon={<ScheduleIcon sx={{ fontSize: '14px !important' }} />}
+                label={schedule}
+                size="small"
+                variant="outlined"
+                sx={{ height: 24, fontSize: 11 }}
+              />
+            )}
+          </Box>
+
+          {/* Active step input */}
           {activeStep === 'name' && (
             <Box display="flex" gap={1} alignItems="flex-end">
               <TextField
@@ -299,36 +355,16 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
             </Box>
           )}
 
-          {activeStep === 'drive' && (
-            <Box>
-              {driveFolderId ? (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                  <Typography variant="body2" color="success.main">{driveName}: {driveFolderPath}</Typography>
-                  <Button size="small" variant="text" onClick={() => { setDriveFolderId(''); setDriveFolderPath(''); }}>Change</Button>
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Navigate in the <strong>Google Drive</strong> explorer and click <strong>Confirm</strong> to select a folder.
-                </Typography>
-              )}
-            </Box>
+          {activeStep === 'drive' && !driveFolderId && (
+            <Typography variant="body2" color="text.secondary">
+              Navigate in the <strong>Google Drive</strong> explorer and click <strong>Select folder</strong>.
+            </Typography>
           )}
 
-          {activeStep === 'local' && (
-            <Box>
-              {localPath ? (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                  <Typography variant="body2" color="success.main">{localPath}</Typography>
-                  <Button size="small" variant="text" onClick={() => setLocalPath('')}>Change</Button>
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Navigate in the <strong>Local Files</strong> explorer and click <strong>Select</strong> to choose a folder.
-                </Typography>
-              )}
-            </Box>
+          {activeStep === 'local' && !localPath && (
+            <Typography variant="body2" color="text.secondary">
+              Navigate in the <strong>Local Files</strong> explorer and click <strong>Select folder</strong>.
+            </Typography>
           )}
 
           {activeStep === 'direction' && (
