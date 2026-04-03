@@ -103,6 +103,14 @@ function createWindow(): void {
     mainWindow?.show();
   });
 
+  // Also detect maximize/unmaximize for layout adjustments
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send('app:fullscreenChange', true);
+  });
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send('app:fullscreenChange', false);
+  });
+
   // Send fullscreen state to renderer for layout adjustments
   mainWindow.on('enter-full-screen', () => {
     mainWindow?.webContents.send('app:fullscreenChange', true);
