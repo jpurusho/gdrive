@@ -92,8 +92,20 @@ function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, se
           <FolderIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
         </ListItemIcon>
         <ListItemText primary={file.name} primaryTypographyProps={{ fontSize: 13, noWrap: true }} />
-        {selectionMode && selectedFolderId === file.id && (
-          <CheckIcon sx={{ fontSize: 16, color: 'success.main' }} />
+        {selectionMode && (
+          <Button
+            size="small"
+            variant={selectedFolderId === file.id ? 'contained' : 'outlined'}
+            color={selectedFolderId === file.id ? 'success' : 'primary'}
+            onClick={(e) => {
+              e.stopPropagation();
+              const folderPath = `${parentPath}${file.name}/`;
+              onSelect?.({ driveId, driveName, driveType, folderId: file.id, folderPath });
+            }}
+            sx={{ ml: 1, height: 22, fontSize: 10, textTransform: 'none', minWidth: 40 }}
+          >
+            {selectedFolderId === file.id ? 'Selected' : 'Use'}
+          </Button>
         )}
       </ListItemButton>
       <Collapse in={open} timeout="auto">
@@ -202,18 +214,6 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
           )}
         </Box>
         <Box display="flex" alignItems="center" gap={0.5}>
-          {selectionMode && (
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<CheckIcon sx={{ fontSize: 14 }} />}
-              onClick={() => selectedFolder && onFolderSelect?.(selectedFolder)}
-              disabled={!selectedFolder}
-              sx={{ height: 28, fontSize: 12, textTransform: 'none', px: 2 }}
-            >
-              {selectedFolder ? 'Select folder' : 'Click a folder'}
-            </Button>
-          )}
           <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>
             <RefreshIcon sx={{ fontSize: 18 }} />
           </IconButton>
@@ -277,11 +277,25 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                         : drive.permission === 'writer' ? 'primary.main' : 'text.secondary',
                     }}
                   />
+                  {selectionMode && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const fid = drive.id === 'root' ? 'root' : drive.id;
+                        onFolderSelect?.({ driveId: drive.id, driveName: drive.name, driveType: drive.type, folderId: fid, folderPath: '/' });
+                      }}
+                      sx={{ ml: 1, height: 22, fontSize: 10, textTransform: 'none', minWidth: 40 }}
+                    >
+                      Use
+                    </Button>
+                  )}
                 </ListItemButton>
                 <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                   {(driveFiles[drive.id] || []).map((file) =>
                     file.isFolder ? (
-                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
+                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={(info) => { setSelectedFolder(info); if (selectionMode) onFolderSelect?.(info); }} />
                     ) : (
                       <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>

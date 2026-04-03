@@ -203,17 +203,15 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
           )}
         </Box>
         <Box display="flex" gap={0.5}>
-          {selectionMode && (
+          {selectionMode && rootPath && (
             <Button
               size="small"
               variant="contained"
               color="success"
-              startIcon={<CheckIcon sx={{ fontSize: 14 }} />}
-              onClick={() => rootPath && onFolderSelect?.(rootPath)}
-              disabled={!rootPath}
-              sx={{ height: 28, fontSize: 12, textTransform: 'none', px: 2 }}
+              onClick={() => onFolderSelect?.(rootPath)}
+              sx={{ height: 24, fontSize: 11, textTransform: 'none', px: 1.5 }}
             >
-              {rootPath ? 'Select folder' : 'Navigate first'}
+              Use this folder
             </Button>
           )}
           <IconButton
