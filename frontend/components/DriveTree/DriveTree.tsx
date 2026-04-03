@@ -278,7 +278,7 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                 <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                   {(driveFiles[drive.id] || []).map((file) =>
                     file.isFolder ? (
-                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={(info) => { setSelectedFolder(info); if (selectionMode) onFolderSelect?.(info); }} />
+                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
                     ) : (
                       <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
