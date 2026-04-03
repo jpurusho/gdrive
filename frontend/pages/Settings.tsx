@@ -231,7 +231,7 @@ export default function Settings() {
         </Typography>
       ) : (
         <TableContainer
-          sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`, mb: 4, overflow: 'hidden' }}
+          sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.35)}`, mb: 4, overflow: 'hidden' }}
         >
           <Table size="small">
             <TableHead>

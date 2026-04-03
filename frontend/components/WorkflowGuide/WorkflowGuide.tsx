@@ -186,7 +186,7 @@ export default function WorkflowGuide({ onProfileCreated }: Props) {
     <Box
       sx={{
         borderRadius: 3,
-        border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.15)}`,
+        border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.4)}`,
         bgcolor: 'background.paper',
         overflow: 'hidden',
       }}

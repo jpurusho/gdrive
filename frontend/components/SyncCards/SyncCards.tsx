@@ -102,7 +102,7 @@ function ProfileCard({
                   ? alpha(theme.palette.error.main, 0.6)
                   : isCompleted
                     ? alpha(theme.palette.success.main, 0.5)
-                    : alpha(theme.palette.primary.main, 0.25)
+                    : alpha(theme.palette.primary.light, 0.35)
         }`,
         borderRadius: 3,
         transition: 'transform 0.2s, border-color 0.3s',
@@ -375,7 +375,7 @@ export default function SyncCards() {
         <Card
           sx={{
             width: 280,
-            border: (t) => `1.5px dashed ${alpha(t.palette.primary.main, 0.3)}`,
+            border: (t) => `1.5px dashed ${alpha(t.palette.primary.light, 0.4)}`,
             borderRadius: 3,
             display: 'flex',
             alignItems: 'center',

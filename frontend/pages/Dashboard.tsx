@@ -117,7 +117,7 @@ function ExplorerPanel({ children }: { children: React.ReactNode }) {
       flex={1}
       sx={{
         borderRadius: 3,
-        border: (t) => `1.5px solid ${alpha(t.palette.primary.main, 0.2)}`,
+        border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.35)}`,
         bgcolor: 'background.paper',
         overflow: 'hidden',
         display: 'flex',
@@ -293,49 +293,21 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {currentPage === 'dashboard' && (
           <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={0}>
-            {/* Workflow guide — on top when no profiles */}
-            {hasProfiles === false && (
-              <>
-                <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: '45vh' }}>
-                  <WorkflowGuide onProfileCreated={() => setHasProfiles(true)} />
-                </Box>
-                <ResizeHandle onDrag={handleResize} />
-              </>
-            )}
+            {/* Workflow wizard — always on top */}
+            <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: hasProfiles ? '30vh' : '45vh', mb: 0 }}>
+              <WorkflowGuide onProfileCreated={() => { setHasProfiles(true); }} />
+            </Box>
+
+            <ResizeHandle onDrag={hasProfiles ? handleResizeInverted : handleResize} />
 
             {/* File explorers — middle */}
             {explorersSection}
 
-            {/* Status table — bottom, only when profiles exist */}
+            {/* Status table — bottom, when profiles exist */}
             {hasProfiles && (
               <>
                 <ResizeHandle onDrag={handleResize} />
-                <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto', position: 'relative' }}>
-                  {/* Move status toggle */}
-                  <Box
-                    sx={{ position: 'absolute', right: 8, top: 6, zIndex: 10 }}
-                    className="titlebar-nodrag"
-                  >
-                    <Tooltip title={layout.statusOnTop ? 'Move status to bottom' : 'Move status to top'}>
-                      <IconButton
-                        size="small"
-                        onClick={() => setLayout({ statusOnTop: !layout.statusOnTop })}
-                        sx={{
-                          bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
-                          border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
-                          backdropFilter: 'blur(8px)',
-                          '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
-                          width: 28,
-                          height: 28,
-                        }}
-                      >
-                        {layout.statusOnTop
-                          ? <VerticalAlignBottomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          : <VerticalAlignTopIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                        }
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
+                <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto' }}>
                   <SyncStatus />
                 </Box>
               </>
