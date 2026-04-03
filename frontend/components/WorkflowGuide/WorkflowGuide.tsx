@@ -30,6 +30,11 @@ import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../
 
 interface Props {
   onProfileCreated: (profile: SyncProfile) => void;
+  onActiveStepChange?: (step: string | null) => void;
+  onDriveSelectRequest?: (callback: (info: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string }) => void) => void;
+  onLocalSelectRequest?: (callback: (path: string) => void) => void;
+  externalDriveSelection?: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string } | null;
+  externalLocalSelection?: string | null;
 }
 
 interface StepDef {
@@ -48,7 +53,7 @@ const STEPS: StepDef[] = [
   { id: 'sync', icon: PlayArrowIcon, title: 'Sync!', color: 'success' },
 ];
 
-export default function WorkflowGuide({ onProfileCreated }: Props) {
+export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, onDriveSelectRequest, onLocalSelectRequest, externalDriveSelection, externalLocalSelection }: Props) {
   const theme = useTheme();
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -77,7 +82,28 @@ export default function WorkflowGuide({ onProfileCreated }: Props) {
   }
 
   function handleStepClick(stepId: string) {
-    setActiveStep(activeStep === stepId ? null : stepId);
+    const next = activeStep === stepId ? null : stepId;
+    setActiveStep(next);
+    onActiveStepChange?.(next);
+
+    // When activating drive/local steps, request explorer selection mode
+    if (next === 'drive' && onDriveSelectRequest) {
+      onDriveSelectRequest((info) => {
+        setDriveId(info.driveId);
+        setDriveName(info.driveName);
+        setDriveType(info.driveType);
+        setDriveFolderId(info.folderId);
+        setDriveFolderPath(info.folderPath);
+        completeStep('drive');
+        handleStepClick('local');
+      });
+    } else if (next === 'local' && onLocalSelectRequest) {
+      onLocalSelectRequest((path) => {
+        setLocalPath(path);
+        completeStep('local');
+        handleStepClick('direction');
+      });
+    }
   }
 
   // Step handlers
@@ -275,67 +301,32 @@ export default function WorkflowGuide({ onProfileCreated }: Props) {
 
           {activeStep === 'drive' && (
             <Box>
-              {drives.length === 0 ? (
-                <Button variant="outlined" size="small" onClick={loadDrives} disabled={loadingDrives}>
-                  {loadingDrives ? 'Loading...' : 'Load My Drives'}
-                </Button>
-              ) : (
-                <Box>
-                  <Box display="flex" gap={1} flexWrap="wrap" mb={1.5}>
-                    {drives.map((d) => (
-                      <Button
-                        key={d.id}
-                        variant={selectedDriveForFiles === d.id ? 'contained' : 'outlined'}
-                        size="small"
-                        onClick={() => handleDriveSelect(d)}
-                        startIcon={<CloudIcon sx={{ fontSize: 16 }} />}
-                      >
-                        {d.name}
-                      </Button>
-                    ))}
-                  </Box>
-                  {driveFiles.length > 0 && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-                        Select a folder (or use drive root):
-                      </Typography>
-                      <Box display="flex" gap={0.5} flexWrap="wrap" mb={1.5}>
-                        <Button
-                          variant={driveFolderPath === '/' ? 'contained' : 'outlined'}
-                          size="small"
-                          onClick={() => { setDriveFolderId(driveId === 'root' ? 'root' : driveId); setDriveFolderPath('/'); }}
-                        >
-                          / (root)
-                        </Button>
-                        {driveFiles.map((f) => (
-                          <Button
-                            key={f.id}
-                            variant={driveFolderId === f.id ? 'contained' : 'outlined'}
-                            size="small"
-                            onClick={() => handleFolderSelect(f)}
-                            startIcon={<FolderIcon sx={{ fontSize: 14 }} />}
-                          >
-                            {f.name}
-                          </Button>
-                        ))}
-                      </Box>
-                    </Box>
-                  )}
-                  <Button variant="contained" size="small" onClick={handleDriveDone} disabled={!driveFolderId}>
-                    Next
-                  </Button>
+              {driveFolderId ? (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                  <Typography variant="body2" color="success.main">{driveName}: {driveFolderPath}</Typography>
+                  <Button size="small" variant="text" onClick={() => { setDriveFolderId(''); setDriveFolderPath(''); }}>Change</Button>
                 </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Navigate in the <strong>Google Drive</strong> explorer and click <strong>Confirm</strong> to select a folder.
+                </Typography>
               )}
             </Box>
           )}
 
           {activeStep === 'local' && (
-            <Box display="flex" gap={1} alignItems="center">
-              <Button variant="outlined" size="small" onClick={handleBrowseLocal} startIcon={<FolderOpenIcon />}>
-                Choose Local Folder
-              </Button>
-              {localPath && (
-                <Typography variant="caption" color="success.main">{localPath}</Typography>
+            <Box>
+              {localPath ? (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                  <Typography variant="body2" color="success.main">{localPath}</Typography>
+                  <Button size="small" variant="text" onClick={() => setLocalPath('')}>Change</Button>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Navigate in the <strong>Local Files</strong> explorer and click <strong>Select</strong> to choose a folder.
+                </Typography>
               )}
             </Box>
           )}

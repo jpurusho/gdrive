@@ -111,17 +111,21 @@ function formatDate(): string {
   });
 }
 
-function ExplorerPanel({ children }: { children: React.ReactNode }) {
+function ExplorerPanel({ children, highlight }: { children: React.ReactNode; highlight?: boolean }) {
   return (
     <Box
       flex={1}
       sx={{
         borderRadius: 3,
-        border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.35)}`,
+        border: (t) => highlight
+          ? `2px solid ${t.palette.primary.main}`
+          : `1.5px solid ${alpha(t.palette.primary.light, 0.35)}`,
         bgcolor: 'background.paper',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        boxShadow: highlight ? (t: any) => `0 0 12px ${alpha(t.palette.primary.main, 0.2)}` : 'none',
+        transition: 'border 0.3s, box-shadow 0.3s',
       }}
     >
       {children}
@@ -136,6 +140,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [layout, setLayoutState] = useState<LayoutState>(loadLayout);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [hasProfiles, setHasProfiles] = useState<boolean | null>(null);
+  const [workflowStep, setWorkflowStep] = useState<string | null>(null);
+  const [workflowDriveSelect, setWorkflowDriveSelect] = useState<((info: any) => void) | null>(null);
+  const [workflowLocalSelect, setWorkflowLocalSelect] = useState<((path: string) => void) | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
@@ -188,12 +195,18 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     });
   }, []);
 
-  const leftPanel = layout.swapExplorers ? <LocalTree /> : <DriveTree />;
-  const rightPanel = layout.swapExplorers ? <DriveTree /> : <LocalTree />;
+  const driveSelectionMode = workflowStep === 'drive';
+  const localSelectionMode = workflowStep === 'local';
+
+  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => { if (workflowDriveSelect) workflowDriveSelect(info); }} />;
+  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => { if (workflowLocalSelect) workflowLocalSelect(p); }} />;
+
+  const leftPanel = layout.swapExplorers ? localTree : driveTree;
+  const rightPanel = layout.swapExplorers ? driveTree : localTree;
 
   const explorersSection = (
     <Box flex={1} display="flex" gap={2} minHeight={150} position="relative">
-      <ExplorerPanel>{leftPanel}</ExplorerPanel>
+      <ExplorerPanel highlight={layout.swapExplorers ? localSelectionMode : driveSelectionMode}>{leftPanel}</ExplorerPanel>
 
       {/* Swap button between panels */}
       <Box
@@ -224,7 +237,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </Tooltip>
       </Box>
 
-      <ExplorerPanel>{rightPanel}</ExplorerPanel>
+      <ExplorerPanel highlight={layout.swapExplorers ? driveSelectionMode : localSelectionMode}>{rightPanel}</ExplorerPanel>
     </Box>
   );
 
@@ -295,7 +308,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={0}>
             {/* Workflow wizard — always on top */}
             <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: hasProfiles ? '30vh' : '45vh', mb: 0 }}>
-              <WorkflowGuide onProfileCreated={() => { setHasProfiles(true); }} />
+              <WorkflowGuide
+                onProfileCreated={() => { setHasProfiles(true); setWorkflowStep(null); }}
+                onActiveStepChange={(step) => setWorkflowStep(step)}
+                onDriveSelectRequest={(cb) => setWorkflowDriveSelect(() => cb)}
+                onLocalSelectRequest={(cb) => setWorkflowLocalSelect(() => cb)}
+              />
             </Box>
 
             <ResizeHandle onDrag={hasProfiles ? handleResizeInverted : handleResize} />

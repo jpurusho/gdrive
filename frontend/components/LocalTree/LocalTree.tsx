@@ -12,8 +12,11 @@ import {
   IconButton,
   Breadcrumbs,
   Link,
+  Button,
+  Chip,
   alpha,
 } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
 import ComputerIcon from '@mui/icons-material/Computer';
 import FolderIcon from '@mui/icons-material/Folder';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -114,7 +117,12 @@ function FolderNode({ file, depth, showHidden }: FolderNodeProps) {
   );
 }
 
-export default function LocalTree() {
+interface LocalTreeProps {
+  selectionMode?: boolean;
+  onFolderSelect?: (path: string) => void;
+}
+
+export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreeProps = {}) {
   const [rootPath, setRootPath] = useState('');
   const [files, setFiles] = useState<LocalFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,8 +198,23 @@ export default function LocalTree() {
         <Box display="flex" alignItems="center" gap={1}>
           <ComputerIcon sx={{ fontSize: 18, color: 'success.main' }} />
           <Typography variant="subtitle2" fontWeight={700}>Local Files</Typography>
+          {selectionMode && (
+            <Chip label="Navigate & select" size="small" color="success" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+          )}
         </Box>
         <Box display="flex" gap={0.5}>
+          {selectionMode && rootPath && (
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              startIcon={<CheckIcon sx={{ fontSize: 14 }} />}
+              onClick={() => onFolderSelect?.(rootPath)}
+              sx={{ height: 26, fontSize: 11, textTransform: 'none' }}
+            >
+              Select
+            </Button>
+          )}
           <IconButton
             size="small"
             onClick={() => setShowHidden(!showHidden)}

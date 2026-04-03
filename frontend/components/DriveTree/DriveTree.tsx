@@ -11,8 +11,10 @@ import {
   Collapse,
   IconButton,
   Chip,
+  Button,
   alpha,
 } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
 import CloudIcon from '@mui/icons-material/Cloud';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -33,10 +35,16 @@ function formatSize(bytes?: number): string {
 interface FolderNodeProps {
   file: DriveFile;
   driveId: string;
+  driveName: string;
+  driveType: 'my_drive' | 'shared_drive';
   depth: number;
+  parentPath: string;
+  selectionMode?: boolean;
+  selectedFolderId?: string;
+  onSelect?: (info: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string }) => void;
 }
 
-function FolderNode({ file, driveId, depth }: FolderNodeProps) {
+function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, selectionMode, selectedFolderId, onSelect }: FolderNodeProps) {
   const [open, setOpen] = useState(false);
   const [children, setChildren] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +68,17 @@ function FolderNode({ file, driveId, depth }: FolderNodeProps) {
 
   return (
     <>
-      <ListItemButton onClick={handleToggle} sx={{ pl: 2 + depth * 2, py: 0.5 }}>
+      <ListItemButton
+        onClick={() => {
+          handleToggle();
+          if (selectionMode && onSelect) {
+            const folderPath = `${parentPath}${file.name}/`;
+            onSelect({ driveId, driveName, driveType, folderId: file.id, folderPath });
+          }
+        }}
+        selected={selectionMode && selectedFolderId === file.id}
+        sx={{ pl: 2 + depth * 2, py: 0.5 }}
+      >
         <ListItemIcon sx={{ minWidth: 28 }}>
           {loading ? (
             <CircularProgress size={16} />
@@ -74,11 +92,14 @@ function FolderNode({ file, driveId, depth }: FolderNodeProps) {
           <FolderIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
         </ListItemIcon>
         <ListItemText primary={file.name} primaryTypographyProps={{ fontSize: 13, noWrap: true }} />
+        {selectionMode && selectedFolderId === file.id && (
+          <CheckIcon sx={{ fontSize: 16, color: 'success.main' }} />
+        )}
       </ListItemButton>
       <Collapse in={open} timeout="auto">
         {children.map((child) =>
           child.isFolder ? (
-            <FolderNode key={child.id} file={child} driveId={driveId} depth={depth + 1} />
+            <FolderNode key={child.id} file={child} driveId={driveId} driveName={driveName} driveType={driveType} depth={depth + 1} parentPath={`${parentPath}${file.name}/`} selectionMode={selectionMode} selectedFolderId={selectedFolderId} onSelect={onSelect} />
           ) : (
             <ListItemButton key={child.id} sx={{ pl: 2 + (depth + 1) * 2, py: 0.5 }}>
               <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
@@ -104,13 +125,19 @@ function FolderNode({ file, driveId, depth }: FolderNodeProps) {
   );
 }
 
-export default function DriveTree() {
+interface DriveTreeProps {
+  selectionMode?: boolean;
+  onFolderSelect?: (info: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string }) => void;
+}
+
+export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreeProps = {}) {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
   const [driveFiles, setDriveFiles] = useState<Record<string, DriveFile[]>>({});
   const [loadingDrives, setLoadingDrives] = useState<Set<string>>(new Set());
+  const [selectedFolder, setSelectedFolder] = useState<{ driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string } | null>(null);
 
   useEffect(() => { loadDrives(); }, []);
 
@@ -170,10 +197,26 @@ export default function DriveTree() {
         <Box display="flex" alignItems="center" gap={1}>
           <CloudIcon sx={{ fontSize: 18, color: 'primary.main' }} />
           <Typography variant="subtitle2" fontWeight={700}>Google Drive</Typography>
+          {selectionMode && (
+            <Chip label="Select a folder" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+          )}
         </Box>
-        <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>
-          <RefreshIcon sx={{ fontSize: 18 }} />
-        </IconButton>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          {selectionMode && selectedFolder && (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<CheckIcon sx={{ fontSize: 14 }} />}
+              onClick={() => onFolderSelect?.(selectedFolder)}
+              sx={{ height: 26, fontSize: 11, textTransform: 'none' }}
+            >
+              Confirm
+            </Button>
+          )}
+          <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>
+            <RefreshIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Box>
       </Box>
 
       <Box flex={1} overflow="auto">
@@ -189,7 +232,17 @@ export default function DriveTree() {
           <List dense disablePadding>
             {drives.map((drive) => (
               <React.Fragment key={drive.id}>
-                <ListItemButton onClick={() => toggleDrive(drive.id)} sx={{ py: 1 }}>
+                <ListItemButton
+                  onClick={() => {
+                    toggleDrive(drive.id);
+                    if (selectionMode) {
+                      const fid = drive.id === 'root' ? 'root' : drive.id;
+                      setSelectedFolder({ driveId: drive.id, driveName: drive.name, driveType: drive.type, folderId: fid, folderPath: '/' });
+                    }
+                  }}
+                  selected={selectionMode && selectedFolder?.driveId === drive.id && selectedFolder?.folderPath === '/'}
+                  sx={{ py: 1 }}
+                >
                   <ListItemIcon sx={{ minWidth: 28 }}>
                     {loadingDrives.has(drive.id) ? (
                       <CircularProgress size={16} />
@@ -227,7 +280,7 @@ export default function DriveTree() {
                 <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                   {(driveFiles[drive.id] || []).map((file) =>
                     file.isFolder ? (
-                      <FolderNode key={file.id} file={file} driveId={drive.id} depth={1} />
+                      <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
                     ) : (
                       <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
