@@ -11,32 +11,32 @@ import {
   StepLabel,
   alpha,
   useTheme,
-  Link,
   Divider,
+  Collapse,
 } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SettingsIcon from '@mui/icons-material/Settings';
 import type { UserInfo } from '../../shared/types';
 
 interface LoginProps {
   onLogin: (user: UserInfo) => void;
 }
 
-const SETUP_STEPS = ['Configure Google OAuth', 'Sign In'];
-
 export default function Login({ onLogin }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [hasCredentials, setHasCredentials] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [credentialsSaved, setCredentialsSaved] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
     window.api.auth.hasCredentials().then((has) => {
       setHasCredentials(has);
+      if (!has) setShowSetup(true);
       setChecking(false);
     });
   }, []);
@@ -49,7 +49,7 @@ export default function Login({ onLogin }: LoginProps) {
     setError(null);
     await window.api.auth.setCredentials(clientId.trim(), clientSecret.trim());
     setHasCredentials(true);
-    setCredentialsSaved(true);
+    setShowSetup(false);
   }
 
   async function handleLogin() {
@@ -60,16 +60,16 @@ export default function Login({ onLogin }: LoginProps) {
       onLogin(user);
     } catch (err: any) {
       const msg = err?.message || 'Login failed';
-      if (msg === 'Authentication window was closed') {
-        // User closed — not an error
+      if (msg === 'Authentication window was closed' || msg.includes('timed out')) {
+        setError(msg.includes('timed out') ? 'Login timed out. Please try again.' : null);
       } else if (msg.includes('ENOTFOUND') || msg.includes('ENETUNREACH')) {
         setError('No internet connection. Please check your network.');
       } else if (msg.includes('access_denied')) {
-        setError('Access denied. Make sure your email is added as a test user in Google Cloud Console.');
+        setError('Access denied. Your Google account may not be authorized for this app.');
       } else if (msg.includes('client_id') || msg.includes('invalid_client')) {
-        setError('Invalid Client ID or Secret. Please check your credentials.');
+        setError('Invalid OAuth credentials. Please reconfigure.');
         setHasCredentials(false);
-        setCredentialsSaved(false);
+        setShowSetup(true);
       } else {
         setError(msg);
       }
@@ -89,8 +89,6 @@ export default function Login({ onLogin }: LoginProps) {
       </Box>
     );
   }
-
-  const activeStep = hasCredentials ? 1 : 0;
 
   return (
     <Box
@@ -116,7 +114,7 @@ export default function Login({ onLogin }: LoginProps) {
           background: alpha(bgPaper, 0.6),
           backdropFilter: 'blur(20px)',
           border: `1.5px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-          maxWidth: 520,
+          maxWidth: 480,
           width: '92%',
         }}
       >
@@ -148,46 +146,77 @@ export default function Login({ onLogin }: LoginProps) {
           gsync
         </Typography>
 
-        <Typography variant="body2" color="text.secondary" textAlign="center" lineHeight={1.6} maxWidth={380}>
-          Sync your Google Drive files with local folders. To get started, you need Google OAuth credentials.
+        <Typography variant="body2" color="text.secondary" textAlign="center" lineHeight={1.6} maxWidth={350}>
+          Sync your Google Drive files with local folders.
         </Typography>
-
-        {/* Stepper */}
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ width: '100%' }}>
-          {SETUP_STEPS.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
 
         {error && (
           <Alert severity="error" sx={{ width: '100%', borderRadius: 2 }}>{error}</Alert>
         )}
 
-        {/* Step 1: Configure credentials */}
-        {!hasCredentials && (
-          <Box sx={{ width: '100%' }}>
-            <Typography variant="subtitle2" fontWeight={600} mb={1}>
-              Google Cloud Setup
+        {/* Sign In — shown when credentials are available */}
+        {hasCredentials && !showSetup && (
+          <Box sx={{ width: '100%', textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary" mb={2} display="block">
+              Your browser will open for Google sign-in.
             </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleLogin}
+              disabled={loading}
+              fullWidth
+              sx={{
+                py: 1.5,
+                fontSize: '1rem',
+                background: `linear-gradient(135deg, ${primary}, ${theme.palette.secondary.main})`,
+                '&:hover': { background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})` },
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in with Google'}
+            </Button>
+
+            <Divider sx={{ my: 2, opacity: 0.2 }} />
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 0.5, '&:hover': { color: 'primary.main' } }}
+              onClick={() => setShowSetup(true)}
+            >
+              <SettingsIcon sx={{ fontSize: 14 }} /> Configure OAuth credentials
+            </Typography>
+          </Box>
+        )}
+
+        {/* Setup — shown when no credentials or user clicked configure */}
+        {showSetup && (
+          <Box sx={{ width: '100%' }}>
+            <Typography variant="subtitle2" fontWeight={600} mb={1.5}>
+              {hasCredentials ? 'Update OAuth Credentials' : 'First-Time Setup'}
+            </Typography>
+
             <Box
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: alpha(theme.palette.info.main || primary, 0.06),
-                border: `1px solid ${alpha(theme.palette.info.main || primary, 0.15)}`,
+                bgcolor: alpha(primary, 0.05),
+                border: `1px solid ${alpha(primary, 0.12)}`,
                 mb: 2,
               }}
             >
-              <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
-                1. Go to <strong>Google Cloud Console</strong> &gt; APIs &amp; Services &gt; Credentials<br />
-                2. Create an <strong>OAuth 2.0 Client ID</strong> (type: <strong>Desktop app</strong>)<br />
-                3. Enable the <strong>Google Drive API</strong> in APIs &amp; Services &gt; Library<br />
-                4. In OAuth consent screen, add your email as a <strong>test user</strong><br />
-                5. Copy the Client ID and Client Secret below
+              <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.9}>
+                <strong>Google Cloud Console</strong> setup (one time):
+              </Typography>
+              <Typography variant="caption" color="text.secondary" component="ol" sx={{ pl: 2, mt: 0.5, mb: 0, lineHeight: 1.9 }}>
+                <li>Go to <strong>console.cloud.google.com</strong></li>
+                <li>APIs &amp; Services → Credentials → Create <strong>OAuth Client ID</strong></li>
+                <li>Application type: <strong>Desktop app</strong></li>
+                <li>APIs &amp; Services → Library → Enable <strong>Google Drive API</strong></li>
+                <li>OAuth consent screen → Add your email as <strong>test user</strong></li>
               </Typography>
             </Box>
+
             <Box display="flex" flexDirection="column" gap={1.5}>
               <TextField
                 size="small"
@@ -206,66 +235,30 @@ export default function Login({ onLogin }: LoginProps) {
                 placeholder="GOCSPX-..."
                 fullWidth
               />
-              <Button
-                variant="contained"
-                onClick={handleSaveCredentials}
-                disabled={!clientId.trim() || !clientSecret.trim()}
-                sx={{
-                  background: `linear-gradient(135deg, ${primary}, ${theme.palette.secondary.main})`,
-                  '&:hover': { background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})` },
-                }}
-              >
-                Save Credentials
-              </Button>
+              <Box display="flex" gap={1}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveCredentials}
+                  disabled={!clientId.trim() || !clientSecret.trim()}
+                  fullWidth
+                  sx={{
+                    background: `linear-gradient(135deg, ${primary}, ${theme.palette.secondary.main})`,
+                  }}
+                >
+                  Save & Continue
+                </Button>
+                {hasCredentials && (
+                  <Button variant="outlined" onClick={() => setShowSetup(false)}>
+                    Cancel
+                  </Button>
+                )}
+              </Box>
             </Box>
           </Box>
         )}
 
-        {/* Step 2: Sign in */}
-        {hasCredentials && (
-          <Box sx={{ width: '100%', textAlign: 'center' }}>
-            {credentialsSaved && (
-              <Box display="flex" alignItems="center" justifyContent="center" gap={0.75} mb={1.5}>
-                <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
-                <Typography variant="body2" color="success.main" fontWeight={500}>
-                  Credentials saved
-                </Typography>
-              </Box>
-            )}
-            <Typography variant="caption" color="text.secondary" mb={2} display="block">
-              Your browser will open for Google sign-in. After approval, you'll be redirected back automatically.
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleLogin}
-              disabled={loading}
-              fullWidth
-              sx={{
-                py: 1.5,
-                fontSize: '1rem',
-                background: `linear-gradient(135deg, ${primary}, ${theme.palette.secondary.main})`,
-                '&:hover': { background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})` },
-              }}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in with Google'}
-            </Button>
-
-            <Divider sx={{ my: 2, opacity: 0.3 }} />
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-              onClick={() => { setHasCredentials(false); setCredentialsSaved(false); }}
-            >
-              Change OAuth credentials
-            </Typography>
-          </Box>
-        )}
-
-        <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ opacity: 0.7 }}>
-          Your credentials are stored locally and never shared.
+        <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ opacity: 0.6 }}>
+          Credentials are stored locally and never shared.
         </Typography>
       </Box>
     </Box>

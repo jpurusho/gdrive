@@ -2,6 +2,8 @@ import { shell } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { saveTokens, getTokens, clearTokens, saveUserInfo, getUserInfo, clearUserInfo, getSetting, setSetting } from './database';
 import type { UserInfo, AuthTokens } from '../../shared/types';
 
@@ -14,6 +16,33 @@ const SCOPES = [
 // Local callback server port range
 const PORT_MIN = 48620;
 const PORT_MAX = 48640;
+
+/** Load embedded credentials baked in at build time */
+function loadEmbeddedCredentials(): { clientId: string; clientSecret: string } | null {
+  try {
+    const configPath = path.join(__dirname, '../oauth-config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.clientId && config.clientSecret) return config;
+    }
+  } catch {}
+  return null;
+}
+
+/** Resolve credentials: DB (user override) → embedded (build-time) → env (dev) */
+function resolveCredentials(): { clientId: string; clientSecret: string } {
+  const dbId = getSetting('google_client_id');
+  const dbSecret = getSetting('google_client_secret');
+  if (dbId && dbSecret) return { clientId: dbId, clientSecret: dbSecret };
+
+  const embedded = loadEmbeddedCredentials();
+  if (embedded) return embedded;
+
+  return {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  };
+}
 
 function setupTokenListener(client: OAuth2Client): void {
   client.on('tokens', (newTokens) => {
@@ -34,8 +63,7 @@ export class GoogleAuthService {
   private redirectUri: string = '';
 
   constructor() {
-    const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET || '';
+    const { clientId, clientSecret } = resolveCredentials();
 
     // Will be set to actual port when login starts
     this.redirectUri = `http://localhost:${PORT_MIN}/callback`;
@@ -65,8 +93,7 @@ export class GoogleAuthService {
   }
 
   hasCredentials(): boolean {
-    const clientId = getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET;
+    const { clientId, clientSecret } = resolveCredentials();
     return !!(clientId && clientSecret);
   }
 
@@ -255,10 +282,10 @@ export class GoogleAuthService {
           console.log(`[Auth] Callback server listening on http://localhost:${port}/callback`);
 
           const redirectUri = `http://localhost:${port}/callback`;
-          // Update the OAuth client with the actual redirect URI
+          const creds = resolveCredentials();
           this.oauth2Client = new OAuth2Client({
-            clientId: getSetting('google_client_id') || process.env.GOOGLE_CLIENT_ID || '',
-            clientSecret: getSetting('google_client_secret') || process.env.GOOGLE_CLIENT_SECRET || '',
+            clientId: creds.clientId,
+            clientSecret: creds.clientSecret,
             redirectUri,
           });
           this.redirectUri = redirectUri;
