@@ -70,14 +70,53 @@ Source: AWS Bedrock Pricing API (2026-03-13) + Anthropic docs
 
 ---
 
+### Session 3 — Polish, Release, UX Overhaul
+**Date:** 2026-04-02 to 2026-04-03
+
+**Work done:**
+- Profile editing (edit dialog, local path change, CRUD in Settings)
+- DB backup/restore/merge to Google Drive (last-write-wins)
+- Detailed sync diagnostics (totalFiles, synced, skipped, failed counts)
+- Custom app icon (galaxy background with J gsync)
+- Pause/resume for large file transfers (.partial files, Range headers)
+- Comprehensive error handling (retry with backoff, folder validation, ErrorBoundary, classified errors)
+- Multi-theme system polish (consistent gradient headers, bright borders)
+- Swappable dashboard panels with resize handle
+- Customizable app title (stored in DB)
+- Titlebar with version, date, gradient text
+- Dedicated About page with features grid + tech stack
+- Dedicated Profiles page (separated from Dashboard)
+- System browser OAuth (replaced BrowserWindow with local HTTP callback)
+- First-run setup flow (embedded credentials at build time)
+- Configurable data directory (~/.gsync/config.json)
+- macOS menu bar (Cmd+Q, fullscreen, etc.)
+- Auto-update checker (GitHub API, version comparison, in-app download with progress)
+- Embedded GitHub update token for private repo access
+- Interactive workflow wizard in dashboard (explorer-integrated folder selection)
+- Welcome splash on first launch
+- Source folder name option for sync profiles
+- Release pipeline: v1.0.0 through v1.4.0, CI/CD with GitHub Actions
+- ~40 commits, 15+ tags pushed
+
+**Estimated token usage:**
+
+| Metric | Tokens | Cost |
+|--------|--------|------|
+| Input tokens | ~800,000 | $4.00 |
+| Output tokens | ~400,000 | $10.00 |
+| Subagent (exploration, audit) | ~100,000 (combined) | ~$0.80 |
+| **Session total** | **~1,300,000** | **~$14.80** |
+
+---
+
 ## Running Totals
 
 | Metric | Value |
 |--------|-------|
-| **Total input tokens** | ~350,000 |
-| **Total output tokens** | ~258,000 |
-| **Total cost** | **~$7.20** |
-| Sessions completed | 2 |
+| **Total input tokens** | ~1,100,000 |
+| **Total output tokens** | ~590,000 |
+| **Total cost** | **~$22.00** |
+| Sessions completed | 3 |
 
 ---
 
