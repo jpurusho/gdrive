@@ -3,6 +3,7 @@ import * as path from 'path';
 import { config } from 'dotenv';
 import { registerIpcHandlers } from './ipc-handlers';
 import { initDatabase, getSetting } from './services/database';
+import { loadEmbeddedConfig } from './services/embedded-config';
 import { initScheduler } from './services/scheduler';
 import { GoogleAuthService } from './services/google-auth';
 import { autoUpdater } from 'electron-updater';
@@ -103,8 +104,8 @@ function createWindow(): void {
 }
 
 function setupAutoUpdater(): void {
-  // Use GH token from settings or env for update checks
-  const ghToken = getSetting('github_token') || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+  const embedded = loadEmbeddedConfig();
+  const ghToken = getSetting('github_token') || embedded.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   if (ghToken) {
     autoUpdater.setFeedURL({
       provider: 'github',

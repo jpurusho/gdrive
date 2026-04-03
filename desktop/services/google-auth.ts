@@ -2,9 +2,8 @@ import { shell } from 'electron';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import * as http from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
 import { saveTokens, getTokens, clearTokens, saveUserInfo, getUserInfo, clearUserInfo, getSetting, setSetting } from './database';
+import { loadEmbeddedConfig } from './embedded-config';
 import type { UserInfo, AuthTokens } from '../../shared/types';
 
 const SCOPES = [
@@ -17,41 +16,14 @@ const SCOPES = [
 const PORT_MIN = 48620;
 const PORT_MAX = 48640;
 
-/** Load embedded credentials baked in at build time */
-function loadEmbeddedCredentials(): { clientId: string; clientSecret: string } | null {
-  // Try multiple possible paths — __dirname varies between dev, asar, and unpacked
-  const candidates = [
-    path.join(__dirname, '../oauth-config.json'),
-    path.join(__dirname, '../../oauth-config.json'),
-    path.join(__dirname, '../../dist/oauth-config.json'),
-  ];
-
-  for (const configPath of candidates) {
-    try {
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        if (config.clientId && config.clientSecret) {
-          console.log('[Auth] Loaded embedded credentials from:', configPath);
-          return config;
-        }
-      }
-    } catch (err) {
-      console.warn('[Auth] Failed to read:', configPath, err);
-    }
-  }
-
-  console.warn('[Auth] No embedded credentials found. Checked:', candidates);
-  return null;
-}
-
 /** Resolve credentials: DB (user override) → embedded (build-time) → env (dev) */
 function resolveCredentials(): { clientId: string; clientSecret: string } {
   const dbId = getSetting('google_client_id');
   const dbSecret = getSetting('google_client_secret');
   if (dbId && dbSecret) return { clientId: dbId, clientSecret: dbSecret };
 
-  const embedded = loadEmbeddedCredentials();
-  if (embedded) return embedded;
+  const embedded = loadEmbeddedConfig();
+  if (embedded.clientId && embedded.clientSecret) return { clientId: embedded.clientId, clientSecret: embedded.clientSecret };
 
   return {
     clientId: process.env.GOOGLE_CLIENT_ID || '',

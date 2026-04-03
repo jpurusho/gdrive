@@ -1,6 +1,6 @@
 {
   "name": "gsync",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Google Drive Sync Desktop Application",
   "main": "dist/desktop/index.js",
   "author": "Jerome Purushotham",
@@ -9,7 +9,7 @@
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.main.json && electron .",
-    "prebuild": "node -e \"const{config}=require('dotenv');config();const fs=require('fs');const c={clientId:process.env.GOOGLE_CLIENT_ID||'',clientSecret:process.env.GOOGLE_CLIENT_SECRET||''};if(c.clientId){fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/oauth-config.json',JSON.stringify(c));}\"",
+    "prebuild": "node -e \"const{config}=require('dotenv');config();const fs=require('fs');fs.mkdirSync('dist',{recursive:true});const c={clientId:process.env.GOOGLE_CLIENT_ID||'',clientSecret:process.env.GOOGLE_CLIENT_SECRET||'',githubToken:process.env.GSYNC_UPDATE_TOKEN||''};if(c.clientId||c.githubToken)fs.writeFileSync('dist/oauth-config.json',JSON.stringify(c));\"",
     "build": "tsc -p tsconfig.main.json && vite build",
     "dist": "npm run build && electron-builder build --mac --publish never",
     "dist:win": "npm run build && electron-builder build --win",

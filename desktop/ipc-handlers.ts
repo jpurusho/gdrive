@@ -5,6 +5,7 @@ import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting, getDataDir, setDataDir } from './services/database';
+import { loadEmbeddedConfig } from './services/embedded-config';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
@@ -328,7 +329,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
     const currentVersion = app.getVersion();
-    const ghToken = getSetting('github_token') || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+    const embedded = loadEmbeddedConfig();
+    const ghToken = getSetting('github_token') || embedded.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 
     try {
       // Fetch latest release from GitHub API
