@@ -202,15 +202,16 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
           )}
         </Box>
         <Box display="flex" alignItems="center" gap={0.5}>
-          {selectionMode && selectedFolder && (
+          {selectionMode && (
             <Button
               size="small"
               variant="contained"
               startIcon={<CheckIcon sx={{ fontSize: 14 }} />}
-              onClick={() => onFolderSelect?.(selectedFolder)}
-              sx={{ height: 26, fontSize: 11, textTransform: 'none' }}
+              onClick={() => selectedFolder && onFolderSelect?.(selectedFolder)}
+              disabled={!selectedFolder}
+              sx={{ height: 28, fontSize: 12, textTransform: 'none', px: 2 }}
             >
-              Confirm
+              {selectedFolder ? `Select "${selectedFolder.folderPath}"` : 'Click a folder'}
             </Button>
           )}
           <IconButton size="small" onClick={loadDrives} sx={{ color: 'text.secondary' }}>
