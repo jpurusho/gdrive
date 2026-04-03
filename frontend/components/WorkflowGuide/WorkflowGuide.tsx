@@ -32,10 +32,8 @@ import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../
 interface Props {
   onProfileCreated: (profile: SyncProfile) => void;
   onActiveStepChange?: (step: string | null) => void;
-  onDriveSelectRequest?: (callback: (info: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string }) => void) => void;
-  onLocalSelectRequest?: (callback: (path: string) => void) => void;
-  externalDriveSelection?: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string } | null;
-  externalLocalSelection?: string | null;
+  externalDriveSelection?: { data: { driveId: string; driveName: string; driveType: 'my_drive' | 'shared_drive'; folderId: string; folderPath: string }; ts: number } | null;
+  externalLocalSelection?: { path: string; ts: number } | null;
 }
 
 interface StepDef {
@@ -54,7 +52,7 @@ const STEPS: StepDef[] = [
   { id: 'sync', icon: PlayArrowIcon, title: 'Sync!', color: 'success' },
 ];
 
-export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, onDriveSelectRequest, onLocalSelectRequest, externalDriveSelection, externalLocalSelection }: Props) {
+export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, externalDriveSelection, externalLocalSelection }: Props) {
   const theme = useTheme();
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -99,20 +97,27 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
   // Handle external selections from explorers
   useEffect(() => {
     if (!externalDriveSelection) return;
-    setDriveId(externalDriveSelection.driveId);
-    setDriveName(externalDriveSelection.driveName);
-    setDriveType(externalDriveSelection.driveType);
-    setDriveFolderId(externalDriveSelection.folderId);
-    setDriveFolderPath(externalDriveSelection.folderPath);
+    const info = externalDriveSelection.data;
+    setDriveId(info.driveId);
+    setDriveName(info.driveName);
+    setDriveType(info.driveType);
+    setDriveFolderId(info.folderId);
+    setDriveFolderPath(info.folderPath);
     completeStep('drive');
-    setTimeout(() => handleStepClick('local'), 300);
+    setTimeout(() => {
+      setActiveStep('local');
+      onActiveStepChange?.('local');
+    }, 300);
   }, [externalDriveSelection]);
 
   useEffect(() => {
     if (!externalLocalSelection) return;
-    setLocalPath(externalLocalSelection);
+    setLocalPath(externalLocalSelection.path);
     completeStep('local');
-    setTimeout(() => handleStepClick('direction'), 300);
+    setTimeout(() => {
+      setActiveStep('direction');
+      onActiveStepChange?.('direction');
+    }, 300);
   }, [externalLocalSelection]);
 
   // Step handlers

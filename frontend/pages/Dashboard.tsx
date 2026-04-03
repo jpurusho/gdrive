@@ -141,8 +141,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [hasProfiles, setHasProfiles] = useState<boolean | null>(null);
   const [workflowStep, setWorkflowStep] = useState<string | null>(null);
-  const [driveSelection, setDriveSelection] = useState<any>(null);
-  const [localSelection, setLocalSelection] = useState<string | null>(null);
+  const [driveSelection, setDriveSelection] = useState<{ data: any; ts: number } | null>(null);
+  const [localSelection, setLocalSelection] = useState<{ path: string; ts: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
@@ -198,8 +198,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const driveSelectionMode = workflowStep === 'drive';
   const localSelectionMode = workflowStep === 'local';
 
-  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => setDriveSelection(info)} />;
-  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => setLocalSelection(p)} />;
+  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => setDriveSelection({ data: info, ts: Date.now() })} />;
+  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => setLocalSelection({ path: p, ts: Date.now() })} />;
 
   const leftPanel = layout.swapExplorers ? localTree : driveTree;
   const rightPanel = layout.swapExplorers ? driveTree : localTree;
