@@ -310,7 +310,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: hasProfiles ? '30vh' : '45vh', mb: 0 }}>
               <WorkflowGuide
                 onProfileCreated={() => { setHasProfiles(true); setWorkflowStep(null); }}
-                onActiveStepChange={(step) => { setWorkflowStep(step); setDriveSelection(null); setLocalSelection(null); }}
+                onActiveStepChange={(step) => setWorkflowStep(step)}
                 externalDriveSelection={driveSelection}
                 externalLocalSelection={localSelection}
               />

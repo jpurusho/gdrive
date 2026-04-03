@@ -72,6 +72,14 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
   const [useSourceFolder, setUseSourceFolder] = useState(true);
   const [schedule, setSchedule] = useState('');
 
+  // Auto-activate first step on mount
+  useEffect(() => {
+    if (!activeStep) {
+      setActiveStep('name');
+      onActiveStepChange?.('name');
+    }
+  }, []);
+
   // Drive listing for inline picker
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
@@ -90,24 +98,21 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
 
   // Handle external selections from explorers
   useEffect(() => {
-    if (externalDriveSelection && activeStep === 'drive') {
-      setDriveId(externalDriveSelection.driveId);
-      setDriveName(externalDriveSelection.driveName);
-      setDriveType(externalDriveSelection.driveType);
-      setDriveFolderId(externalDriveSelection.folderId);
-      setDriveFolderPath(externalDriveSelection.folderPath);
-      completeStep('drive');
-      // Auto-advance to local step
-      setTimeout(() => handleStepClick('local'), 300);
-    }
+    if (!externalDriveSelection) return;
+    setDriveId(externalDriveSelection.driveId);
+    setDriveName(externalDriveSelection.driveName);
+    setDriveType(externalDriveSelection.driveType);
+    setDriveFolderId(externalDriveSelection.folderId);
+    setDriveFolderPath(externalDriveSelection.folderPath);
+    completeStep('drive');
+    setTimeout(() => handleStepClick('local'), 300);
   }, [externalDriveSelection]);
 
   useEffect(() => {
-    if (externalLocalSelection && activeStep === 'local') {
-      setLocalPath(externalLocalSelection);
-      completeStep('local');
-      setTimeout(() => handleStepClick('direction'), 300);
-    }
+    if (!externalLocalSelection) return;
+    setLocalPath(externalLocalSelection);
+    completeStep('local');
+    setTimeout(() => handleStepClick('direction'), 300);
   }, [externalLocalSelection]);
 
   // Step handlers
