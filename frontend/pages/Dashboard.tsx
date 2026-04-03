@@ -150,22 +150,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     window.api.app.getVersion().then(setVersion);
     window.api.sync.getProfiles().then((p) => setHasProfiles(p.length > 0));
 
-    // Detect full-screen changes via matchMedia (Electron sets this)
-    const mq = window.matchMedia('(display-mode: fullscreen)');
-    setIsFullScreen(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsFullScreen(e.matches);
-    mq.addEventListener('change', handler);
-
-    // Also listen for resize as a fallback — if window width equals screen width, likely fullscreen
-    const resizeHandler = () => {
-      setIsFullScreen(window.innerWidth === screen.width && window.innerHeight === screen.height);
-    };
-    window.addEventListener('resize', resizeHandler);
-
-    return () => {
-      mq.removeEventListener('change', handler);
-      window.removeEventListener('resize', resizeHandler);
-    };
+    // Listen for native fullscreen events from Electron main process
+    const unsub = window.api.app.onFullscreenChange(setIsFullScreen);
+    return unsub;
   }, []);
 
   function setLayout(update: Partial<LayoutState>) {

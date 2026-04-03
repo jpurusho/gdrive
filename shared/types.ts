@@ -186,6 +186,7 @@ export interface ElectronAPI {
     getDataDir: () => Promise<string>;
     setDataDir: (dir: string) => Promise<{ success: boolean; message: string }>;
     openExternal: (url: string) => Promise<void>;
+    onFullscreenChange: (callback: (isFullScreen: boolean) => void) => () => void;
     downloadUpdate: (url: string, destDir?: string) => Promise<{ success: boolean; path: string; size: number }>;
     onDownloadProgress: (callback: (progress: { downloaded: number; total: number; percent: number }) => void) => () => void;
     getVersion: () => Promise<string>;

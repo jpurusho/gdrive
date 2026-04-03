@@ -70,6 +70,14 @@ function createWindow(): void {
         label: 'View',
         submenu: [
           { role: 'togglefullscreen' },
+          {
+            label: 'Exit Full Screen',
+            accelerator: 'Escape',
+            click: () => {
+              const win = BrowserWindow.getFocusedWindow();
+              if (win?.isFullScreen()) win.setFullScreen(false);
+            },
+          },
           { type: 'separator' },
           { role: 'resetZoom' },
           { role: 'zoomIn' },
@@ -93,6 +101,14 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+  });
+
+  // Send fullscreen state to renderer for layout adjustments
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow?.webContents.send('app:fullscreenChange', true);
+  });
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow?.webContents.send('app:fullscreenChange', false);
   });
 
   if (isDev) {

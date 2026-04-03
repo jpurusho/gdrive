@@ -43,6 +43,11 @@ const api: ElectronAPI = {
   },
   app: {
     openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
+    onFullscreenChange: (callback) => {
+      const handler = (_event: Electron.IpcRendererEvent, isFullScreen: boolean) => callback(isFullScreen);
+      ipcRenderer.on('app:fullscreenChange', handler);
+      return () => ipcRenderer.removeListener('app:fullscreenChange', handler);
+    },
     downloadUpdate: (url: string, destDir?: string) => ipcRenderer.invoke('app:downloadUpdate', url, destDir),
     onDownloadProgress: (callback) => {
       const handler = (_event: Electron.IpcRendererEvent, progress: any) => callback(progress);
