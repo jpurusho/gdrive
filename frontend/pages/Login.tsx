@@ -65,7 +65,7 @@ export default function Login({ onLogin }: LoginProps) {
       } else if (msg.includes('ENOTFOUND') || msg.includes('ENETUNREACH')) {
         setError('No internet connection. Please check your network.');
       } else if (msg.includes('access_denied')) {
-        setError('Access denied. Your Google account may not be authorized for this app.');
+        setError('Access denied. Your Google account needs to be added as a test user. Contact the app administrator to add your email in Google Cloud Console → OAuth consent screen → Test users.');
       } else if (msg.includes('client_id') || msg.includes('invalid_client')) {
         setError('Invalid OAuth credentials. Please reconfigure.');
         setHasCredentials(false);
@@ -175,6 +175,21 @@ export default function Login({ onLogin }: LoginProps) {
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign in with Google'}
             </Button>
+
+            <Box
+              sx={{
+                mt: 2,
+                p: 1.5,
+                borderRadius: 1.5,
+                bgcolor: alpha(theme.palette.warning.main, 0.06),
+                border: `1px solid ${alpha(theme.palette.warning.main, 0.12)}`,
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" lineHeight={1.7}>
+                <strong>Getting "Access blocked"?</strong> Your email must be added as a test user by the app administrator.
+                Ask them to add your email in Google Cloud Console → OAuth consent screen → Test users.
+              </Typography>
+            </Box>
 
             <Divider sx={{ my: 2, opacity: 0.2 }} />
 
