@@ -35,23 +35,29 @@ export default function About() {
   const [platform, setPlatform] = useState('');
   const [checking, setChecking] = useState(false);
   const [updateResult, setUpdateResult] = useState<string | null>(null);
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadedPath, setDownloadedPath] = useState<string | null>(null);
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
     window.api.app.getPlatform().then(setPlatform);
   }, []);
 
-  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
-
   async function checkUpdates() {
     setChecking(true);
     setUpdateResult(null);
     setUpdateUrl(null);
+    setUpdateVersion(null);
+    setDownloadedPath(null);
     try {
       const result = await window.api.app.checkForUpdates();
       if (result.status === 'available') {
         setUpdateResult(`Update available: v${result.version}`);
         setUpdateUrl(result.url || null);
+        setUpdateVersion(result.version || null);
       } else if (result.status === 'latest') {
         setUpdateResult(`You're on the latest version (v${result.version}).`);
       } else {
@@ -61,6 +67,40 @@ export default function About() {
       setUpdateResult(err?.message || 'Update check failed');
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function handleDownload() {
+    if (!updateVersion) return;
+
+    // Ask user for download folder
+    const dir = await window.api.localFs.selectDirectory();
+    if (!dir) return;
+
+    setDownloading(true);
+    setDownloadProgress(0);
+    setDownloadedPath(null);
+
+    const unsub = window.api.app.onDownloadProgress((p) => {
+      setDownloadProgress(p.percent);
+    });
+
+    try {
+      // Build the ZIP asset URL from the release
+      const zipName = `gsync-${updateVersion}-universal-mac.zip`;
+      const downloadUrl = `https://github.com/jpurusho/gdrive/releases/download/v${updateVersion}/${zipName}`;
+
+      const result = await window.api.app.downloadUpdate(downloadUrl, dir);
+      if (result.success) {
+        // Move from ~/Downloads to chosen folder
+        setDownloadedPath(result.path);
+        setUpdateResult(`Downloaded to: ${result.path}`);
+      }
+    } catch (err: any) {
+      setUpdateResult(`Download failed: ${err?.message}`);
+    } finally {
+      unsub();
+      setDownloading(false);
     }
   }
 
@@ -185,24 +225,67 @@ export default function About() {
       </Box>
 
       {/* Update */}
-      <Box display="flex" flexDirection="column" gap={1} alignItems="flex-start">
-        <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking}>
+      <Box display="flex" flexDirection="column" gap={1.5} alignItems="flex-start">
+        <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking || downloading}>
           {checking ? 'Checking...' : 'Check for Updates'}
         </Button>
+
         {updateResult && (
-          <Typography variant="caption" color={updateUrl ? 'primary.main' : 'text.secondary'} fontWeight={updateUrl ? 600 : 400}>
+          <Typography variant="caption" color={updateVersion ? 'primary.main' : 'text.secondary'} fontWeight={updateVersion ? 600 : 400}>
             {updateResult}
           </Typography>
         )}
-        {updateUrl && (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => window.api.app.openExternal(updateUrl)}
-            sx={{ textTransform: 'none' }}
+
+        {updateVersion && !downloading && !downloadedPath && (
+          <Box display="flex" gap={1}>
+            <Button variant="contained" size="small" onClick={handleDownload}>
+              Download v{updateVersion}
+            </Button>
+            <Button variant="outlined" size="small" onClick={() => updateUrl && window.api.app.openExternal(updateUrl)}>
+              View on GitHub
+            </Button>
+          </Box>
+        )}
+
+        {downloading && (
+          <Box sx={{ width: '100%', maxWidth: 400 }}>
+            <Box display="flex" justifyContent="space-between" mb={0.5}>
+              <Typography variant="caption" color="text.secondary">Downloading...</Typography>
+              <Typography variant="caption" color="primary.main" fontWeight={600}>{downloadProgress}%</Typography>
+            </Box>
+            <Box sx={{ width: '100%', height: 6, borderRadius: 3, bgcolor: (t) => alpha(t.palette.primary.main, 0.1) }}>
+              <Box sx={{ width: `${downloadProgress}%`, height: '100%', borderRadius: 3, bgcolor: 'primary.main', transition: 'width 0.3s' }} />
+            </Box>
+          </Box>
+        )}
+
+        {downloadedPath && (
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+              border: (t) => `1px solid ${alpha(t.palette.success.main, 0.2)}`,
+              maxWidth: 450,
+            }}
           >
-            Download from GitHub
-          </Button>
+            <Typography variant="body2" color="success.main" fontWeight={600} mb={1}>
+              Download complete
+            </Typography>
+            <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.9}>
+              <strong>To install:</strong>
+              <ol style={{ margin: '4px 0 0 0', paddingLeft: 16 }}>
+                <li>Quit gsync</li>
+                <li>Extract the downloaded ZIP file</li>
+                <li>Replace <code>/Applications/gsync.app</code> with the new one</li>
+                <li>Run: <code>xattr -rc /Applications/gsync.app</code></li>
+                <li>Open gsync</li>
+              </ol>
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', wordBreak: 'break-all' }}>
+              Downloaded to: {downloadedPath}
+            </Typography>
+          </Box>
         )}
       </Box>
     </Box>

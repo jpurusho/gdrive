@@ -274,6 +274,57 @@ export function registerIpcHandlers(): void {
     shell.openExternal(url);
   });
 
+  ipcMain.handle('app:downloadUpdate', async (_event, downloadUrl: string, destDir?: string) => {
+    const https = require('https');
+    const os = require('os');
+    const dir = destDir || path.join(os.homedir(), 'Downloads');
+    const fileName = downloadUrl.split('/').pop() || 'gsync-update.zip';
+    const destPath = path.join(dir, fileName);
+
+    return new Promise((resolve, reject) => {
+      const follow = (url: string) => {
+        https.get(url, { headers: { 'User-Agent': 'gsync-updater' } }, (res: any) => {
+          // Follow redirects
+          if (res.statusCode === 301 || res.statusCode === 302) {
+            return follow(res.headers.location);
+          }
+          if (res.statusCode !== 200) {
+            return reject(new Error(`Download failed: HTTP ${res.statusCode}`));
+          }
+
+          const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+          let downloaded = 0;
+          const file = fs.createWriteStream(destPath);
+
+          res.on('data', (chunk: Buffer) => {
+            downloaded += chunk.length;
+            // Send progress to renderer
+            for (const win of BrowserWindow.getAllWindows()) {
+              if (!win.isDestroyed()) {
+                win.webContents.send('app:downloadProgress', {
+                  downloaded,
+                  total: totalBytes,
+                  percent: totalBytes ? Math.round((downloaded / totalBytes) * 100) : 0,
+                });
+              }
+            }
+          });
+
+          res.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            resolve({ success: true, path: destPath, size: downloaded });
+          });
+          file.on('error', (err: any) => {
+            fs.unlinkSync(destPath);
+            reject(err);
+          });
+        }).on('error', reject);
+      };
+      follow(downloadUrl);
+    });
+  });
+
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
     const currentVersion = app.getVersion();

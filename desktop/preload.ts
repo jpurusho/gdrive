@@ -43,6 +43,12 @@ const api: ElectronAPI = {
   },
   app: {
     openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
+    downloadUpdate: (url: string, destDir?: string) => ipcRenderer.invoke('app:downloadUpdate', url, destDir),
+    onDownloadProgress: (callback) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: any) => callback(progress);
+      ipcRenderer.on('app:downloadProgress', handler);
+      return () => ipcRenderer.removeListener('app:downloadProgress', handler);
+    },
     getDataDir: () => ipcRenderer.invoke('app:getDataDir'),
     setDataDir: (dir: string) => ipcRenderer.invoke('app:setDataDir', dir),
     getVersion: () => ipcRenderer.invoke('app:getVersion'),

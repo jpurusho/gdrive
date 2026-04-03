@@ -184,6 +184,8 @@ export interface ElectronAPI {
     getDataDir: () => Promise<string>;
     setDataDir: (dir: string) => Promise<{ success: boolean; message: string }>;
     openExternal: (url: string) => Promise<void>;
+    downloadUpdate: (url: string, destDir?: string) => Promise<{ success: boolean; path: string; size: number }>;
+    onDownloadProgress: (callback: (progress: { downloaded: number; total: number; percent: number }) => void) => () => void;
     getVersion: () => Promise<string>;
     checkForUpdates: () => Promise<{ status: 'available' | 'latest' | 'error'; version?: string; url?: string; message?: string }>;
     getPlatform: () => Promise<string>;
