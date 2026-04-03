@@ -135,11 +135,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [version, setVersion] = useState('');
   const [layout, setLayoutState] = useState<LayoutState>(loadLayout);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [hasProfiles, setHasProfiles] = useState<boolean | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
+    window.api.sync.getProfiles().then((p) => setHasProfiles(p.length > 0));
 
     // Detect full-screen changes via matchMedia (Electron sets this)
     const mq = window.matchMedia('(display-mode: fullscreen)');
@@ -226,36 +228,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     </Box>
   );
 
-  const statusSection = (
-    <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto', position: 'relative' }}>
-      {/* Move status toggle */}
-      <Box
-        sx={{ position: 'absolute', right: 8, top: 6, zIndex: 10 }}
-        className="titlebar-nodrag"
-      >
-        <Tooltip title={layout.statusOnTop ? 'Move status to bottom' : 'Move status to top'}>
-          <IconButton
-            size="small"
-            onClick={() => setLayout({ statusOnTop: !layout.statusOnTop })}
-            sx={{
-              bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
-              border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
-              backdropFilter: 'blur(8px)',
-              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
-              width: 28,
-              height: 28,
-            }}
-          >
-            {layout.statusOnTop
-              ? <VerticalAlignBottomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              : <VerticalAlignTopIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-            }
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <SyncStatus />
-    </Box>
-  );
+  // statusSection is now inlined in the dashboard layout
 
   return (
     <Box display="flex" height="100vh" overflow="hidden">
@@ -319,18 +292,52 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         </Box>
 
         {currentPage === 'dashboard' && (
-          <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3}>
-            {layout.statusOnTop ? (
+          <Box ref={containerRef} flex={1} display="flex" flexDirection="column" overflow="hidden" px={3} pb={3} gap={0}>
+            {/* Workflow guide — on top when no profiles */}
+            {hasProfiles === false && (
               <>
-                {statusSection}
-                <ResizeHandle onDrag={handleResizeInverted} />
-                {explorersSection}
-              </>
-            ) : (
-              <>
-                {explorersSection}
+                <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: '45vh' }}>
+                  <WorkflowGuide onProfileCreated={() => setHasProfiles(true)} />
+                </Box>
                 <ResizeHandle onDrag={handleResize} />
-                {statusSection}
+              </>
+            )}
+
+            {/* File explorers — middle */}
+            {explorersSection}
+
+            {/* Status table — bottom, only when profiles exist */}
+            {hasProfiles && (
+              <>
+                <ResizeHandle onDrag={handleResize} />
+                <Box sx={{ height: statusHeight, flexShrink: 0, overflowY: 'auto', position: 'relative' }}>
+                  {/* Move status toggle */}
+                  <Box
+                    sx={{ position: 'absolute', right: 8, top: 6, zIndex: 10 }}
+                    className="titlebar-nodrag"
+                  >
+                    <Tooltip title={layout.statusOnTop ? 'Move status to bottom' : 'Move status to top'}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setLayout({ statusOnTop: !layout.statusOnTop })}
+                        sx={{
+                          bgcolor: (t) => alpha(t.palette.background.paper, 0.9),
+                          border: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}`,
+                          backdropFilter: 'blur(8px)',
+                          '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.1) },
+                          width: 28,
+                          height: 28,
+                        }}
+                      >
+                        {layout.statusOnTop
+                          ? <VerticalAlignBottomIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          : <VerticalAlignTopIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        }
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <SyncStatus />
+                </Box>
               </>
             )}
           </Box>
