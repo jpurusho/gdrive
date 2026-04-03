@@ -19,13 +19,28 @@ const PORT_MAX = 48640;
 
 /** Load embedded credentials baked in at build time */
 function loadEmbeddedCredentials(): { clientId: string; clientSecret: string } | null {
-  try {
-    const configPath = path.join(__dirname, '../oauth-config.json');
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-      if (config.clientId && config.clientSecret) return config;
+  // Try multiple possible paths — __dirname varies between dev, asar, and unpacked
+  const candidates = [
+    path.join(__dirname, '../oauth-config.json'),
+    path.join(__dirname, '../../oauth-config.json'),
+    path.join(__dirname, '../../dist/oauth-config.json'),
+  ];
+
+  for (const configPath of candidates) {
+    try {
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (config.clientId && config.clientSecret) {
+          console.log('[Auth] Loaded embedded credentials from:', configPath);
+          return config;
+        }
+      }
+    } catch (err) {
+      console.warn('[Auth] Failed to read:', configPath, err);
     }
-  } catch {}
+  }
+
+  console.warn('[Auth] No embedded credentials found. Checked:', candidates);
   return null;
 }
 
