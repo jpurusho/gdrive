@@ -345,8 +345,17 @@ export function registerIpcHandlers(): void {
           let data = '';
           res.on('data', (chunk: string) => { data += chunk; });
           res.on('end', () => {
-            if (res.statusCode === 200) resolve(JSON.parse(data));
-            else reject(new Error(`GitHub API ${res.statusCode}: ${data.slice(0, 200)}`));
+            if (res.statusCode === 200) {
+              resolve(JSON.parse(data));
+            } else if (res.statusCode === 404) {
+              reject(new Error(ghToken
+                ? 'No releases found. Publish a release first.'
+                : 'Repository not accessible. Add a GitHub token in Settings → GitHub Token (needs repo scope).'));
+            } else if (res.statusCode === 401 || res.statusCode === 403) {
+              reject(new Error('GitHub token is invalid or expired. Update it in Settings → GitHub Token.'));
+            } else {
+              reject(new Error(`GitHub API error (${res.statusCode}). Try again later.`));
+            }
           });
         }).on('error', reject);
       });
