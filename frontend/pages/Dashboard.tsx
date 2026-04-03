@@ -132,11 +132,29 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [statusHeight, setStatusHeight] = useState(180);
   const [version, setVersion] = useState('');
   const [layout, setLayoutState] = useState<LayoutState>(loadLayout);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
   useEffect(() => {
     window.api.app.getVersion().then(setVersion);
+
+    // Detect full-screen changes via matchMedia (Electron sets this)
+    const mq = window.matchMedia('(display-mode: fullscreen)');
+    setIsFullScreen(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsFullScreen(e.matches);
+    mq.addEventListener('change', handler);
+
+    // Also listen for resize as a fallback — if window width equals screen width, likely fullscreen
+    const resizeHandler = () => {
+      setIsFullScreen(window.innerWidth === screen.width && window.innerHeight === screen.height);
+    };
+    window.addEventListener('resize', resizeHandler);
+
+    return () => {
+      mq.removeEventListener('change', handler);
+      window.removeEventListener('resize', resizeHandler);
+    };
   }, []);
 
   function setLayout(update: Partial<LayoutState>) {
@@ -242,17 +260,18 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       <Sidebar user={user} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
 
       <Box flex={1} display="flex" flexDirection="column" overflow="hidden" sx={{ background: (t) => t.palette.background.default }}>
-        {/* Titlebar */}
+        {/* Titlebar — reduced padding when fullscreen (traffic lights hidden) */}
         <Box
           className="titlebar-drag"
           sx={{
             height: 52,
             flexShrink: 0,
-            pl: 10,
+            pl: isFullScreen ? 2 : 10,
             pr: 3,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            transition: 'padding-left 0.2s',
           }}
         >
           <Typography

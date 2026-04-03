@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme, globalShortcut, Menu } from 'electron';
 import * as path from 'path';
 import { config } from 'dotenv';
 import { registerIpcHandlers } from './ipc-handlers';
@@ -33,6 +33,58 @@ function createWindow(): void {
       sandbox: false,
     },
   });
+
+  // macOS menu — required for Cmd+Q, Cmd+W, fullscreen toggle, etc.
+  if (process.platform === 'darwin') {
+    const template: Electron.MenuItemConstructorOptions[] = [
+      {
+        label: app.name,
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+        ],
+      },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'togglefullscreen' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          ...(isDev ? [{ type: 'separator' as const }, { role: 'toggleDevTools' as const }] : []),
+        ],
+      },
+      {
+        label: 'Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'zoom' },
+          { role: 'close' },
+          { type: 'separator' },
+          { role: 'front' },
+        ],
+      },
+    ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
