@@ -254,7 +254,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           sx={{
             height: 52,
             flexShrink: 0,
-            pl: isFullScreen ? 2 : 10,
+            pl: isFullScreen ? 1 : 10,
             pr: 3,
             display: 'flex',
             alignItems: 'center',

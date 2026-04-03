@@ -11,6 +11,9 @@ import { autoUpdater } from 'electron-updater';
 // Load .env from project root
 config({ path: path.join(__dirname, '../../.env') });
 
+// Set app name for macOS menu bar, dock, and window title
+app.setName('gsync');
+
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | null = null;
 
@@ -18,6 +21,7 @@ function createWindow(): void {
   nativeTheme.themeSource = 'dark';
 
   mainWindow = new BrowserWindow({
+    title: 'gsync',
     width: 1280,
     height: 850,
     minWidth: 960,
