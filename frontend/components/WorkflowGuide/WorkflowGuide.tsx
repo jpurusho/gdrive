@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -86,26 +86,29 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, on
     const next = activeStep === stepId ? null : stepId;
     setActiveStep(next);
     onActiveStepChange?.(next);
-
-    // When activating drive/local steps, request explorer selection mode
-    if (next === 'drive' && onDriveSelectRequest) {
-      onDriveSelectRequest((info) => {
-        setDriveId(info.driveId);
-        setDriveName(info.driveName);
-        setDriveType(info.driveType);
-        setDriveFolderId(info.folderId);
-        setDriveFolderPath(info.folderPath);
-        completeStep('drive');
-        handleStepClick('local');
-      });
-    } else if (next === 'local' && onLocalSelectRequest) {
-      onLocalSelectRequest((path) => {
-        setLocalPath(path);
-        completeStep('local');
-        handleStepClick('direction');
-      });
-    }
   }
+
+  // Handle external selections from explorers
+  useEffect(() => {
+    if (externalDriveSelection && activeStep === 'drive') {
+      setDriveId(externalDriveSelection.driveId);
+      setDriveName(externalDriveSelection.driveName);
+      setDriveType(externalDriveSelection.driveType);
+      setDriveFolderId(externalDriveSelection.folderId);
+      setDriveFolderPath(externalDriveSelection.folderPath);
+      completeStep('drive');
+      // Auto-advance to local step
+      setTimeout(() => handleStepClick('local'), 300);
+    }
+  }, [externalDriveSelection]);
+
+  useEffect(() => {
+    if (externalLocalSelection && activeStep === 'local') {
+      setLocalPath(externalLocalSelection);
+      completeStep('local');
+      setTimeout(() => handleStepClick('direction'), 300);
+    }
+  }, [externalLocalSelection]);
 
   // Step handlers
   function handleNameDone() {

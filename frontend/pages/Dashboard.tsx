@@ -141,8 +141,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [hasProfiles, setHasProfiles] = useState<boolean | null>(null);
   const [workflowStep, setWorkflowStep] = useState<string | null>(null);
-  const [workflowDriveSelect, setWorkflowDriveSelect] = useState<((info: any) => void) | null>(null);
-  const [workflowLocalSelect, setWorkflowLocalSelect] = useState<((path: string) => void) | null>(null);
+  const [driveSelection, setDriveSelection] = useState<any>(null);
+  const [localSelection, setLocalSelection] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { appTitle } = useAppSettings();
 
@@ -198,8 +198,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const driveSelectionMode = workflowStep === 'drive';
   const localSelectionMode = workflowStep === 'local';
 
-  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => { if (workflowDriveSelect) workflowDriveSelect(info); }} />;
-  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => { if (workflowLocalSelect) workflowLocalSelect(p); }} />;
+  const driveTree = <DriveTree selectionMode={driveSelectionMode} onFolderSelect={(info) => setDriveSelection(info)} />;
+  const localTree = <LocalTree selectionMode={localSelectionMode} onFolderSelect={(p) => setLocalSelection(p)} />;
 
   const leftPanel = layout.swapExplorers ? localTree : driveTree;
   const rightPanel = layout.swapExplorers ? driveTree : localTree;
@@ -310,9 +310,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <Box flexShrink={0} sx={{ overflowY: 'auto', maxHeight: hasProfiles ? '30vh' : '45vh', mb: 0 }}>
               <WorkflowGuide
                 onProfileCreated={() => { setHasProfiles(true); setWorkflowStep(null); }}
-                onActiveStepChange={(step) => setWorkflowStep(step)}
-                onDriveSelectRequest={(cb) => setWorkflowDriveSelect(() => cb)}
-                onLocalSelectRequest={(cb) => setWorkflowLocalSelect(() => cb)}
+                onActiveStepChange={(step) => { setWorkflowStep(step); setDriveSelection(null); setLocalSelection(null); }}
+                externalDriveSelection={driveSelection}
+                externalLocalSelection={localSelection}
               />
             </Box>
 
