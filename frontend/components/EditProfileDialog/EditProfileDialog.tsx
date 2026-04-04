@@ -38,6 +38,95 @@ import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
 import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../shared/types';
 
+function FolderPickerNode({
+  folder,
+  driveId,
+  driveName,
+  parentPath,
+  depth,
+  selectedFolderId,
+  onSelect,
+}: {
+  folder: DriveFile;
+  driveId: string;
+  driveName: string;
+  parentPath: string;
+  depth: number;
+  selectedFolderId: string;
+  onSelect: (id: string, name: string, path: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [children, setChildren] = useState<DriveFile[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const isSelected = selectedFolderId === folder.id;
+  const folderPath = `${parentPath}${folder.name}/`;
+
+  async function handleToggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!loaded) {
+      setLoading(true);
+      try {
+        const files = await window.api.drive.listFiles(driveId, folder.id);
+        setChildren(files.filter((f) => f.isFolder));
+        setLoaded(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    setOpen(!open);
+  }
+
+  return (
+    <>
+      <ListItemButton
+        sx={{
+          pl: 3 + depth * 2, py: 0.25,
+          bgcolor: isSelected ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
+          borderLeft: isSelected ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
+        }}
+        onClick={() => onSelect(folder.id, driveName, folderPath)}
+      >
+        <ListItemIcon sx={{ minWidth: 22 }}>
+          {loading ? (
+            <CircularProgress size={12} />
+          ) : (children.length > 0 || !loaded) ? (
+            <Box onClick={handleToggle} sx={{ display: 'flex', cursor: 'pointer' }}>
+              {open ? <ExpandMoreIcon sx={{ fontSize: 14, color: 'text.secondary' }} /> : <ChevronRightIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}
+            </Box>
+          ) : (
+            <Box width={14} />
+          )}
+        </ListItemIcon>
+        <ListItemIcon sx={{ minWidth: 22 }}>
+          <FolderIcon sx={{ fontSize: 14, color: isSelected ? 'success.main' : 'warning.main' }} />
+        </ListItemIcon>
+        <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }} />
+        {isSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
+      </ListItemButton>
+      <Collapse in={open} timeout="auto">
+        {children.map((child) => (
+          <FolderPickerNode
+            key={child.id}
+            folder={child}
+            driveId={driveId}
+            driveName={driveName}
+            parentPath={folderPath}
+            depth={depth + 1}
+            selectedFolderId={selectedFolderId}
+            onSelect={onSelect}
+          />
+        ))}
+        {loaded && children.length === 0 && (
+          <Typography variant="caption" color="text.secondary" sx={{ pl: 5 + depth * 2, py: 0.5, display: 'block', fontSize: 11 }}>
+            No subfolders
+          </Typography>
+        )}
+      </Collapse>
+    </>
+  );
+}
+
 interface Props {
   open: boolean;
   profile: SyncProfile | null;
@@ -250,32 +339,21 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
                       </ListItemButton>
                       <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                         {(driveFiles[drive.id] || []).map((folder) => (
-                          <ListItemButton
+                          <FolderPickerNode
                             key={folder.id}
-                            sx={{
-                              pl: 6, py: 0.25,
-                              bgcolor: driveFolderId === folder.id
-                                ? (t: any) => alpha(t.palette.success.main, 0.1)
-                                : 'transparent',
-                              borderLeft: driveFolderId === folder.id
-                                ? (t: any) => `3px solid ${t.palette.success.main}`
-                                : '3px solid transparent',
-                            }}
-                            onClick={() => {
+                            folder={folder}
+                            driveId={drive.id}
+                            driveName={drive.name}
+                            parentPath="/"
+                            depth={0}
+                            selectedFolderId={driveFolderId}
+                            onSelect={(fid, dn, fp) => {
                               setDriveId(drive.id);
-                              setDriveName(drive.name);
-                              setDriveFolderId(folder.id);
-                              setDriveFolderPath('/' + folder.name + '/');
+                              setDriveName(dn);
+                              setDriveFolderId(fid);
+                              setDriveFolderPath(fp);
                             }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 24 }}>
-                              <FolderIcon sx={{ fontSize: 14, color: driveFolderId === folder.id ? 'success.main' : 'warning.main' }} />
-                            </ListItemIcon>
-                            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12, fontWeight: driveFolderId === folder.id ? 700 : 400 }} />
-                            {driveFolderId === folder.id && (
-                              <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
-                            )}
-                          </ListItemButton>
+                          />
                         ))}
                       </Collapse>
                     </React.Fragment>
