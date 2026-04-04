@@ -214,6 +214,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
   const [useSourceFolderName, setUseSourceFolderName] = useState(true);
+  const [convertHeicToJpeg, setConvertHeicToJpeg] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
@@ -234,6 +235,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setLocalPath('');
     setDirection('download');
     setUseSourceFolderName(true);
+    setConvertHeicToJpeg(false);
     setFileFilter('');
     setSchedule('');
     setError('');
@@ -261,6 +263,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         localPath,
         syncDirection: direction,
         useSourceFolderName,
+        convertHeicToJpeg,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
         isActive: true,
@@ -328,7 +331,11 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         {/* Source folder name option */}
         <FormControlLabel
           control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
-          label={<Typography variant="body2">Create source folder in destination (e.g., <code>{folderSel ? folderSel.folderPath.split('/').filter(Boolean).pop() || folderSel.driveName : 'My Folder'}/</code>)</Typography>}
+          label={<Typography variant="body2">Create source folder in destination</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox checked={convertHeicToJpeg} onChange={(e) => setConvertHeicToJpeg(e.target.checked)} size="small" />}
+          label={<Typography variant="body2">Convert HEIC photos to JPEG</Typography>}
         />
 
         {/* Sync direction */}

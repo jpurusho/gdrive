@@ -142,6 +142,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const [localPath, setLocalPath] = useState('');
   const [direction, setDirection] = useState<SyncDirection>('download');
   const [useSourceFolderName, setUseSourceFolderName] = useState(false);
+  const [convertHeicToJpeg, setConvertHeicToJpeg] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
@@ -161,6 +162,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       setLocalPath(profile.localPath);
       setDirection(profile.syncDirection);
       setUseSourceFolderName(profile.useSourceFolderName);
+      setConvertHeicToJpeg(profile.convertHeicToJpeg);
       setFileFilter(profile.fileFilter || '');
       setSchedule(profile.schedule || '');
       setDriveFolderId(profile.driveFolderId);
@@ -210,6 +212,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         name: name.trim(),
         syncDirection: direction,
         useSourceFolderName,
+        convertHeicToJpeg,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
       };
@@ -398,6 +401,10 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         <FormControlLabel
           control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
           label={<Typography variant="body2">Create source folder in destination</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox checked={convertHeicToJpeg} onChange={(e) => setConvertHeicToJpeg(e.target.checked)} size="small" />}
+          label={<Typography variant="body2">Convert HEIC photos to JPEG</Typography>}
         />
 
         {/* Sync direction */}

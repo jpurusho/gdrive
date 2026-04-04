@@ -197,6 +197,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
         localPath,
         syncDirection: direction,
         useSourceFolderName: useSourceFolder,
+        convertHeicToJpeg: false,
         fileFilter: undefined,
         schedule: schedule || undefined,
         isActive: true,

@@ -245,6 +245,9 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             {profile.useSourceFolderName && (
               <Chip label="Source folder" size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
             )}
+            {profile.convertHeicToJpeg && (
+              <Chip label="HEIC→JPEG" size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+            )}
           </Box>
           {profile.schedule && (
             <Box display="flex" alignItems="center" gap={1.5}>

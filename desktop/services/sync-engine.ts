@@ -1,9 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BrowserWindow } from 'electron';
+import sharp from 'sharp';
 import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportInfo } from './google-drive';
 import { getProfile, updateProfile, getDb } from './database';
 import type { SyncProfile, SyncSession } from '../../shared/types';
+
+/** Convert HEIC file to JPEG, returns the new path */
+async function convertHeicFile(heicPath: string): Promise<string> {
+  const jpegPath = heicPath.replace(/\.heic$/i, '.jpeg');
+  await sharp(heicPath).jpeg({ quality: 90 }).toFile(jpegPath);
+  // Remove the original .heic
+  try { fs.unlinkSync(heicPath); } catch {}
+  return jpegPath;
+}
 
 /** Retry a function with exponential backoff for transient errors */
 async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> {
@@ -283,6 +293,15 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
           // Paused — partial file saved for resume
           logFile(session.id, file.name, file.relativePath, 'download', 'paused', file.size || 0, 0);
           break;
+        }
+        // Convert HEIC to JPEG if enabled
+        if (profile.convertHeicToJpeg && /\.heic$/i.test(localPath)) {
+          try {
+            const jpegPath = await convertHeicFile(localPath);
+            console.log(`[Sync] Converted HEIC→JPEG: ${path.basename(jpegPath)}`);
+          } catch (convErr: any) {
+            console.warn(`[Sync] HEIC conversion failed for ${file.name}: ${convErr?.message}`);
+          }
         }
         logFile(session.id, file.name, file.relativePath, 'download', 'completed', file.size || 0, file.size || 0, hash, file.md5Checksum);
         session.filesSynced++;

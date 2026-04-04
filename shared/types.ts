@@ -73,6 +73,7 @@ export interface SyncProfile {
   localPath: string;
   syncDirection: SyncDirection;
   useSourceFolderName: boolean;
+  convertHeicToJpeg: boolean;
   fileFilter?: string;
   schedule?: string;
   isActive: boolean;
