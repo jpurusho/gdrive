@@ -35,6 +35,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { DriveInfo, DriveFile, SyncProfile, SyncDirection, DrivePermission } from '../../../shared/types';
 
 interface Props {
@@ -152,17 +153,21 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
       return (
         <React.Fragment key={fkey}>
           <ListItemButton
-            selected={isSelected}
             onClick={() => toggleFolder(driveId, folder, parentPath, permission, driveInfo)}
-            sx={{ pl: 2 + depth * 2, py: 0.5 }}
+            sx={{
+              pl: 2 + depth * 2, py: 0.5,
+              bgcolor: isSelected ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
+              borderLeft: isSelected ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
+            }}
           >
             <ListItemIcon sx={{ minWidth: 24 }}>
               {loadingIds.has(fkey) ? <CircularProgress size={14} /> : isExpanded ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
             </ListItemIcon>
             <ListItemIcon sx={{ minWidth: 24 }}>
-              {isExpanded ? <FolderOpenIcon sx={{ fontSize: 16, color: 'warning.main' }} /> : <FolderIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+              {isExpanded ? <FolderOpenIcon sx={{ fontSize: 16, color: isSelected ? 'success.main' : 'warning.main' }} /> : <FolderIcon sx={{ fontSize: 16, color: isSelected ? 'success.main' : 'warning.main' }} />}
             </ListItemIcon>
-            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 13, noWrap: true }} />
+            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 13, noWrap: true, fontWeight: isSelected ? 700 : 400 }} />
+            {isSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
           </ListItemButton>
           {isExpanded && expandedFolders[fkey] && (
             <Collapse in>
@@ -183,7 +188,13 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
         const isDriveSelected = selected === `drive:${drive.id}`;
         return (
           <React.Fragment key={drive.id}>
-            <ListItemButton selected={isDriveSelected} sx={{ py: 0.75 }}>
+            <ListItemButton
+              sx={{
+                py: 0.75,
+                bgcolor: isDriveSelected ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
+                borderLeft: isDriveSelected ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
+              }}
+            >
               <ListItemIcon sx={{ minWidth: 24 }} onClick={() => toggleDrive(drive)}>
                 {loadingIds.has(drive.id) ? <CircularProgress size={14} /> : isExpanded ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
               </ListItemIcon>
@@ -193,8 +204,9 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
               <ListItemText
                 primary={drive.name}
                 onClick={() => { selectDriveRoot(drive); toggleDrive(drive); }}
-                primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }}
+                primaryTypographyProps={{ fontSize: 13, fontWeight: isDriveSelected ? 700 : 500 }}
               />
+              {isDriveSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main', mr: 0.5 }} />}
               <Chip label={drive.permission} size="small" sx={{ height: 18, fontSize: 10 }} />
             </ListItemButton>
             <Collapse in={isExpanded} timeout="auto">
