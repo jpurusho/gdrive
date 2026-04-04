@@ -26,27 +26,57 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import type { DriveInfo, DriveFile } from '../../../shared/types';
 
-function groupByMonth(files: DriveFile[]): { label: string; files: DriveFile[] }[] {
-  const groups = new Map<string, DriveFile[]>();
+interface TimeBucket {
+  key: string;
+  label: string;
+  files: DriveFile[];
+  defaultOpen: boolean;
+}
+
+function groupByTimeBucket(files: DriveFile[]): TimeBucket[] {
   const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const buckets = new Map<string, { label: string; files: DriveFile[]; defaultOpen: boolean }>();
 
   for (const f of files) {
     const date = f.sharedWithMeTime ? new Date(f.sharedWithMeTime) : f.modifiedTime ? new Date(f.modifiedTime) : now;
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(f);
+
+    let key: string;
+    let label: string;
+    let defaultOpen: boolean;
+
+    if (date >= startOfWeek) {
+      key = '0-this-week';
+      label = 'This Week';
+      defaultOpen = true;
+    } else if (date >= startOfMonth) {
+      key = '1-this-month';
+      label = 'This Month';
+      defaultOpen = true;
+    } else {
+      // Group by year/month
+      const y = date.getFullYear();
+      const m = date.getMonth();
+      key = `2-${y}-${String(m + 1).padStart(2, '0')}`;
+      label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      defaultOpen = date >= oneMonthAgo;
+    }
+
+    if (!buckets.has(key)) {
+      buckets.set(key, { label, files: [], defaultOpen });
+    }
+    buckets.get(key)!.files.push(f);
   }
 
-  // Sort by key descending (newest first)
-  return Array.from(groups.entries())
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([, files], i, arr) => ({
-      label: files.length > 0
-        ? new Date(files[0].sharedWithMeTime || files[0].modifiedTime || '').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-        : 'Unknown',
-      files,
-    }));
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, val]) => ({ key, ...val }));
 }
 
 function formatSize(bytes?: number): string {
@@ -150,9 +180,10 @@ function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, se
   );
 }
 
-function SharedMonthGroup({ label, files, driveId, driveName, driveType, selectionMode, selectedFolderId, onSelect }: {
+function SharedMonthGroup({ label, files, defaultOpen, driveId, driveName, driveType, selectionMode, selectedFolderId, onSelect }: {
   label: string;
   files: DriveFile[];
+  defaultOpen: boolean;
   driveId: string;
   driveName: string;
   driveType: 'my_drive' | 'shared_drive';
@@ -160,7 +191,7 @@ function SharedMonthGroup({ label, files, driveId, driveName, driveType, selecti
   selectedFolderId?: string;
   onSelect?: (info: any) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <>
@@ -356,9 +387,9 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                 </ListItemButton>
                 <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                   {drive.id === 'shared_with_me' ? (
-                    // Grouped by month for "Shared with me"
-                    groupByMonth(driveFiles[drive.id] || []).map((group) => (
-                      <SharedMonthGroup key={group.label} label={group.label} files={group.files} driveId={drive.id} driveName={drive.name} driveType={drive.type} selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
+                    // Grouped by time buckets for "Shared with me"
+                    groupByTimeBucket(driveFiles[drive.id] || []).map((bucket) => (
+                      <SharedMonthGroup key={bucket.key} label={bucket.label} files={bucket.files} defaultOpen={bucket.defaultOpen} driveId={drive.id} driveName={drive.name} driveType={drive.type} selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
                     ))
                   ) : (
                     (driveFiles[drive.id] || []).map((file) =>
