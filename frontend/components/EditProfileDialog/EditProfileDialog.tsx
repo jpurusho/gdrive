@@ -27,6 +27,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -217,7 +218,15 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
                   {drives.map((drive) => (
                     <React.Fragment key={drive.id}>
                       <ListItemButton
-                        sx={{ py: 0.5 }}
+                        sx={{
+                          py: 0.5,
+                          bgcolor: (driveId === drive.id && driveFolderPath === '/')
+                            ? (t: any) => alpha(t.palette.success.main, 0.1)
+                            : 'transparent',
+                          borderLeft: (driveId === drive.id && driveFolderPath === '/')
+                            ? (t: any) => `3px solid ${t.palette.success.main}`
+                            : '3px solid transparent',
+                        }}
                         onClick={() => {
                           toggleDrive(drive.id);
                           const fid = drive.id === 'root' ? 'root' : drive.id;
@@ -234,14 +243,24 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
                           {drive.type === 'shared_drive' ? <GroupWorkIcon sx={{ fontSize: 16, color: 'secondary.main' }} /> : <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
                         </ListItemIcon>
                         <ListItemText primary={drive.name} primaryTypographyProps={{ fontSize: 12, fontWeight: 500 }} />
+                        {driveId === drive.id && driveFolderPath === '/' && (
+                          <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />
+                        )}
                         <Chip label={drive.permission} size="small" sx={{ height: 18, fontSize: 10 }} />
                       </ListItemButton>
                       <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
                         {(driveFiles[drive.id] || []).map((folder) => (
                           <ListItemButton
                             key={folder.id}
-                            selected={driveFolderId === folder.id}
-                            sx={{ pl: 6, py: 0.25 }}
+                            sx={{
+                              pl: 6, py: 0.25,
+                              bgcolor: driveFolderId === folder.id
+                                ? (t: any) => alpha(t.palette.success.main, 0.1)
+                                : 'transparent',
+                              borderLeft: driveFolderId === folder.id
+                                ? (t: any) => `3px solid ${t.palette.success.main}`
+                                : '3px solid transparent',
+                            }}
                             onClick={() => {
                               setDriveId(drive.id);
                               setDriveName(drive.name);
@@ -250,9 +269,12 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
                             }}
                           >
                             <ListItemIcon sx={{ minWidth: 24 }}>
-                              <FolderIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                              <FolderIcon sx={{ fontSize: 14, color: driveFolderId === folder.id ? 'success.main' : 'warning.main' }} />
                             </ListItemIcon>
-                            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12 }} />
+                            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12, fontWeight: driveFolderId === folder.id ? 700 : 400 }} />
+                            {driveFolderId === folder.id && (
+                              <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                            )}
                           </ListItemButton>
                         ))}
                       </Collapse>
