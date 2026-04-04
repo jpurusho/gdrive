@@ -93,6 +93,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
   }
 
+  async function handleToggleActive(profileId: number, active: boolean) {
+    const updated = await window.api.sync.updateProfile(profileId, { isActive: active });
+    if (updated) {
+      setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+    }
+  }
+
   const selectedProfile = profiles.find((p) => p.id === selectedProfileId);
 
   return (
@@ -179,6 +186,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                       onSync={() => handleSync(selectedProfile.id)}
                       onPause={() => handlePause(selectedProfile.id)}
                       onDelete={() => handleDelete(selectedProfile.id)}
+                      onToggleActive={(active) => handleToggleActive(selectedProfile.id, active)}
                       onUpdated={handleUpdated}
                     />
                   ) : (

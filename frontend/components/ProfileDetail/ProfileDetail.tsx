@@ -6,6 +6,8 @@ import {
   Chip,
   LinearProgress,
   Divider,
+  Switch,
+  Tooltip,
   alpha,
   useTheme,
   keyframes,
@@ -52,10 +54,11 @@ interface Props {
   onSync: () => void;
   onPause: () => void;
   onDelete: () => void;
+  onToggleActive: (active: boolean) => void;
   onUpdated: (updated: SyncProfile) => void;
 }
 
-export default function ProfileDetail({ profile, session, onSync, onPause, onDelete, onUpdated }: Props) {
+export default function ProfileDetail({ profile, session, onSync, onPause, onDelete, onToggleActive, onUpdated }: Props) {
   const theme = useTheme();
   const DirIcon = directionIcons[profile.syncDirection];
   const isActive = session?.status === 'in_progress';
@@ -86,21 +89,35 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
       >
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1.5}>
-            <DirIcon sx={{ fontSize: 22, color: 'primary.main' }} />
+            <DirIcon sx={{ fontSize: 22, color: profile.isActive ? 'primary.main' : 'text.secondary' }} />
             <Box>
-              <Typography variant="h6" fontWeight={700} lineHeight={1.2}>{profile.name}</Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography variant="h6" fontWeight={700} lineHeight={1.2} sx={{ opacity: profile.isActive ? 1 : 0.5 }}>
+                  {profile.name}
+                </Typography>
+                {!profile.isActive && (
+                  <Chip label="Paused" size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+                )}
+              </Box>
               <Typography variant="caption" color="text.secondary">
                 {directionLabels[profile.syncDirection]} {profile.schedule ? `· ${profile.schedule}` : '· Manual'}
               </Typography>
             </Box>
+            <Tooltip title={profile.isActive ? 'Pause auto-sync' : 'Resume auto-sync'}>
+              <Switch
+                size="small"
+                checked={profile.isActive}
+                onChange={(e) => onToggleActive(e.target.checked)}
+              />
+            </Tooltip>
           </Box>
           <Box display="flex" gap={1}>
             {isActive ? (
               <Button size="small" variant="outlined" color="warning" startIcon={<PauseIcon />} onClick={onPause}>
-                Pause
+                Pause Transfer
               </Button>
             ) : (
-              <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={onSync}>
+              <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={onSync} disabled={!profile.isActive}>
                 {isPaused ? 'Resume' : 'Sync Now'}
               </Button>
             )}

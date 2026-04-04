@@ -103,15 +103,19 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
               const isSelected = selectedId === profile.id;
               const DirIcon = directionIcons[profile.syncDirection];
 
-              const borderColor = isActive
-                ? theme.palette.primary.main
-                : isPaused
-                  ? theme.palette.warning.main
-                  : isFailed
-                    ? theme.palette.error.main
-                    : isCompleted
-                      ? theme.palette.success.main
-                      : 'transparent';
+              const isProfileInactive = !profile.isActive;
+
+              const borderColor = isProfileInactive
+                ? alpha(theme.palette.text.secondary, 0.3)
+                : isActive
+                  ? theme.palette.primary.main
+                  : isPaused
+                    ? theme.palette.warning.main
+                    : isFailed
+                      ? theme.palette.error.main
+                      : isCompleted
+                        ? theme.palette.success.main
+                        : 'transparent';
 
               return (
                 <ListItemButton
@@ -128,12 +132,15 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
                     },
                   }}
                 >
-                  <Box flex={1} minWidth={0}>
+                  <Box flex={1} minWidth={0} sx={{ opacity: isProfileInactive ? 0.5 : 1 }}>
                     <Box display="flex" alignItems="center" gap={0.75} mb={0.25}>
                       <DirIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                       <Typography variant="body2" fontWeight={isSelected ? 600 : 500} noWrap>
                         {profile.name}
                       </Typography>
+                      {isProfileInactive && (
+                        <Typography variant="caption" color="warning.main" sx={{ fontSize: 10 }}>OFF</Typography>
+                      )}
                     </Box>
                     <Box display="flex" alignItems="center" gap={0.75}>
                       {isActive ? (
