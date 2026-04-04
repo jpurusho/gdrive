@@ -24,9 +24,18 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudIcon from '@mui/icons-material/Cloud';
+import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import type { SyncProfile, SyncDirection } from '../../../shared/types';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CircularProgress from '@mui/material/CircularProgress';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Collapse from '@mui/material/Collapse';
+import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../shared/types';
 
 interface Props {
   open: boolean;
@@ -46,6 +55,15 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
+  const [changingDrive, setChangingDrive] = useState(false);
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [driveFolderPath, setDriveFolderPath] = useState('');
+  const [driveName, setDriveName] = useState('');
+  const [driveId, setDriveId] = useState('');
+  const [drives, setDrives] = useState<DriveInfo[]>([]);
+  const [driveFiles, setDriveFiles] = useState<Record<string, DriveFile[]>>({});
+  const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
+  const [loadingDrives, setLoadingDrives] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -55,6 +73,11 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       setUseSourceFolderName(profile.useSourceFolderName);
       setFileFilter(profile.fileFilter || '');
       setSchedule(profile.schedule || '');
+      setDriveFolderId(profile.driveFolderId);
+      setDriveFolderPath(profile.driveFolderPath);
+      setDriveName(profile.driveName);
+      setDriveId(profile.driveId);
+      setChangingDrive(false);
     }
   }, [profile]);
 
@@ -63,6 +86,31 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   async function handleBrowseLocal() {
     const selected = await window.api.localFs.selectDirectory();
     if (selected) setLocalPath(selected);
+  }
+
+  async function loadDrives() {
+    setLoadingDrives(true);
+    try {
+      const result = await window.api.drive.listDrives();
+      setDrives(result);
+    } finally {
+      setLoadingDrives(false);
+    }
+  }
+
+  async function toggleDrive(id: string) {
+    const newExp = new Set(expandedDrives);
+    if (newExp.has(id)) {
+      newExp.delete(id);
+    } else {
+      newExp.add(id);
+      if (!driveFiles[id]) {
+        const fid = id === 'root' ? 'root' : id;
+        const files = await window.api.drive.listFiles(id, fid);
+        setDriveFiles((prev) => ({ ...prev, [id]: files.filter((f) => f.isFolder) }));
+      }
+    }
+    setExpandedDrives(newExp);
   }
 
   async function handleSave() {
@@ -75,9 +123,12 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
       };
-      // Only include localPath if changed
       if (localPath !== profile!.localPath) {
         updates.localPath = localPath;
+      }
+      if (driveFolderId !== profile!.driveFolderId) {
+        updates.driveFolderId = driveFolderId;
+        updates.driveFolderPath = driveFolderPath;
       }
       const updated = await window.api.sync.updateProfile(profile!.id, updates);
       onSave(updated);
@@ -124,9 +175,14 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
           fullWidth
         />
 
-        {/* Locations */}
+        {/* Drive Folder */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Google Drive Folder</Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+            <Typography variant="subtitle2">Google Drive Folder</Typography>
+            <Button size="small" variant="text" onClick={() => { if (!changingDrive) { setChangingDrive(true); loadDrives(); } else { setChangingDrive(false); } }}>
+              {changingDrive ? 'Cancel' : 'Change'}
+            </Button>
+          </Box>
           <Box
             sx={{
               p: 1.5,
@@ -139,13 +195,73 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
             }}
           >
             <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="body2" color="text.secondary" flex={1} noWrap>
-              {profile.driveName}: {profile.driveFolderPath}
+            <Typography variant="body2" color={driveFolderId !== profile.driveFolderId ? 'primary.main' : 'text.secondary'} flex={1} noWrap>
+              {driveName}: {driveFolderPath}
             </Typography>
           </Box>
-          <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
-            To change the Drive folder, delete this profile and create a new one.
-          </Typography>
+          {changingDrive && (
+            <Box
+              sx={{
+                mt: 1,
+                maxHeight: 200,
+                overflow: 'auto',
+                borderRadius: 2,
+                border: (t) => `1px solid ${alpha(t.palette.primary.light, 0.3)}`,
+                bgcolor: 'background.default',
+              }}
+            >
+              {loadingDrives ? (
+                <Box display="flex" justifyContent="center" py={2}><CircularProgress size={20} /></Box>
+              ) : (
+                <List dense disablePadding>
+                  {drives.map((drive) => (
+                    <React.Fragment key={drive.id}>
+                      <ListItemButton
+                        sx={{ py: 0.5 }}
+                        onClick={() => {
+                          toggleDrive(drive.id);
+                          const fid = drive.id === 'root' ? 'root' : drive.id;
+                          setDriveId(drive.id);
+                          setDriveName(drive.name);
+                          setDriveFolderId(fid);
+                          setDriveFolderPath('/');
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 24 }}>
+                          {expandedDrives.has(drive.id) ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
+                        </ListItemIcon>
+                        <ListItemIcon sx={{ minWidth: 24 }}>
+                          {drive.type === 'shared_drive' ? <GroupWorkIcon sx={{ fontSize: 16, color: 'secondary.main' }} /> : <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
+                        </ListItemIcon>
+                        <ListItemText primary={drive.name} primaryTypographyProps={{ fontSize: 12, fontWeight: 500 }} />
+                        <Chip label={drive.permission} size="small" sx={{ height: 18, fontSize: 10 }} />
+                      </ListItemButton>
+                      <Collapse in={expandedDrives.has(drive.id)} timeout="auto">
+                        {(driveFiles[drive.id] || []).map((folder) => (
+                          <ListItemButton
+                            key={folder.id}
+                            selected={driveFolderId === folder.id}
+                            sx={{ pl: 6, py: 0.25 }}
+                            onClick={() => {
+                              setDriveId(drive.id);
+                              setDriveName(drive.name);
+                              setDriveFolderId(folder.id);
+                              setDriveFolderPath('/' + folder.name + '/');
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 24 }}>
+                              <FolderIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                            </ListItemIcon>
+                            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12 }} />
+                          </ListItemButton>
+                        ))}
+                      </Collapse>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </Box>
+          )}
         </Box>
 
         <Box>
