@@ -6,6 +6,8 @@
   "author": "Jerome Purushotham",
   "license": "MIT",
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.main.json && electron .",
@@ -44,6 +46,7 @@
     "react-router-dom": "^6.28.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
+    "vitest": "^4.1.2",
     "wait-on": "^8.0.1"
   }
 }
