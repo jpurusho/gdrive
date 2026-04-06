@@ -379,9 +379,20 @@ export default function Settings() {
           {dataDirMessage.text}
         </Alert>
       )}
-      <Typography variant="caption" color="text.secondary" mb={2} display="block">
-        Config stored at: ~/.gsync/config.json
-      </Typography>
+      <Box
+        sx={{
+          mt: 1.5, mb: 2, p: 1.5, borderRadius: 1.5, maxWidth: 500,
+          bgcolor: (t) => alpha(t.palette.info?.main || t.palette.primary.main, 0.05),
+          border: (t) => `1px solid ${alpha(t.palette.info?.main || t.palette.primary.main, 0.12)}`,
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
+          <strong>Config file:</strong> <code>~/.gsync/config.json</code><br />
+          <strong>Database files:</strong> <code>gdrive-sync.db</code>, <code>.db-wal</code>, <code>.db-shm</code><br />
+          <strong>Pre-configure on new machine:</strong><br />
+          <code style={{ fontSize: 11 }}>mkdir -p ~/.gsync && echo '{'{'"dataDir":"/your/path"'}{'}'}' {'>'} ~/.gsync/config.json</code>
+        </Typography>
+      </Box>
 
       <Divider sx={{ opacity: 0.3, my: 3 }} />
 

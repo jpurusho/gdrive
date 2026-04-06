@@ -346,3 +346,49 @@ gdrive/
 | Auto-update | GitHub API + in-app download | Version check + download with progress |
 | Themes | Custom MUI ThemeProvider | 5 themes with localStorage persistence |
 | Auth | System browser + local HTTP server | Standard desktop OAuth (VS Code, gcloud pattern) |
+
+## Data Storage
+
+### Database Location
+
+The app stores its SQLite database in a configurable data directory:
+
+| Platform | Default Path |
+|----------|-------------|
+| macOS | `~/Library/Application Support/gsync/` |
+| Windows | `%APPDATA%/gsync/` |
+| Linux | `~/.config/gsync/` |
+
+The config file `~/.gsync/config.json` overrides the default:
+
+```json
+{
+  "dataDir": "/Users/yourname/your/preferred/path"
+}
+```
+
+### Database Files
+
+| File | Purpose | Safe to delete? |
+|------|---------|----------------|
+| `gdrive-sync.db` | Main database — profiles, tokens, settings, sync history | No — all data is here |
+| `gdrive-sync.db-wal` | Write-ahead log — buffered writes for performance | No while app is running. Merges into .db on clean shutdown |
+| `gdrive-sync.db-shm` | Shared memory — coordinates WAL access | No while app is running. Auto-recreated on next launch |
+
+### Pre-configure on New Machine
+
+Before first launch, set the data directory so the app creates its database in the right place:
+
+```bash
+mkdir -p ~/.gsync
+echo '{"dataDir":"/your/preferred/path"}' > ~/.gsync/config.json
+```
+
+Then restore a database backup (from Settings > Database Backup > Restore from Drive) to recover all profiles, history, and settings.
+
+### Backup & Restore
+
+The database can be backed up to Google Drive and restored on any machine:
+- **Backup**: uploads `gdrive-sync-backup.db` to `GDrive Sync Backups/` folder on Drive
+- **Restore**: downloads backup, creates safety copy (`.pre_restore_*`), replaces local DB
+- **Sync-Merge**: merges remote and local DBs using last-write-wins by `updated_at` timestamp

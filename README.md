@@ -67,6 +67,29 @@ xattr -rc /Applications/gsync.app
 
 Or right-click the app and select **Open** to bypass Gatekeeper on first launch.
 
+### Data Directory
+
+By default, gsync stores its database and settings in the system application support folder:
+- **macOS**: `~/Library/Application Support/gsync/`
+- **Windows**: `%APPDATA%/gsync/`
+- **Linux**: `~/.config/gsync/`
+
+The database files are:
+- `gdrive-sync.db` — main database (profiles, history, settings, tokens)
+- `gdrive-sync.db-wal` — write-ahead log (merges on clean shutdown)
+- `gdrive-sync.db-shm` — shared memory index (temporary)
+
+To use a custom data directory, either:
+1. Change it in **Settings > Data Directory** within the app, or
+2. Pre-configure before first launch:
+
+```bash
+mkdir -p ~/.gsync
+echo '{"dataDir":"/your/preferred/path"}' > ~/.gsync/config.json
+```
+
+This is useful when setting up a new machine or restoring from a database backup.
+
 ## Architecture
 
 ```mermaid
