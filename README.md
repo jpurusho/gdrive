@@ -118,8 +118,9 @@ gdrive/
 ├── desktop/         # Electron main process
 ├── frontend/        # React renderer (Vite)
 ├── shared/          # Shared TypeScript types
+├── tests/           # Unit tests (vitest)
 ├── docs/            # Architecture & setup docs
-├── scripts/         # Utility scripts
+├── scripts/         # Release & verification scripts
 ├── .github/         # CI/CD workflows
 └── dist/            # Build output
 ```
@@ -140,23 +141,61 @@ gdrive/
 | [OAuth Setup](docs/oauth-setup.md) | Step-by-step Google Cloud credentials configuration |
 | [Phases](docs/phases.md) | Implementation roadmap with deliverables per phase |
 
+## Testing
+
+```bash
+npm test                        # Run all 25 unit tests
+npm run test:watch              # Watch mode (re-runs on changes)
+./scripts/prerelease-check.sh   # Full pre-release verification
+```
+
+### Test Coverage
+
+| Category | Tests | What's Verified |
+|----------|-------|-----------------|
+| MD5 Hash | 2 | File and string hash computation for change detection |
+| File Filters | 5 | Extension matching, multi-pattern, path glob, case insensitivity |
+| HEIC Detection | 4 | `.heic`/`.HEIC` matching, JPEG path generation |
+| HEIC Conversion | 1 | macOS `sips` command converts HEIC to JPEG |
+| Workspace Types | 4 | Google Docs/Sheets/Slides detection, export mapping |
+| Retry Logic | 3 | Transient error retry, max attempts, non-retryable errors |
+| Time Buckets | 2 | "Shared with me" grouping (This Week, This Month, older) |
+| Build Verification | 4 | TypeScript compilation, Vite build, OAuth config embedding |
+
+### Pre-Release Check
+
+Run before every release to verify nothing is broken:
+
+```bash
+./scripts/prerelease-check.sh
+```
+
+This runs:
+1. TypeScript compilation (main process)
+2. TypeScript compilation (renderer)
+3. All unit tests
+4. Production build
+5. Build output verification (JS, HTML, OAuth config)
+
 ## Development
 
 ```bash
 npm run dev           # Vite dev server + Electron (hot reload)
 npm run build         # Compile TypeScript + bundle renderer
-npm run dist          # Build + package as .dmg
+npm run dist          # Build + package as .zip
 ```
 
 ### npm Scripts
 
 | Script | Description |
 |--------|-------------|
+| `test` | Run unit tests (vitest) |
+| `test:watch` | Run tests in watch mode |
 | `dev` | Start Vite + Electron concurrently |
 | `dev:vite` | Start Vite dev server only |
 | `dev:electron` | Compile main process + launch Electron |
-| `build` | Production build (tsc + vite) |
-| `dist` | Package macOS .dmg |
+| `build` | Production build (tsc + vite + embed credentials) |
+| `dist` | Package macOS .zip |
 | `dist:all` | Package all platforms |
 
 ## Tech Stack
