@@ -537,6 +537,13 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     throw new Error('Sync already in progress for this profile');
   }
 
+  // Mark any previous paused sessions for this profile as cancelled
+  const db = getDb();
+  db.prepare(`
+    UPDATE sync_history SET status = 'cancelled', completed_at = datetime('now')
+    WHERE profile_id = ? AND status = 'paused'
+  `).run(profileId);
+
   // If useSourceFolderName is enabled, append the drive folder name to the local path
   let effectiveProfile = profile;
   if (profile.useSourceFolderName) {
