@@ -390,7 +390,7 @@ export default function Settings() {
           <strong>Config file:</strong> <code>~/.gsync/config.json</code><br />
           <strong>Database files:</strong> <code>gdrive-sync.db</code>, <code>.db-wal</code>, <code>.db-shm</code><br />
           <strong>Pre-configure on new machine:</strong><br />
-          <code style={{ fontSize: 11 }}>mkdir -p ~/.gsync && echo '{'{'"dataDir":"/your/path"'}{'}'}' {'>'} ~/.gsync/config.json</code>
+          <code style={{ fontSize: 11 }}>{'mkdir -p ~/.gsync && echo \'{"dataDir":"/your/path"}\' > ~/.gsync/config.json'}</code>
         </Typography>
       </Box>
 
