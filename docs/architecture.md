@@ -99,16 +99,31 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    START[Start Sync] --> DIR{Direction?}
+    START[Start Sync] --> VALIDATE[Validate folders exist]
+    VALIDATE -->|Local missing + download| CREATE[Auto-create local folder]
+    VALIDATE -->|Folder missing + upload/bidir| FAIL[Fail + deactivate profile]
+    VALIDATE -->|OK| DIR{Direction?}
+    CREATE --> DIR
+
     DIR -->|Download| DL[List remote files recursively]
     DIR -->|Upload| UL[List local files recursively]
     DIR -->|Bidirectional| BI[List both sides]
 
-    DL --> DL_CHECK{Local file exists?}
+    DL --> DL_TYPE{File type?}
+
+    DL_TYPE -->|Regular file| DL_CHECK{Local file exists?}
     DL_CHECK -->|No| DL_DO[Download file]
     DL_CHECK -->|Yes| DL_HASH{MD5 match?}
-    DL_HASH -->|Yes| DL_SKIP[Skip]
+    DL_HASH -->|Yes| DL_SKIP[Skip — unchanged]
     DL_HASH -->|No| DL_DO
+
+    DL_TYPE -->|HEIC with convert enabled| HEIC_CHECK{Local .jpeg exists?}
+    HEIC_CHECK -->|No| DL_HEIC[Download + convert to JPEG]
+    HEIC_CHECK -->|Yes| HEIC_TIME{Remote newer than local?}
+    HEIC_TIME -->|Yes| DL_HEIC
+    HEIC_TIME -->|No| DL_SKIP
+
+    DL_TYPE -->|Google Workspace| DL_EXPORT[Export to DOCX/XLSX/PPTX]
 
     UL --> UL_CHECK{Remote file exists?}
     UL_CHECK -->|No| UL_DO[Upload file]
@@ -125,13 +140,56 @@ flowchart TD
     BI_TIME -->|Remote newer| DL_DO
     BI_TIME -->|Local newer| UL_DO
 
-    DL_DO --> LOG[Log to sync_file_log]
-    UL_DO --> LOG
+    DL_DO --> RETRY[Retry with backoff on failure]
+    DL_HEIC --> RETRY
+    DL_EXPORT --> RETRY
+    UL_DO --> RETRY
+    RETRY --> LOG[Log to sync_file_log]
     DL_SKIP --> LOG
     UL_SKIP --> LOG
     BI_SKIP --> LOG
-    LOG --> PROGRESS[Send progress event]
+    LOG --> PROGRESS[Send progress event to renderer]
 ```
+
+### Change Detection Strategy
+
+| File Type | Comparison Method | Re-download When |
+|-----------|------------------|-----------------|
+| Regular files (PDF, JPG, etc.) | **MD5 hash** — Google provides `md5Checksum` in metadata, compared with locally computed hash | Hash mismatch (file changed on either side) |
+| HEIC with conversion enabled | **modifiedTime** — compares remote HEIC timestamp vs local JPEG mtime | Remote HEIC newer than local JPEG |
+| Google Workspace (Docs/Sheets/Slides) | **Always re-export** — Google doesn't provide MD5 for native formats | Every sync (exported to DOCX/XLSX/PPTX) |
+| Deleted local files | **exists check** — `fs.existsSync()` returns false | File missing locally → re-downloaded |
+| Partial downloads (.partial files) | **Resume via HTTP Range header** — continues from last byte | Paused transfer resumed |
+
+### Safe Sync Mode
+
+The sync engine **never deletes files** on either side. It only adds new files and updates existing ones.
+
+- If a file is deleted locally → next sync re-downloads it from Drive
+- If a file is deleted on Drive → local copy remains untouched
+- No conflict resolution needed — newer version wins (by timestamp or hash)
+
+### Google Workspace Export Map
+
+| Google Native Type | Exported Format | Extension |
+|-------------------|----------------|-----------|
+| Google Docs | Word | .docx |
+| Google Sheets | Excel | .xlsx |
+| Google Slides | PowerPoint | .pptx |
+| Google Drawings | PNG | .png |
+| Google Jamboard | PDF | .pdf |
+| Google Apps Script | JSON | .json |
+| Google Forms | Not exported | Skipped |
+| Google Sites | Not exported | Skipped |
+
+### Retry Logic
+
+Transient errors are retried up to 3 times with exponential backoff:
+- Attempt 1: wait ~1s
+- Attempt 2: wait ~2s
+- Attempt 3: wait ~4s
+
+Retryable errors: `ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`, HTTP 429 (rate limit), 500, 503.
 
 ## Database Schema
 
@@ -163,9 +221,20 @@ erDiagram
         text drive_folder_path
         text local_path
         text sync_direction
+        int use_source_folder_name
+        int convert_heic_to_jpeg
+        text file_filter
         text schedule
         int is_active
         text last_sync_at
+        text created_at
+        text updated_at
+    }
+
+    app_settings {
+        text key PK
+        text value
+        text updated_at
     }
 
     sync_history {
@@ -174,7 +243,9 @@ erDiagram
         text status
         text started_at
         text completed_at
+        int total_files
         int files_synced
+        int files_skipped
         int files_failed
         int bytes_transferred
         int total_bytes
@@ -205,43 +276,58 @@ erDiagram
 ```
 gdrive/
 ├── desktop/              # Electron main process (TypeScript)
-│   ├── index.ts          # App entry, window creation
+│   ├── index.ts          # App entry, window creation, menu, auto-updater
 │   ├── preload.ts        # contextBridge API exposure
-│   ├── auth-preload.ts   # WebAuthn disabler for auth window
-│   ├── ipc-handlers.ts   # IPC channel registration
+│   ├── ipc-handlers.ts   # IPC channel registration (all try-catch wrapped)
 │   └── services/
-│       ├── google-auth.ts   # OAuth2 flow & token management
-│       ├── google-drive.ts  # Google Drive API wrapper (list/download/upload)
-│       ├── sync-engine.ts   # Core sync logic (download/upload/bidirectional)
-│       ├── scheduler.ts     # Cron-based auto-sync scheduler
-│       ├── local-fs.ts      # Local filesystem operations
-│       └── database.ts      # SQLite init & CRUD helpers
+│       ├── google-auth.ts     # OAuth2 via system browser + local HTTP callback
+│       ├── google-drive.ts    # Drive API: list, download (resumable), upload, export
+│       ├── sync-engine.ts     # Sync: download/upload/bidir, retry, pause/resume, HEIC convert
+│       ├── scheduler.ts       # node-cron auto-sync scheduler
+│       ├── db-backup.ts       # DB backup/restore/merge to Google Drive
+│       ├── embedded-config.ts # Load build-time OAuth + GH token config
+│       ├── local-fs.ts        # Local filesystem operations
+│       └── database.ts        # SQLite init, CRUD, settings, migrations
 ├── frontend/             # React renderer (TypeScript + Vite)
-│   ├── index.html        # HTML shell
-│   ├── main.tsx          # React entry point
-│   ├── App.tsx           # Root component (auth routing)
+│   ├── index.html
+│   ├── main.tsx          # Entry: AppThemeProvider + AppSettingsProvider
+│   ├── App.tsx           # Auth routing with ErrorBoundary
+│   ├── context/
+│   │   └── AppSettingsContext.tsx  # Customizable app title
 │   ├── pages/
-│   │   ├── Login.tsx     # OAuth login screen
-│   │   ├── Dashboard.tsx # Main dashboard with file browsers + sync cards
-│   │   ├── History.tsx   # Sync activity history table
-│   │   └── Settings.tsx  # Theme selector + version info + updates
+│   │   ├── Login.tsx     # First-run setup + system browser OAuth
+│   │   ├── Dashboard.tsx # Profile Command Center (master-detail layout)
+│   │   ├── History.tsx   # Filterable, sortable history with bulk delete
+│   │   ├── Settings.tsx  # Data dir, OAuth creds, backup, profiles, title, theme
+│   │   └── About.tsx     # Feature cards, tech stack, update checker
 │   ├── components/
-│   │   ├── Layout/Sidebar.tsx
-│   │   ├── DriveTree/DriveTree.tsx
-│   │   ├── LocalTree/LocalTree.tsx
-│   │   ├── SyncCards/SyncCards.tsx
-│   │   └── CreateProfileDialog/CreateProfileDialog.tsx
+│   │   ├── Layout/Sidebar.tsx          # Collapsible sidebar (4 nav items)
+│   │   ├── StatsBar/StatsBar.tsx       # Aggregate sync metrics
+│   │   ├── ProfileList/ProfileList.tsx # Master column with status indicators
+│   │   ├── ProfileDetail/ProfileDetail.tsx  # Detail panel with config + activity
+│   │   ├── EmptyState/EmptyState.tsx   # Onboarding for 0 profiles
+│   │   ├── DriveTree/DriveTree.tsx     # Drive explorer (used in dialogs)
+│   │   ├── LocalTree/LocalTree.tsx     # Local explorer (used in dialogs)
+│   │   ├── CreateProfileDialog/        # Profile creation with embedded Drive picker
+│   │   ├── EditProfileDialog/          # Profile editing with recursive folder picker
+│   │   ├── ErrorBoundary/              # React error boundary
+│   │   ├── StatusMessage/              # Classified error display
+│   │   └── WelcomeSplash/              # First-run welcome dialog
 │   └── theme/
 │       ├── index.ts         # Re-exports
-│       ├── themes.ts        # 6 theme definitions
-│       └── ThemeContext.tsx  # Theme provider + persistence
-├── shared/               # Shared TypeScript types
-│   └── types.ts          # IPC API types, data models
-├── docs/                 # Architecture & setup documentation
-├── scripts/              # Utility & test scripts
+│       ├── themes.ts        # 5 themes (Midnight, GitHub Dark, Ocean, Sunset, Light)
+│       └── ThemeContext.tsx  # Theme provider + localStorage persistence
+├── shared/types.ts       # All TypeScript types + IPC API interface
+├── resources/
+│   ├── icon.png          # App icon (1024px)
+│   └── icon.icns         # macOS icon
+├── docs/                 # Architecture, OAuth setup, phases, cost tracking
+├── scripts/
+│   ├── release.sh        # Local build + GitHub Release upload
+│   └── verify-build.sh
 ├── dist/                 # Build output (gitignored)
 ├── release/              # Packaged app (gitignored)
-└── .github/workflows/    # CI/CD
+└── .github/workflows/    # CI/CD (GitHub Actions)
 ```
 
 ## Technology Choices
@@ -254,7 +340,9 @@ gdrive/
 | Main process | TypeScript + tsc | Type safety, compiles to CommonJS for Node.js |
 | Google APIs | googleapis npm | Official client library, OAuth2 built-in |
 | Database | better-sqlite3 | Synchronous, fast, single-file, no server needed |
+| Image conversion | sharp | HEIC to JPEG conversion for synced photos |
 | Scheduling | node-cron | Standard cron expression support |
-| Packaging | electron-builder | DMG/NSIS/AppImage output, auto-update support |
-| Auto-update | electron-updater | GitHub Releases integration |
-| Themes | Custom MUI ThemeProvider | 6 themes with localStorage persistence |
+| Packaging | electron-builder | ZIP output for macOS, auto-update support |
+| Auto-update | GitHub API + in-app download | Version check + download with progress |
+| Themes | Custom MUI ThemeProvider | 5 themes with localStorage persistence |
+| Auth | System browser + local HTTP server | Standard desktop OAuth (VS Code, gcloud pattern) |
