@@ -268,12 +268,24 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
 
     try {
       let needsDownload = true;
-      if (fs.existsSync(localPath) && file.md5Checksum) {
-        const localHash = await computeLocalMd5(localPath);
-        if (localHash === file.md5Checksum) {
+      // Check if file exists locally (also check .jpeg version for converted HEIC files)
+      const localExists = fs.existsSync(localPath);
+      const jpegPath = localPath.replace(/\.heic$/i, '.jpeg');
+      const jpegExists = profile.convertHeicToJpeg && /\.heic$/i.test(localPath) && fs.existsSync(jpegPath);
+
+      if ((localExists || jpegExists) && file.md5Checksum) {
+        // If HEIC was converted, we can't compare MD5 (format changed). Skip if jpeg exists.
+        if (jpegExists && !localExists) {
           needsDownload = false;
           session.filesSkipped++;
-          logFile(session.id, file.name, file.relativePath, 'download', 'skipped', file.size || 0, 0, localHash, file.md5Checksum);
+          logFile(session.id, file.name, file.relativePath, 'download', 'skipped', file.size || 0, 0, undefined, file.md5Checksum);
+        } else if (localExists) {
+          const localHash = await computeLocalMd5(localPath);
+          if (localHash === file.md5Checksum) {
+            needsDownload = false;
+            session.filesSkipped++;
+            logFile(session.id, file.name, file.relativePath, 'download', 'skipped', file.size || 0, 0, localHash, file.md5Checksum);
+          }
         }
       }
 
