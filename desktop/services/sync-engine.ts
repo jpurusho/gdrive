@@ -1,15 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { BrowserWindow } from 'electron';
-import sharp from 'sharp';
 import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportInfo } from './google-drive';
 import { getProfile, updateProfile, getDb } from './database';
 import type { SyncProfile, SyncSession } from '../../shared/types';
 
-/** Convert HEIC file to JPEG, returns the new path */
+const execFileAsync = promisify(execFile);
+
+/** Convert HEIC file to JPEG using macOS sips (built-in, no dependencies) */
 async function convertHeicFile(heicPath: string): Promise<string> {
   const jpegPath = heicPath.replace(/\.heic$/i, '.jpeg');
-  await sharp(heicPath).jpeg({ quality: 90 }).toFile(jpegPath);
+  await execFileAsync('sips', ['-s', 'format', 'jpeg', heicPath, '--out', jpegPath]);
   // Remove the original .heic
   try { fs.unlinkSync(heicPath); } catch {}
   return jpegPath;
