@@ -189,6 +189,18 @@ export function registerIpcHandlers(): void {
     cancelSync(profileId);
   });
 
+  ipcMain.handle('sync:deleteSessions', async (_event, ids: number[]) => {
+    try {
+      const db = require('./services/database').getDb();
+      const placeholders = ids.map(() => '?').join(',');
+      db.prepare(`DELETE FROM sync_file_log WHERE history_id IN (${placeholders})`).run(...ids);
+      db.prepare(`DELETE FROM sync_history WHERE id IN (${placeholders})`).run(...ids);
+    } catch (err: any) {
+      console.error('Delete sessions failed:', err?.message);
+      throw new Error(err?.message || 'Failed to delete sessions');
+    }
+  });
+
   ipcMain.handle('sync:getSessions', async (_event, profileId?: number) => {
     try {
       return getSessions(profileId);

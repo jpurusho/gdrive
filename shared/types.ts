@@ -175,6 +175,7 @@ export interface ElectronAPI {
     startSync: (profileId: number) => Promise<void>;
     cancelSync: (sessionId: number) => Promise<void>;
     getSessions: (profileId?: number) => Promise<SyncSession[]>;
+    deleteSessions: (ids: number[]) => Promise<void>;
     onSyncProgress: (callback: (session: SyncSession) => void) => () => void;
   };
   backup: {

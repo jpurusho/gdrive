@@ -29,6 +29,7 @@ const api: ElectronAPI = {
     startSync: (profileId) => ipcRenderer.invoke('sync:startSync', profileId),
     cancelSync: (sessionId) => ipcRenderer.invoke('sync:cancelSync', sessionId),
     getSessions: (profileId) => ipcRenderer.invoke('sync:getSessions', profileId),
+    deleteSessions: (ids: number[]) => ipcRenderer.invoke('sync:deleteSessions', ids),
     onSyncProgress: (callback) => {
       const handler = (_event: Electron.IpcRendererEvent, session: any) => callback(session);
       ipcRenderer.on('sync:progress', handler);
