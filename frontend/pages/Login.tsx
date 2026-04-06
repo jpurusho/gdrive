@@ -31,6 +31,8 @@ export default function Login({ onLogin }: LoginProps) {
   const [showSetup, setShowSetup] = useState(false);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [dataDir, setDataDir] = useState('');
+  const [dataDirChanged, setDataDirChanged] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
@@ -39,7 +41,17 @@ export default function Login({ onLogin }: LoginProps) {
       if (!has) setShowSetup(true);
       setChecking(false);
     });
+    window.api.app.getDataDir().then(setDataDir);
   }, []);
+
+  async function handleChangeDataDir() {
+    const dir = await window.api.localFs.selectDirectory();
+    if (dir) {
+      await window.api.app.setDataDir(dir);
+      setDataDir(dir);
+      setDataDirChanged(true);
+    }
+  }
 
   async function handleSaveCredentials() {
     if (!clientId.trim() || !clientSecret.trim()) {
@@ -152,6 +164,37 @@ export default function Login({ onLogin }: LoginProps) {
 
         {error && (
           <Alert severity="error" sx={{ width: '100%', borderRadius: 2 }}>{error}</Alert>
+        )}
+
+        {/* Data directory — shown on first launch */}
+        {hasCredentials && !showSetup && (
+          <Box
+            sx={{
+              width: '100%',
+              p: 1.5,
+              borderRadius: 1.5,
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              border: `1px solid ${alpha(theme.palette.primary.light, 0.15)}`,
+              mb: 1,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>
+              <strong>Data directory</strong> — where profiles and sync history are stored
+            </Typography>
+            <Box display="flex" gap={1} alignItems="center">
+              <Typography variant="caption" color="text.secondary" noWrap flex={1} title={dataDir}>
+                {dataDir || 'Loading...'}
+              </Typography>
+              <Button size="small" variant="outlined" onClick={handleChangeDataDir} sx={{ fontSize: 11, height: 24, textTransform: 'none' }}>
+                Change
+              </Button>
+            </Box>
+            {dataDirChanged && (
+              <Typography variant="caption" color="success.main" display="block" mt={0.5}>
+                Updated. The app will use this location.
+              </Typography>
+            )}
+          </Box>
         )}
 
         {/* Sign In — shown when credentials are available */}
