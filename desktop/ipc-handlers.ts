@@ -362,13 +362,11 @@ export function registerIpcHandlers(): void {
             if (res.statusCode === 200) {
               resolve(JSON.parse(data));
             } else if (res.statusCode === 404) {
-              reject(new Error(ghToken
-                ? 'No releases found. Publish a release first.'
-                : 'Repository not accessible. Add a GitHub token in Settings → GitHub Token (needs repo scope).'));
+              reject(new Error('No releases found. Check that the repository exists and has published releases.'));
             } else if (res.statusCode === 401 || res.statusCode === 403) {
-              reject(new Error('GitHub token is invalid or expired. Update it in Settings → GitHub Token.'));
+              reject(new Error('Access denied checking for updates. If this is a private repo, configure a GitHub token in Settings.'));
             } else {
-              reject(new Error(`GitHub API error (${res.statusCode}). Try again later.`));
+              reject(new Error(`Update check failed (HTTP ${res.statusCode}). Try again later.`));
             }
           });
         }).on('error', reject);
