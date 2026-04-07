@@ -41,6 +41,7 @@ npm-debug.log*
 credentials.json
 token.json
 client_secret*.json
+oauth-config.json
 
 # Python (legacy)
 __pycache__/
