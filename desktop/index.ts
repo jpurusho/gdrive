@@ -2,8 +2,7 @@ import { app, BrowserWindow, nativeTheme, globalShortcut, Menu } from 'electron'
 import * as path from 'path';
 import { config } from 'dotenv';
 import { registerIpcHandlers } from './ipc-handlers';
-import { initDatabase, getSetting } from './services/database';
-import { loadEmbeddedConfig } from './services/embedded-config';
+import { initDatabase } from './services/database';
 import { initScheduler } from './services/scheduler';
 import { GoogleAuthService } from './services/google-auth';
 import { autoUpdater } from 'electron-updater';
@@ -132,16 +131,11 @@ function createWindow(): void {
 }
 
 function setupAutoUpdater(): void {
-  const embedded = loadEmbeddedConfig();
-  const ghToken = getSetting('github_token') || embedded.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-  if (ghToken) {
-    autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: 'jpurusho',
-      repo: 'gdrive',
-      token: ghToken,
-    });
-  }
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'jpurusho',
+    repo: 'gdrive',
+  });
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

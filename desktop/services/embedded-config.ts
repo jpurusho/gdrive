@@ -4,7 +4,6 @@ import * as path from 'path';
 export interface EmbeddedConfig {
   clientId: string;
   clientSecret: string;
-  githubToken: string;
 }
 
 let cached: EmbeddedConfig | null = null;
@@ -26,7 +25,6 @@ export function loadEmbeddedConfig(): EmbeddedConfig {
         cached = {
           clientId: config.clientId || '',
           clientSecret: config.clientSecret || '',
-          githubToken: config.githubToken || '',
         };
         console.log('[Config] Loaded embedded config from:', configPath);
         return cached;
@@ -34,6 +32,6 @@ export function loadEmbeddedConfig(): EmbeddedConfig {
     } catch {}
   }
 
-  cached = { clientId: '', clientSecret: '', githubToken: '' };
+  cached = { clientId: '', clientSecret: '' };
   return cached;
 }

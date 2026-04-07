@@ -5,7 +5,6 @@ import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting, getDataDir, setDataDir } from './services/database';
-import { loadEmbeddedConfig } from './services/embedded-config';
 import { startSync, cancelSync, getSessions } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
@@ -341,35 +340,33 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
     const currentVersion = app.getVersion();
-    const embedded = loadEmbeddedConfig();
-    const ghToken = getSetting('github_token') || embedded.githubToken || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 
     try {
-      // Fetch latest release from GitHub API
       const https = require('https');
-      const options: any = {
-        hostname: 'api.github.com',
-        path: '/repos/jpurusho/gdrive/releases/latest',
-        headers: { 'User-Agent': 'gsync-updater' },
-      };
-      if (ghToken) options.headers['Authorization'] = `token ${ghToken}`;
 
       const release: any = await new Promise((resolve, reject) => {
-        https.get(options, (res: any) => {
+        https.get({
+          hostname: 'api.github.com',
+          path: '/repos/jpurusho/gdrive/releases/latest',
+          headers: { 'User-Agent': 'gsync-updater' },
+        }, (res: any) => {
           let data = '';
           res.on('data', (chunk: string) => { data += chunk; });
           res.on('end', () => {
+            console.log(`[Update] GitHub API: ${res.statusCode}`);
             if (res.statusCode === 200) {
               resolve(JSON.parse(data));
             } else if (res.statusCode === 404) {
-              reject(new Error('No releases found. Check that the repository exists and has published releases.'));
-            } else if (res.statusCode === 401 || res.statusCode === 403) {
-              reject(new Error('Access denied checking for updates. If this is a private repo, configure a GitHub token in Settings.'));
+              reject(new Error('No releases found for this app.'));
+            } else if (res.statusCode === 403) {
+              reject(new Error('GitHub API rate limit reached. Try again in a few minutes.'));
             } else {
               reject(new Error(`Update check failed (HTTP ${res.statusCode}). Try again later.`));
             }
           });
-        }).on('error', reject);
+        }).on('error', (err: any) => {
+          reject(new Error(`Cannot reach GitHub: ${err.message}`));
+        });
       });
 
       const latestVersion = release.tag_name?.replace(/^v/, '') || '';
