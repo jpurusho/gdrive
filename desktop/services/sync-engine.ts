@@ -432,16 +432,24 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
 
   session.currentFile = 'Scanning local files...';
   sendProgress(session);
-  const localFiles = await listAllLocalFiles(profile.localPath);
+  const allLocalFiles = await listAllLocalFiles(profile.localPath);
 
-  const remoteByPath = new Map(downloadable.map((f) => [f.relativePath, f]));
+  // Apply file filter to both sides
+  const profileFilter = profile.fileFilter;
+  const filteredRemote = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
+  const localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  if (profileFilter) {
+    console.log(`[Sync] Bidirectional filter "${profileFilter}" matched ${filteredRemote.length}/${downloadable.length} remote, ${localFiles.length}/${allLocalFiles.length} local`);
+  }
+
+  const remoteByPath = new Map(filteredRemote.map((f) => [f.relativePath, f]));
   const localByPath = new Map(localFiles.map((f) => [f.relativePath, f]));
 
   const allPaths = new Set([...remoteByPath.keys(), ...localByPath.keys()]);
   session.totalFiles = allPaths.size;
-  session.totalBytes = downloadable.reduce((s, f) => s + (f.size || 0), 0) + localFiles.reduce((s, f) => s + f.size, 0);
+  session.totalBytes = filteredRemote.reduce((s, f) => s + (f.size || 0), 0) + localFiles.reduce((s, f) => s + f.size, 0);
 
-  console.log(`[Sync] Bidirectional for "${profile.name}" — ${downloadable.length} remote, ${localFiles.length} local, ${allPaths.size} unique paths`);
+  console.log(`[Sync] Bidirectional for "${profile.name}" — ${filteredRemote.length} remote, ${localFiles.length} local, ${allPaths.size} unique paths`);
 
   if (allPaths.size === 0) {
     session.currentFile = 'No files found on either side';

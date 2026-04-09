@@ -79,6 +79,33 @@ describe('File Filter Logic', () => {
     const result = applyFileFilter(testFiles, '*.PDF');
     expect(result).toHaveLength(1);
   });
+
+  it('filters HEIC files', () => {
+    const result = applyFileFilter(testFiles, '*.heic');
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('image.heic');
+  });
+
+  it('filters by exact name', () => {
+    const result = applyFileFilter(testFiles, 'data.xlsx');
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('data.xlsx');
+  });
+
+  it('filters images only', () => {
+    const result = applyFileFilter(testFiles, '*.jpg, *.heic');
+    expect(result).toHaveLength(2);
+  });
+
+  it('filters documents only', () => {
+    const result = applyFileFilter(testFiles, '*.pdf, *.docx, *.xlsx');
+    expect(result).toHaveLength(3);
+  });
+
+  it('handles whitespace in patterns', () => {
+    const result = applyFileFilter(testFiles, ' *.pdf , *.docx ');
+    expect(result).toHaveLength(2);
+  });
 });
 
 describe('HEIC File Detection', () => {
