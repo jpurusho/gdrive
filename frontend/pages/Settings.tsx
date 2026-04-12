@@ -446,6 +446,20 @@ export default function Settings() {
         Restore or merge when setting up a new machine or recovering from data loss.
       </Typography>
 
+      {/* Backup folder info */}
+      <Box
+        sx={{
+          p: 1.5, borderRadius: 1.5, mb: 2, maxWidth: 500,
+          bgcolor: (t) => alpha(t.palette.info?.main || t.palette.primary.main, 0.05),
+          border: (t) => `1px solid ${alpha(t.palette.info?.main || t.palette.primary.main, 0.12)}`,
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
+          <strong>Backup folder:</strong> {backupInfo.folderId ? `"GDrive Sync Backups" on your Drive` : 'Drive root folder (no folder set)'}<br />
+          <strong>Backup file:</strong> <code>gdrive-sync-backup.db</code>
+        </Typography>
+      </Box>
+
       {backupMessage && (
         <Alert severity={backupMessage.type} sx={{ mb: 2, borderRadius: 2 }} onClose={() => setBackupMessage(null)}>
           {backupMessage.text}

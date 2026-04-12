@@ -38,6 +38,9 @@ export function classifyError(err: string): { type: MessageType; title: string; 
   if (lower.includes('econnreset') || lower.includes('socket hang up') || lower.includes('etimedout')) {
     return { type: 'offline', title: 'Connection lost', detail: 'The connection was interrupted. Try again.' };
   }
+  if (lower.includes('invalid_grant') || lower.includes('token has been expired') || lower.includes('token expired or revoked')) {
+    return { type: 'noAccess', title: 'Session expired', detail: 'Your Google session has expired. Please sign out and sign in again to continue.' };
+  }
   if (lower.includes('401') || lower.includes('unauthorized') || lower.includes('not authenticated')) {
     return { type: 'noAccess', title: 'Session expired', detail: 'Please sign out and sign in again.' };
   }

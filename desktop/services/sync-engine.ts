@@ -64,10 +64,15 @@ async function validateRemoteFolder(profile: SyncProfile, driveService: GoogleDr
     await driveService.listFiles(profile.driveId, profile.driveFolderId);
     return null;
   } catch (err: any) {
+    const errMsg = err?.message || '';
+    const errData = err?.response?.data;
+    if (errMsg.includes('invalid_grant') || errData?.error === 'invalid_grant') {
+      return 'Session expired — please sign out and sign in again.';
+    }
     const status = err?.code || err?.status || err?.response?.status;
     if (status === 404) return `Drive folder not found: ${profile.driveFolderPath}`;
     if (status === 401 || status === 403) return `Access denied to Drive folder: ${profile.driveFolderPath}`;
-    return `Cannot access Drive folder: ${err.message}`;
+    return `Cannot access Drive folder: ${errMsg}`;
   }
 }
 
@@ -627,9 +632,17 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   } catch (err: any) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();
-    session.errorMessage = err?.message || 'Sync failed';
     session.currentFile = undefined;
-    console.error(`[Sync] Failed:`, err?.message);
+
+    // Detect expired/revoked tokens
+    const errMsg = err?.message || '';
+    const errData = err?.response?.data;
+    if (errMsg.includes('invalid_grant') || errData?.error === 'invalid_grant') {
+      session.errorMessage = 'Session expired — please sign out and sign in again.';
+    } else {
+      session.errorMessage = errMsg || 'Sync failed';
+    }
+    console.error(`[Sync] Failed:`, errMsg);
   } finally {
     updateSession(session);
     sendProgress(session);
