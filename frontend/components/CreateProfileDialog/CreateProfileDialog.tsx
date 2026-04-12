@@ -227,6 +227,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [direction, setDirection] = useState<SyncDirection>('download');
   const [useSourceFolderName, setUseSourceFolderName] = useState(true);
   const [convertHeicToJpeg, setConvertHeicToJpeg] = useState(false);
+  const [mirrorMode, setMirrorMode] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
@@ -248,6 +249,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setDirection('download');
     setUseSourceFolderName(true);
     setConvertHeicToJpeg(false);
+    setMirrorMode(false);
     setFileFilter('');
     setSchedule('');
     setError('');
@@ -276,6 +278,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         syncDirection: direction,
         useSourceFolderName,
         convertHeicToJpeg,
+        mirrorMode,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
         isActive: true,
@@ -348,6 +351,21 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         <FormControlLabel
           control={<Checkbox checked={convertHeicToJpeg} onChange={(e) => setConvertHeicToJpeg(e.target.checked)} size="small" />}
           label={<Typography variant="body2">Convert HEIC photos to JPEG</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox checked={mirrorMode} onChange={(e) => setMirrorMode(e.target.checked)} size="small" disabled={direction === 'bidirectional'} />}
+          label={
+            <Box>
+              <Typography variant="body2" color={direction === 'bidirectional' ? 'text.disabled' : undefined}>
+                Mirror mode (delete extras on destination)
+              </Typography>
+              {mirrorMode && direction !== 'bidirectional' && (
+                <Typography variant="caption" color="warning.main">
+                  Files not in the source will be permanently deleted from the destination.
+                </Typography>
+              )}
+            </Box>
+          }
         />
 
         {/* Sync direction */}

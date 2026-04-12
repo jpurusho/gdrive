@@ -74,6 +74,7 @@ export interface SyncProfile {
   syncDirection: SyncDirection;
   useSourceFolderName: boolean;
   convertHeicToJpeg: boolean;
+  mirrorMode: boolean;
   fileFilter?: string;
   schedule?: string;
   isActive: boolean;
@@ -105,7 +106,7 @@ export interface SyncFileEntry {
   fileName: string;
   filePath: string;
   direction: 'download' | 'upload';
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped' | 'deleted';
   fileSize: number;
   bytesTransferred: number;
   localHash?: string;

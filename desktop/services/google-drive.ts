@@ -372,6 +372,14 @@ export class GoogleDriveService {
       md5Checksum: f.md5Checksum ?? undefined,
     };
   }
+
+  /** Delete a file or folder from Google Drive */
+  async deleteFile(fileId: string): Promise<void> {
+    await this.drive.files.delete({
+      fileId,
+      supportsAllDrives: true,
+    });
+  }
 }
 
 /** Compute the MD5 hash of a local file */

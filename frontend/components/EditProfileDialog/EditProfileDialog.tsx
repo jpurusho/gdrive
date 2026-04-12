@@ -143,6 +143,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const [direction, setDirection] = useState<SyncDirection>('download');
   const [useSourceFolderName, setUseSourceFolderName] = useState(false);
   const [convertHeicToJpeg, setConvertHeicToJpeg] = useState(false);
+  const [mirrorMode, setMirrorMode] = useState(false);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [saving, setSaving] = useState(false);
@@ -163,6 +164,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       setDirection(profile.syncDirection);
       setUseSourceFolderName(profile.useSourceFolderName);
       setConvertHeicToJpeg(profile.convertHeicToJpeg);
+      setMirrorMode(profile.mirrorMode);
       setFileFilter(profile.fileFilter || '');
       setSchedule(profile.schedule || '');
       setDriveFolderId(profile.driveFolderId);
@@ -213,6 +215,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         syncDirection: direction,
         useSourceFolderName,
         convertHeicToJpeg,
+        mirrorMode,
         fileFilter: fileFilter || undefined,
         schedule: schedule || '',
       };
@@ -405,6 +408,21 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         <FormControlLabel
           control={<Checkbox checked={convertHeicToJpeg} onChange={(e) => setConvertHeicToJpeg(e.target.checked)} size="small" />}
           label={<Typography variant="body2">Convert HEIC photos to JPEG</Typography>}
+        />
+        <FormControlLabel
+          control={<Checkbox checked={mirrorMode} onChange={(e) => setMirrorMode(e.target.checked)} size="small" disabled={direction === 'bidirectional'} />}
+          label={
+            <Box>
+              <Typography variant="body2" color={direction === 'bidirectional' ? 'text.disabled' : undefined}>
+                Mirror mode (delete extras on destination)
+              </Typography>
+              {mirrorMode && direction !== 'bidirectional' && (
+                <Typography variant="caption" color="warning.main">
+                  Files not in the source will be permanently deleted from the destination.
+                </Typography>
+              )}
+            </Box>
+          }
         />
 
         {/* Sync direction */}

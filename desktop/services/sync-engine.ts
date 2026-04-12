@@ -341,6 +341,31 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
 
     sendProgress(session);
   }
+
+  // Mirror mode: delete local files not present in remote
+  if (profile.mirrorMode) {
+    session.currentFile = 'Mirror: scanning for extra local files...';
+    sendProgress(session);
+    const localFiles = await listAllLocalFiles(profile.localPath);
+    const remoteRelPaths = new Set(finalFiles.map((f) => f.relativePath));
+
+    for (const localFile of localFiles) {
+      if (ctx.cancelled) break;
+      if (!remoteRelPaths.has(localFile.relativePath)) {
+        try {
+          fs.unlinkSync(localFile.path);
+          logFile(session.id, localFile.name, localFile.relativePath, 'download', 'deleted', localFile.size, 0);
+          session.filesSynced++;
+          console.log(`[Mirror] Deleted local: ${localFile.relativePath}`);
+        } catch (err: any) {
+          console.warn(`[Mirror] Failed to delete local ${localFile.name}:`, err?.message);
+          logFile(session.id, localFile.name, localFile.relativePath, 'download', 'failed', localFile.size, 0, undefined, undefined, `Mirror delete failed: ${err?.message}`);
+          session.filesFailed++;
+        }
+        sendProgress(session);
+      }
+    }
+  }
 }
 
 async function runUploadSync(ctx: SyncContext): Promise<void> {
@@ -421,6 +446,38 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
     }
 
     sendProgress(session);
+  }
+
+  // Mirror mode: delete remote files not present locally
+  if (profile.mirrorMode) {
+    session.currentFile = 'Mirror: scanning for extra remote files...';
+    sendProgress(session);
+    const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+    const localRelPaths = new Set(localFiles.map((f) => f.relativePath));
+
+    for (const remoteFile of remoteFiles) {
+      if (ctx.cancelled) break;
+      if (!localRelPaths.has(remoteFile.relativePath)) {
+        // Check if we can delete
+        if (remoteFile.capabilities?.canDelete === false) {
+          console.warn(`[Mirror] Cannot delete remote ${remoteFile.name}: no delete permission`);
+          logFile(session.id, remoteFile.name, remoteFile.relativePath, 'upload', 'failed', remoteFile.size || 0, 0, undefined, undefined, 'No delete permission');
+          session.filesFailed++;
+          continue;
+        }
+        try {
+          await driveService.deleteFile(remoteFile.id);
+          logFile(session.id, remoteFile.name, remoteFile.relativePath, 'upload', 'deleted', remoteFile.size || 0, 0);
+          session.filesSynced++;
+          console.log(`[Mirror] Deleted remote: ${remoteFile.relativePath}`);
+        } catch (err: any) {
+          console.warn(`[Mirror] Failed to delete remote ${remoteFile.name}:`, err?.message);
+          logFile(session.id, remoteFile.name, remoteFile.relativePath, 'upload', 'failed', remoteFile.size || 0, 0, undefined, undefined, `Mirror delete failed: ${err?.message}`);
+          session.filesFailed++;
+        }
+        sendProgress(session);
+      }
+    }
   }
 }
 

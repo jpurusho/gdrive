@@ -250,6 +250,9 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             {profile.convertHeicToJpeg && (
               <Chip label="HEIC→JPEG" size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
             )}
+            {profile.mirrorMode && (
+              <Chip label="Mirror" size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+            )}
           </Box>
           {profile.schedule && (
             <Box display="flex" alignItems="center" gap={1.5}>
