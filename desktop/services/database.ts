@@ -285,7 +285,7 @@ export function updateProfile(id: number, updates: Partial<SyncProfile>): SyncPr
   if (updates.useSourceFolderName !== undefined) { fields.push('use_source_folder_name = ?'); values.push(updates.useSourceFolderName ? 1 : 0); }
   if (updates.convertHeicToJpeg !== undefined) { fields.push('convert_heic_to_jpeg = ?'); values.push(updates.convertHeicToJpeg ? 1 : 0); }
   if (updates.fileFilter !== undefined) { fields.push('file_filter = ?'); values.push(updates.fileFilter ?? null); }
-  if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule ?? null); }
+  if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule || null); }
   if (updates.isActive !== undefined) { fields.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
   if (updates.lastSyncAt !== undefined) { fields.push('last_sync_at = ?'); values.push(updates.lastSyncAt); }
 

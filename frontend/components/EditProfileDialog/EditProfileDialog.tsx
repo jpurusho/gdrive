@@ -214,7 +214,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         useSourceFolderName,
         convertHeicToJpeg,
         fileFilter: fileFilter || undefined,
-        schedule: schedule || undefined,
+        schedule: schedule || '',
       };
       if (localPath !== profile!.localPath) {
         updates.localPath = localPath;
