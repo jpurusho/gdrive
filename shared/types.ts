@@ -195,7 +195,7 @@ export interface ElectronAPI {
     downloadUpdate: (url: string, destDir?: string) => Promise<{ success: boolean; path: string; size: number }>;
     onDownloadProgress: (callback: (progress: { downloaded: number; total: number; percent: number }) => void) => () => void;
     getVersion: () => Promise<string>;
-    checkForUpdates: () => Promise<{ status: 'available' | 'latest' | 'error'; version?: string; url?: string; message?: string }>;
+    checkForUpdates: () => Promise<{ status: 'available' | 'latest' | 'error'; version?: string; url?: string; notes?: string; message?: string }>;
     getPlatform: () => Promise<string>;
     getSetting: (key: string) => Promise<string | null>;
     setSetting: (key: string, value: string) => Promise<void>;

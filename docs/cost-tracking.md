@@ -109,14 +109,50 @@ Source: AWS Bedrock Pricing API (2026-03-13) + Anthropic docs
 
 ---
 
+### Session 4 — Profile Command Center + Production Hardening
+**Date:** 2026-04-06 to 2026-04-12
+
+**Work done:**
+- Profile Command Center UX redesign (master-detail layout)
+- StatsBar, ProfileList, ProfileDetail, EmptyState components
+- Collapsible sidebar (4 nav items)
+- Active/inactive toggle per profile
+- HEIC→JPEG conversion via macOS sips
+- Shared with me time bucketing (This Week/Month/older)
+- File detail dialog (click Files Today or session rows)
+- History filtering, sorting, bulk delete
+- Backup folder selector in Settings
+- Backup folder dedup fix (search before create)
+- Expired token detection (clean error message)
+- Bidirectional sync file filter fix
+- System browser OAuth (replaced BrowserWindow)
+- First-run setup flow with embedded credentials
+- Auto-update in titlebar (orange badge, download dialog)
+- Recursive Drive folder picker in Edit dialog
+- 30 unit tests (vitest), pre-release check script
+- Public repo, branch renamed master→main
+- Local release script (scripts/release.sh)
+- ~30 commits, v2.0.0 through v2.4.0
+
+**Estimated token usage:**
+
+| Metric | Tokens | Cost |
+|--------|--------|------|
+| Input tokens | ~1,200,000 | $6.00 |
+| Output tokens | ~600,000 | $15.00 |
+| Subagent (exploration, planning) | ~150,000 (combined) | ~$1.20 |
+| **Session total** | **~1,950,000** | **~$22.20** |
+
+---
+
 ## Running Totals
 
 | Metric | Value |
 |--------|-------|
-| **Total input tokens** | ~1,100,000 |
-| **Total output tokens** | ~590,000 |
-| **Total cost** | **~$22.00** |
-| Sessions completed | 3 |
+| **Total input tokens** | ~2,300,000 |
+| **Total output tokens** | ~1,190,000 |
+| **Total cost** | **~$44.20** |
+| Sessions completed | 4 |
 
 ---
 

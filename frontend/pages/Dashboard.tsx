@@ -52,7 +52,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const { appTitle } = useAppSettings();
 
   // Update state
-  const [updateAvailable, setUpdateAvailable] = useState<{ version: string; url: string } | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string; url: string; notes: string } | null>(null);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -67,7 +67,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     // Auto-check for updates on startup (silent)
     window.api.app.checkForUpdates().then((result) => {
       if (result.status === 'available' && result.version && result.url) {
-        setUpdateAvailable({ version: result.version, url: result.url });
+        setUpdateAvailable({ version: result.version, url: result.url, notes: result.notes || '' });
       }
     }).catch(() => {});
 
@@ -310,9 +310,22 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         <DialogContent sx={{ py: 3 }}>
           {!downloading && !downloadedPath && (
             <Box>
-              <Typography variant="body2" color="text.secondary" mb={3}>
-                A new version of gsync is available. Download it and replace your current installation.
-                Your data and profiles are stored separately and won't be affected.
+              {updateAvailable?.notes && (
+                <Box
+                  sx={{
+                    mb: 2, p: 2, borderRadius: 2, maxHeight: 200, overflowY: 'auto',
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                    border: (t) => `1px solid ${alpha(t.palette.primary.light, 0.15)}`,
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={600} mb={1}>What's New</Typography>
+                  <Typography variant="caption" color="text.secondary" component="div" whiteSpace="pre-line" lineHeight={1.8}>
+                    {updateAvailable.notes}
+                  </Typography>
+                </Box>
+              )}
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Your data and profiles won't be affected by the update.
               </Typography>
               <Box display="flex" gap={1}>
                 <Button

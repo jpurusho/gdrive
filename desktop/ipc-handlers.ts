@@ -390,6 +390,7 @@ export function registerIpcHandlers(): void {
 
       const latestVersion = release.tag_name?.replace(/^v/, '') || '';
       const downloadUrl = release.html_url || '';
+      const releaseNotes = release.body || '';
 
       if (!latestVersion) return { status: 'error', message: 'Could not determine latest version' };
 
@@ -401,7 +402,7 @@ export function registerIpcHandlers(): void {
         || (latest[0] === current[0] && latest[1] === current[1] && latest[2] > current[2]);
 
       if (isNewer) {
-        return { status: 'available', version: latestVersion, url: downloadUrl };
+        return { status: 'available', version: latestVersion, url: downloadUrl, notes: releaseNotes };
       }
       return { status: 'latest', version: currentVersion };
     } catch (err: any) {
