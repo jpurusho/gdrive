@@ -5,7 +5,7 @@ import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting, getDataDir, setDataDir } from './services/database';
-import { startSync, cancelSync, getSessions } from './services/sync-engine';
+import { startSync, cancelSync, getSessions, getFileLogs } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
 import type { SyncProfile } from '../shared/types';
@@ -197,6 +197,15 @@ export function registerIpcHandlers(): void {
     } catch (err: any) {
       console.error('Delete sessions failed:', err?.message);
       throw new Error(err?.message || 'Failed to delete sessions');
+    }
+  });
+
+  ipcMain.handle('sync:getFileLogs', async (_event, sessionId: number) => {
+    try {
+      return getFileLogs(sessionId);
+    } catch (err: any) {
+      console.error('Get file logs failed:', err?.message);
+      return [];
     }
   });
 

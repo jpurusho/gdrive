@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { BrowserWindow } from 'electron';
 import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportInfo } from './google-drive';
 import { getProfile, updateProfile, getDb } from './database';
-import type { SyncProfile, SyncSession } from '../../shared/types';
+import type { SyncProfile, SyncSession, SyncFileEntry } from '../../shared/types';
 
 const execFileAsync = promisify(execFile);
 
@@ -643,6 +643,24 @@ export function cancelSync(profileId: number): void {
   if (ctx) {
     ctx.cancelled = true;
   }
+}
+
+export function getFileLogs(sessionId: number): SyncFileEntry[] {
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM sync_file_log WHERE history_id = ? ORDER BY completed_at DESC').all(sessionId) as any[];
+  return rows.map((r) => ({
+    id: r.id,
+    sessionId: r.history_id,
+    fileName: r.file_name,
+    filePath: r.file_path,
+    direction: r.direction,
+    status: r.status,
+    fileSize: r.file_size,
+    bytesTransferred: r.bytes_transferred,
+    localHash: r.local_hash ?? undefined,
+    remoteHash: r.remote_hash ?? undefined,
+    errorMessage: r.error_message ?? undefined,
+  }));
 }
 
 export function getSessions(profileId?: number): SyncSession[] {

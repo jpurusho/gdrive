@@ -4,7 +4,7 @@ import * as os from 'os';
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import { GoogleDriveService } from './google-drive';
-import { getDb } from './database';
+import { getDb, getDataDir } from './database';
 
 const BACKUP_FILENAME = 'gdrive-sync-backup.db';
 const BACKUP_FOLDER_NAME = 'GDrive Sync Backups';
@@ -38,17 +38,32 @@ export interface MergeResult {
 
 /** Find or create the backup folder on Google Drive */
 async function ensureBackupFolder(driveService: GoogleDriveService): Promise<string> {
-  // Check for stored folder ID
   const db = getDb();
+
+  // 1. Check stored folder ID
   const row = db.prepare("SELECT value FROM app_settings WHERE key = 'backup_folder_id'").get() as any;
   if (row?.value) {
-    return row.value;
+    // Verify the stored folder still exists on Drive
+    try {
+      await driveService.listFiles('root', row.value);
+      return row.value;
+    } catch {
+      // Stored folder is gone — fall through to search/create
+      console.log('[Backup] Stored backup folder no longer accessible, searching...');
+    }
   }
 
-  // Create the folder in My Drive root
-  const folderId = await driveService.createFolder(BACKUP_FOLDER_NAME, 'root', 'root');
+  // 2. Search Drive for existing folder by name (prevents duplicates)
+  const existing = await driveService.findFile('root', BACKUP_FOLDER_NAME, 'root');
+  if (existing?.id) {
+    console.log('[Backup] Found existing backup folder:', existing.id);
+    db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(existing.id);
+    return existing.id;
+  }
 
-  // Store it
+  // 3. Create new folder only if none found
+  console.log('[Backup] Creating new backup folder');
+  const folderId = await driveService.createFolder(BACKUP_FOLDER_NAME, 'root', 'root');
   db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(folderId);
 
   return folderId;
@@ -56,7 +71,7 @@ async function ensureBackupFolder(driveService: GoogleDriveService): Promise<str
 
 /** Backup the local database to Google Drive */
 export async function backupDatabase(driveService: GoogleDriveService): Promise<BackupResult> {
-  const dbPath = path.join(app.getPath('userData'), 'gdrive-sync.db');
+  const dbPath = path.join(getDataDir(), 'gdrive-sync.db');
 
   if (!fs.existsSync(dbPath)) {
     return { success: false, action: 'created', fileId: '', size: 0, timestamp: '', error: 'Database not found' };
@@ -92,7 +107,7 @@ export async function backupDatabase(driveService: GoogleDriveService): Promise<
 
 /** Restore database from Google Drive (full replace with safety backup) */
 export async function restoreDatabase(driveService: GoogleDriveService): Promise<RestoreResult> {
-  const dbPath = path.join(app.getPath('userData'), 'gdrive-sync.db');
+  const dbPath = path.join(getDataDir(), 'gdrive-sync.db');
   const folderId = await ensureBackupFolder(driveService);
 
   const remote = await driveService.findFile(folderId, BACKUP_FILENAME, 'root');
@@ -147,7 +162,7 @@ export async function restoreDatabase(driveService: GoogleDriveService): Promise
 
 /** Merge remote DB into local DB (last-write-wins by updated_at), then upload merged result */
 export async function syncMergeDatabase(driveService: GoogleDriveService): Promise<MergeResult> {
-  const dbPath = path.join(app.getPath('userData'), 'gdrive-sync.db');
+  const dbPath = path.join(getDataDir(), 'gdrive-sync.db');
   const folderId = await ensureBackupFolder(driveService);
 
   const remote = await driveService.findFile(folderId, BACKUP_FILENAME, 'root');

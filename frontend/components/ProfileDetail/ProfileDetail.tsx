@@ -27,6 +27,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
+import FileLogDialog from '../FileLogDialog/FileLogDialog';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
 
 const directionLabels: Record<string, string> = { download: 'Download', upload: 'Upload', bidirectional: 'Bidirectional' };
@@ -67,6 +68,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
   const isCompleted = session?.status === 'completed';
   const [editOpen, setEditOpen] = useState(false);
   const [recentSessions, setRecentSessions] = useState<SyncSession[]>([]);
+  const [fileLogSessionId, setFileLogSessionId] = useState<number | null>(null);
 
   useEffect(() => {
     window.api.sync.getSessions(profile.id).then(setRecentSessions);
@@ -283,7 +285,10 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                 gap={2}
                 px={2}
                 py={0.75}
+                onClick={() => setFileLogSessionId(s.id)}
                 sx={{
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: (t: any) => alpha(t.palette.primary.main, 0.04) },
                   borderBottom: i < Math.min(recentSessions.length, 8) - 1
                     ? (t: any) => `1px solid ${alpha(t.palette.divider, 0.08)}`
                     : 'none',
@@ -323,6 +328,13 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         onSave={(updated) => { onUpdated(updated); setEditOpen(false); }}
         onDelete={() => { onDelete(); setEditOpen(false); }}
         onSync={() => { onSync(); setEditOpen(false); }}
+      />
+
+      <FileLogDialog
+        open={fileLogSessionId !== null}
+        onClose={() => setFileLogSessionId(null)}
+        title={`Files — ${profile.name}`}
+        sessionIds={fileLogSessionId !== null ? [fileLogSessionId] : []}
       />
     </Box>
   );
