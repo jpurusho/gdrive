@@ -250,6 +250,16 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('backup:setFolder', async (_event, folderId: string, folderName: string) => {
+    try {
+      const db = require('./services/database').getDb();
+      db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(folderId);
+      db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_name', ?, datetime('now'))").run(folderName);
+    } catch (err: any) {
+      throw new Error(err?.message || 'Failed to set backup folder');
+    }
+  });
+
   ipcMain.handle('backup:getInfo', async () => {
     try {
       return getBackupInfo();

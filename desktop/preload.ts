@@ -42,6 +42,7 @@ const api: ElectronAPI = {
     restore: () => ipcRenderer.invoke('backup:restore'),
     syncMerge: () => ipcRenderer.invoke('backup:syncMerge'),
     getInfo: () => ipcRenderer.invoke('backup:getInfo'),
+    setFolder: (folderId: string, folderName: string) => ipcRenderer.invoke('backup:setFolder', folderId, folderName),
   },
   app: {
     openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),

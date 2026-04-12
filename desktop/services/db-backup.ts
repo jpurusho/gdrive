@@ -297,11 +297,12 @@ function mergeRemoteIntoLocal(localDb: Database.Database, remotePath: string): M
 }
 
 /** Get info about the last backup */
-export function getBackupInfo(): { lastBackup: string | null; folderId: string | null } {
+export function getBackupInfo(): { lastBackup: string | null; folderId: string | null; folderName: string | null } {
   const db = getDb();
   const folder = db.prepare("SELECT value FROM app_settings WHERE key = 'backup_folder_id'").get() as any;
+  const folderName = db.prepare("SELECT value FROM app_settings WHERE key = 'backup_folder_name'").get() as any;
   const last = db.prepare("SELECT value FROM app_settings WHERE key = 'last_backup_at'").get() as any;
-  return { lastBackup: last?.value || null, folderId: folder?.value || null };
+  return { lastBackup: last?.value || null, folderId: folder?.value || null, folderName: folderName?.value || null };
 }
 
 /** Record last backup timestamp */

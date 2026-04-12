@@ -145,6 +145,7 @@ export interface MergeResult {
 export interface BackupInfo {
   lastBackup: string | null;
   folderId: string | null;
+  folderName: string | null;
 }
 
 // ─── IPC API ─────────────────────────────────────────────────────────────────
@@ -184,6 +185,7 @@ export interface ElectronAPI {
     restore: () => Promise<RestoreResult>;
     syncMerge: () => Promise<MergeResult>;
     getInfo: () => Promise<BackupInfo>;
+    setFolder: (folderId: string, folderName: string) => Promise<void>;
   };
   app: {
     getDataDir: () => Promise<string>;

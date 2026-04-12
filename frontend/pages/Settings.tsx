@@ -107,7 +107,12 @@ export default function Settings() {
   const [checking, setChecking] = useState(false);
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
   const [editProfile, setEditProfile] = useState<SyncProfile | null>(null);
-  const [backupInfo, setBackupInfo] = useState<BackupInfo>({ lastBackup: null, folderId: null });
+  const [backupInfo, setBackupInfo] = useState<BackupInfo>({ lastBackup: null, folderId: null, folderName: null });
+  const [showBackupPicker, setShowBackupPicker] = useState(false);
+  const [backupDrives, setBackupDrives] = useState<any[]>([]);
+  const [backupDriveFiles, setBackupDriveFiles] = useState<Record<string, any[]>>({});
+  const [backupExpandedDrives, setBackupExpandedDrives] = useState<Set<string>>(new Set());
+  const [loadingBackupDrives, setLoadingBackupDrives] = useState(false);
   const [backupLoading, setBackupLoading] = useState('');
   const [backupMessage, setBackupMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [titleSaved, setTitleSaved] = useState(false);
@@ -446,18 +451,123 @@ export default function Settings() {
         Restore or merge when setting up a new machine or recovering from data loss.
       </Typography>
 
-      {/* Backup folder info */}
-      <Box
-        sx={{
-          p: 1.5, borderRadius: 1.5, mb: 2, maxWidth: 500,
-          bgcolor: (t) => alpha(t.palette.info?.main || t.palette.primary.main, 0.05),
-          border: (t) => `1px solid ${alpha(t.palette.info?.main || t.palette.primary.main, 0.12)}`,
-        }}
-      >
-        <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
-          <strong>Backup folder:</strong> {backupInfo.folderId ? `"GDrive Sync Backups" on your Drive` : 'Drive root folder (no folder set)'}<br />
-          <strong>Backup file:</strong> <code>gdrive-sync-backup.db</code>
-        </Typography>
+      {/* Backup folder selector */}
+      <Box mb={2} maxWidth={500}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Typography variant="subtitle2">Backup Folder</Typography>
+          <Button
+            size="small"
+            variant="text"
+            onClick={async () => {
+              if (!showBackupPicker) {
+                setShowBackupPicker(true);
+                setLoadingBackupDrives(true);
+                try {
+                  const drives = await window.api.drive.listDrives();
+                  setBackupDrives(drives);
+                } finally {
+                  setLoadingBackupDrives(false);
+                }
+              } else {
+                setShowBackupPicker(false);
+              }
+            }}
+          >
+            {showBackupPicker ? 'Cancel' : 'Change'}
+          </Button>
+        </Box>
+        <Box
+          sx={{
+            p: 1.5, borderRadius: 1.5,
+            bgcolor: (t) => alpha(t.palette.info?.main || t.palette.primary.main, 0.05),
+            border: (t) => `1px solid ${alpha(t.palette.info?.main || t.palette.primary.main, 0.12)}`,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.8}>
+            <strong>Current:</strong> {backupInfo.folderName || (backupInfo.folderId ? 'GDrive Sync Backups' : 'Drive root (no folder selected)')}<br />
+            <strong>File:</strong> <code>gdrive-sync-backup.db</code>
+          </Typography>
+        </Box>
+
+        {showBackupPicker && (
+          <Box
+            sx={{
+              mt: 1, maxHeight: 200, overflow: 'auto', borderRadius: 2,
+              border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.3)}`,
+              bgcolor: 'background.default',
+            }}
+          >
+            {loadingBackupDrives ? (
+              <Box display="flex" justifyContent="center" py={2}><CircularProgress size={20} /></Box>
+            ) : (
+              <Box>
+                {/* Use Drive root */}
+                <Box
+                  onClick={async () => {
+                    await window.api.backup.setFolder('root', 'Drive Root');
+                    setBackupInfo((prev) => ({ ...prev, folderId: 'root', folderName: 'Drive Root' }));
+                    setShowBackupPicker(false);
+                  }}
+                  sx={{
+                    px: 2, py: 1, cursor: 'pointer',
+                    '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.05) },
+                    borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.08)}`,
+                  }}
+                >
+                  <Typography variant="caption" fontWeight={600}>My Drive Root</Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">Backup directly to Drive home</Typography>
+                </Box>
+
+                {/* Drive folders */}
+                {backupDrives.filter((d: any) => d.id === 'root').map((drive: any) => (
+                  <Box key={drive.id}>
+                    <Box
+                      onClick={async () => {
+                        const exp = new Set(backupExpandedDrives);
+                        if (exp.has(drive.id)) { exp.delete(drive.id); } else {
+                          exp.add(drive.id);
+                          if (!backupDriveFiles[drive.id]) {
+                            const files = await window.api.drive.listFiles(drive.id, 'root');
+                            setBackupDriveFiles((prev) => ({ ...prev, [drive.id]: files.filter((f: any) => f.isFolder) }));
+                          }
+                        }
+                        setBackupExpandedDrives(exp);
+                      }}
+                      sx={{
+                        px: 2, py: 0.75, cursor: 'pointer',
+                        '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.05) },
+                        borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.08)}`,
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight={500}>
+                        {backupExpandedDrives.has(drive.id) ? '▾' : '▸'} My Drive Folders
+                      </Typography>
+                    </Box>
+                    {backupExpandedDrives.has(drive.id) && (backupDriveFiles[drive.id] || []).map((folder: any) => (
+                      <Box
+                        key={folder.id}
+                        onClick={async () => {
+                          await window.api.backup.setFolder(folder.id, folder.name);
+                          setBackupInfo((prev) => ({ ...prev, folderId: folder.id, folderName: folder.name }));
+                          setShowBackupPicker(false);
+                        }}
+                        sx={{
+                          px: 4, py: 0.5, cursor: 'pointer',
+                          bgcolor: backupInfo.folderId === folder.id ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
+                          '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.05) },
+                          borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.05)}`,
+                          display: 'flex', alignItems: 'center', gap: 1,
+                        }}
+                      >
+                        <Typography variant="caption">📁 {folder.name}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
       </Box>
 
       {backupMessage && (
