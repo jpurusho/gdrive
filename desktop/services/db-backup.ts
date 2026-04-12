@@ -47,26 +47,32 @@ async function ensureBackupFolder(driveService: GoogleDriveService): Promise<str
     try {
       await driveService.listFiles('root', row.value);
       return row.value;
-    } catch {
-      // Stored folder is gone — fall through to search/create
-      console.log('[Backup] Stored backup folder no longer accessible, searching...');
+    } catch (err: any) {
+      // Stored folder is gone or no permission — clear and fall through
+      console.log('[Backup] Stored backup folder not accessible:', err?.message);
+      db.prepare("DELETE FROM app_settings WHERE key = 'backup_folder_id'").run();
     }
   }
 
   // 2. Search Drive for existing folder by name (prevents duplicates)
-  const existing = await driveService.findFile('root', BACKUP_FOLDER_NAME, 'root');
-  if (existing?.id) {
-    console.log('[Backup] Found existing backup folder:', existing.id);
-    db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(existing.id);
-    return existing.id;
+  try {
+    const existing = await driveService.findFile('root', BACKUP_FOLDER_NAME, 'root');
+    if (existing?.id) {
+      console.log('[Backup] Found existing backup folder:', existing.id);
+      db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(existing.id);
+      return existing.id;
+    }
+
+    // 3. Create new folder only if none found
+    console.log('[Backup] Creating new backup folder');
+    const folderId = await driveService.createFolder(BACKUP_FOLDER_NAME, 'root', 'root');
+    db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(folderId);
+    return folderId;
+  } catch (err: any) {
+    // If we can't search or create a folder, fall back to Drive root
+    console.warn('[Backup] Cannot create backup folder, using Drive root:', err?.message);
+    return 'root';
   }
-
-  // 3. Create new folder only if none found
-  console.log('[Backup] Creating new backup folder');
-  const folderId = await driveService.createFolder(BACKUP_FOLDER_NAME, 'root', 'root');
-  db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('backup_folder_id', ?, datetime('now'))").run(folderId);
-
-  return folderId;
 }
 
 /** Backup the local database to Google Drive */

@@ -147,6 +147,11 @@ export class GoogleAuthService {
     this.oauth2Client.setCredentials({});
     clearTokens();
     clearUserInfo();
+    // Clear stale backup folder ID so next login gets a fresh one
+    try {
+      const { getDb } = require('./database');
+      getDb().prepare("DELETE FROM app_settings WHERE key = 'backup_folder_id'").run();
+    } catch {}
   }
 
   async getCurrentUser(): Promise<UserInfo | null> {
