@@ -199,6 +199,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
         useSourceFolderName: useSourceFolder,
         convertHeicToJpeg: false,
         mirrorMode: false,
+        maxDepth: 0,
         fileFilter: undefined,
         schedule: schedule || undefined,
         isActive: true,

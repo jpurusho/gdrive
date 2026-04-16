@@ -75,6 +75,7 @@ export interface SyncProfile {
   useSourceFolderName: boolean;
   convertHeicToJpeg: boolean;
   mirrorMode: boolean;
+  maxDepth: number;
   fileFilter?: string;
   schedule?: string;
   isActive: boolean;

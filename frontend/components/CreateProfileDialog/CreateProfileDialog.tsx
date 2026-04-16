@@ -228,6 +228,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   const [useSourceFolderName, setUseSourceFolderName] = useState(true);
   const [convertHeicToJpeg, setConvertHeicToJpeg] = useState(false);
   const [mirrorMode, setMirrorMode] = useState(false);
+  const [maxDepth, setMaxDepth] = useState(0);
   const [fileFilter, setFileFilter] = useState('');
   const [schedule, setSchedule] = useState('');
   const [creating, setCreating] = useState(false);
@@ -250,6 +251,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
     setUseSourceFolderName(true);
     setConvertHeicToJpeg(false);
     setMirrorMode(false);
+    setMaxDepth(0);
     setFileFilter('');
     setSchedule('');
     setError('');
@@ -279,6 +281,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         useSourceFolderName,
         convertHeicToJpeg,
         mirrorMode,
+        maxDepth,
         fileFilter: fileFilter || undefined,
         schedule: schedule || undefined,
         isActive: true,
@@ -367,6 +370,18 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
             </Box>
           }
         />
+
+        {/* Depth limit */}
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel>Folder Depth</InputLabel>
+          <Select value={maxDepth} label="Folder Depth" onChange={(e) => setMaxDepth(Number(e.target.value))}>
+            <MenuItem value={0}>Unlimited (all subfolders)</MenuItem>
+            <MenuItem value={1}>Root files only (no subfolders)</MenuItem>
+            <MenuItem value={2}>1 level deep</MenuItem>
+            <MenuItem value={3}>2 levels deep</MenuItem>
+            <MenuItem value={5}>4 levels deep</MenuItem>
+          </Select>
+        </FormControl>
 
         {/* Sync direction */}
         <Box>

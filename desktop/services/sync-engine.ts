@@ -76,6 +76,15 @@ async function validateRemoteFolder(profile: SyncProfile, driveService: GoogleDr
   }
 }
 
+/** Filter files by directory depth. 0 = unlimited, 1 = root only, 2 = one level deep, etc. */
+function applyMaxDepth<T extends { relativePath: string }>(files: T[], maxDepth: number): T[] {
+  if (!maxDepth || maxDepth <= 0) return files;
+  return files.filter((f) => {
+    const depth = f.relativePath.split('/').filter(Boolean).length;
+    return depth <= maxDepth;
+  });
+}
+
 /** Apply glob-like file filter patterns (e.g., "*.pdf,*.docx" or "*.jpg,reports/*") */
 function applyFileFilter<T extends { name: string; relativePath: string }>(files: T[], filter: string): T[] {
   const patterns = filter.split(',').map((p) => p.trim().toLowerCase()).filter(Boolean);
@@ -244,7 +253,8 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
 
   // Apply profile file filter (glob patterns like *.pdf, *.docx)
   const profileFilter = profile.fileFilter;
-  const finalFiles = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
+  let finalFiles = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
+  finalFiles = applyMaxDepth(finalFiles, profile.maxDepth);
 
   session.totalFiles = finalFiles.length;
   session.totalBytes = finalFiles.reduce((sum, f) => sum + (f.size || 0), 0);
@@ -380,7 +390,8 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
   console.log(`[Sync] Found ${allLocalFiles.length} local files`);
 
   const profileFilter = profile.fileFilter;
-  const localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  let localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  localFiles = applyMaxDepth(localFiles, profile.maxDepth);
   if (profileFilter && localFiles.length !== allLocalFiles.length) {
     console.log(`[Sync] Profile filter "${profileFilter}" matched ${localFiles.length}/${allLocalFiles.length} local files`);
   }
@@ -506,8 +517,10 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
 
   // Apply file filter to both sides
   const profileFilter = profile.fileFilter;
-  const filteredRemote = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
-  const localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  let filteredRemote = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
+  let localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
+  filteredRemote = applyMaxDepth(filteredRemote, profile.maxDepth);
+  localFiles = applyMaxDepth(localFiles, profile.maxDepth);
   if (profileFilter) {
     console.log(`[Sync] Bidirectional filter "${profileFilter}" matched ${filteredRemote.length}/${downloadable.length} remote, ${localFiles.length}/${allLocalFiles.length} local`);
   }
@@ -684,10 +697,11 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     }
 
     if (ctx.cancelled) {
-      session.status = 'paused';
+      session.status = 'cancelled';
+      session.completedAt = new Date().toISOString();
       session.currentFile = undefined;
-      session.errorMessage = `Paused — ${session.filesSynced} synced, ${session.filesSkipped} skipped. Resume to continue.`;
-      console.log(`[Sync] Paused: ${session.filesSynced} synced, ${session.filesSkipped} skipped, partial files saved for resume`);
+      session.errorMessage = `Stopped — ${session.filesSynced} synced, ${session.filesSkipped} skipped. Partial files saved.`;
+      console.log(`[Sync] Stopped: ${session.filesSynced} synced, ${session.filesSkipped} skipped`);
     } else {
       session.status = 'completed';
       session.completedAt = new Date().toISOString();

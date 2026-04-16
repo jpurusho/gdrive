@@ -63,7 +63,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
   const theme = useTheme();
   const DirIcon = directionIcons[profile.syncDirection];
   const isActive = session?.status === 'in_progress';
-  const isPaused = session?.status === 'paused';
+  const isCancelled = session?.status === 'cancelled';
   const isFailed = session?.status === 'failed';
   const isCompleted = session?.status === 'completed';
   const [editOpen, setEditOpen] = useState(false);
@@ -115,12 +115,12 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
           </Box>
           <Box display="flex" gap={1}>
             {isActive ? (
-              <Button size="small" variant="outlined" color="warning" startIcon={<PauseIcon />} onClick={onPause}>
-                Pause Transfer
+              <Button size="small" variant="outlined" color="error" startIcon={<PauseIcon />} onClick={onPause}>
+                Stop
               </Button>
             ) : (
               <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={onSync} disabled={!profile.isActive}>
-                {isPaused ? 'Resume' : 'Sync Now'}
+                Sync Now
               </Button>
             )}
             <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => setEditOpen(true)}>
@@ -163,7 +163,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
           </Box>
         )}
 
-        {isPaused && session && (
+        {isCancelled && session && (
           <Box mb={3}>
             <Box
               sx={{
@@ -175,9 +175,9 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             >
               <PauseCircleOutlineIcon sx={{ color: 'warning.main' }} />
               <Box>
-                <Typography variant="body2" fontWeight={600} color="warning.main">Paused</Typography>
+                <Typography variant="body2" fontWeight={600} color="warning.main">Stopped</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {session.filesSynced} synced, {session.filesSkipped} skipped. Click Resume to continue.
+                  {session.filesSynced} synced, {session.filesSkipped} skipped. Click Sync Now to restart.
                 </Typography>
               </Box>
             </Box>

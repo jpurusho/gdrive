@@ -90,6 +90,7 @@ export function initDatabase(): void {
       use_source_folder_name INTEGER DEFAULT 0,
       convert_heic_to_jpeg INTEGER DEFAULT 0,
       mirror_mode INTEGER DEFAULT 0,
+      max_depth INTEGER DEFAULT 0,
       file_filter TEXT,
       schedule TEXT,
       is_active INTEGER DEFAULT 1,
@@ -153,6 +154,9 @@ export function initDatabase(): void {
   }
   if (!profileColNames.has('mirror_mode')) {
     db.exec('ALTER TABLE sync_profiles ADD COLUMN mirror_mode INTEGER DEFAULT 0');
+  }
+  if (!profileColNames.has('max_depth')) {
+    db.exec('ALTER TABLE sync_profiles ADD COLUMN max_depth INTEGER DEFAULT 0');
   }
 
   const cols = db.pragma('table_info(sync_history)') as any[];
@@ -246,6 +250,7 @@ function rowToProfile(row: any): SyncProfile {
     useSourceFolderName: row.use_source_folder_name === 1,
     convertHeicToJpeg: row.convert_heic_to_jpeg === 1,
     mirrorMode: row.mirror_mode === 1,
+    maxDepth: row.max_depth ?? 0,
     fileFilter: row.file_filter ?? undefined,
     schedule: row.schedule ?? undefined,
     isActive: row.is_active === 1,
@@ -267,13 +272,13 @@ export function getProfile(id: number): SyncProfile | null {
 
 export function createProfile(p: Omit<SyncProfile, 'id' | 'createdAt' | 'updatedAt'>): SyncProfile {
   const stmt = db.prepare(`
-    INSERT INTO sync_profiles (name, drive_id, drive_name, drive_type, drive_folder_id, drive_folder_path, local_path, sync_direction, use_source_folder_name, convert_heic_to_jpeg, mirror_mode, file_filter, schedule, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sync_profiles (name, drive_id, drive_name, drive_type, drive_folder_id, drive_folder_path, local_path, sync_direction, use_source_folder_name, convert_heic_to_jpeg, mirror_mode, max_depth, file_filter, schedule, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     p.name, p.driveId, p.driveName, p.driveType,
     p.driveFolderId, p.driveFolderPath, p.localPath,
-    p.syncDirection, p.useSourceFolderName ? 1 : 0, p.convertHeicToJpeg ? 1 : 0, p.mirrorMode ? 1 : 0, p.fileFilter ?? null, p.schedule ?? null, p.isActive ? 1 : 0,
+    p.syncDirection, p.useSourceFolderName ? 1 : 0, p.convertHeicToJpeg ? 1 : 0, p.mirrorMode ? 1 : 0, p.maxDepth ?? 0, p.fileFilter ?? null, p.schedule ?? null, p.isActive ? 1 : 0,
   );
   return getProfile(result.lastInsertRowid as number)!;
 }
@@ -290,6 +295,7 @@ export function updateProfile(id: number, updates: Partial<SyncProfile>): SyncPr
   if (updates.useSourceFolderName !== undefined) { fields.push('use_source_folder_name = ?'); values.push(updates.useSourceFolderName ? 1 : 0); }
   if (updates.convertHeicToJpeg !== undefined) { fields.push('convert_heic_to_jpeg = ?'); values.push(updates.convertHeicToJpeg ? 1 : 0); }
   if (updates.mirrorMode !== undefined) { fields.push('mirror_mode = ?'); values.push(updates.mirrorMode ? 1 : 0); }
+  if (updates.maxDepth !== undefined) { fields.push('max_depth = ?'); values.push(updates.maxDepth); }
   if (updates.fileFilter !== undefined) { fields.push('file_filter = ?'); values.push(updates.fileFilter ?? null); }
   if (updates.schedule !== undefined) { fields.push('schedule = ?'); values.push(updates.schedule || null); }
   if (updates.isActive !== undefined) { fields.push('is_active = ?'); values.push(updates.isActive ? 1 : 0); }
