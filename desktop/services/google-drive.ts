@@ -280,6 +280,9 @@ export class GoogleDriveService {
     onProgress?: (bytes: number) => void,
   ): Promise<string> {
     const stat = await fs.promises.stat(localPath);
+    if (stat.isDirectory()) {
+      throw new Error(`Cannot upload directory: ${localPath}`);
+    }
     const isSharedDrive = driveId !== 'root';
 
     const media = {

@@ -395,6 +395,14 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
   }
   sendProgress(session);
 
+  // For upload with useSourceFolderName, create a subfolder on Drive named after the local folder
+  let uploadRootId = profile.driveFolderId;
+  if (profile.useSourceFolderName) {
+    const localFolderName = path.basename(profile.localPath);
+    uploadRootId = await driveService.ensureFolder(profile.driveFolderId, localFolderName, profile.driveId);
+    console.log(`[Sync] Created/found source folder on Drive: ${localFolderName}`);
+  }
+
   for (const file of localFiles) {
     if (ctx.cancelled) break;
 
@@ -403,7 +411,7 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
 
     try {
       const relDir = path.dirname(file.relativePath);
-      let parentId = profile.driveFolderId;
+      let parentId = uploadRootId;
 
       if (relDir !== '/') {
         const parts = relDir.split('/').filter(Boolean);
@@ -614,12 +622,15 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     WHERE profile_id = ? AND status = 'paused'
   `).run(profileId);
 
-  // If useSourceFolderName is enabled, append the drive folder name to the local path
+  // useSourceFolderName: for download, create subfolder locally; for upload, create subfolder on Drive
   let effectiveProfile = profile;
   if (profile.useSourceFolderName) {
-    const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
-    const effectivePath = path.join(profile.localPath, folderName);
-    effectiveProfile = { ...profile, localPath: effectivePath };
+    if (profile.syncDirection === 'download') {
+      const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
+      effectiveProfile = { ...profile, localPath: path.join(profile.localPath, folderName) };
+    }
+    // For upload, the Drive subfolder is created during sync (ensureFolder)
+    // For bidirectional, use the local path as-is
   }
 
   const session = createSession(profileId, effectiveProfile.name);
@@ -712,6 +723,9 @@ export function cancelSync(profileId: number): void {
   const ctx = activeSyncs.get(profileId);
   if (ctx) {
     ctx.cancelled = true;
+  } else {
+    // Force-clear stuck entry (sync crashed but wasn't cleaned up)
+    activeSyncs.delete(profileId);
   }
 }
 
