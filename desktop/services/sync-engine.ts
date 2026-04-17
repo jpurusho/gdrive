@@ -190,8 +190,8 @@ function logFile(
   `).run(sessionId, fileName, filePath, direction, status, fileSize, bytesTransferred, localHash ?? null, remoteHash ?? null, error ?? null);
 }
 
-/** Recursively list all local files with relative paths */
-async function listAllLocalFiles(rootDir: string, relativePath: string = '/'): Promise<{ name: string; path: string; relativePath: string; size: number; modifiedTime: Date }[]> {
+/** Recursively list all local files with relative paths. Respects maxDepth and fileFilter for early pruning. */
+async function listAllLocalFiles(rootDir: string, relativePath: string = '/', maxDepth: number = 0, currentDepth: number = 1, fileFilter?: string): Promise<{ name: string; path: string; relativePath: string; size: number; modifiedTime: Date }[]> {
   const result: { name: string; path: string; relativePath: string; size: number; modifiedTime: Date }[] = [];
 
   let entries;
@@ -202,6 +202,9 @@ async function listAllLocalFiles(rootDir: string, relativePath: string = '/'): P
     return result;
   }
 
+  // Parse filter patterns once
+  const patterns = fileFilter ? fileFilter.split(',').map((p) => p.trim().toLowerCase()).filter(Boolean) : [];
+
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     const fullPath = path.join(rootDir, entry.name);
@@ -209,9 +212,21 @@ async function listAllLocalFiles(rootDir: string, relativePath: string = '/'): P
     try {
       const stat = await fs.promises.stat(fullPath);
       if (entry.isDirectory()) {
-        const subFiles = await listAllLocalFiles(fullPath, `${relativePath}${entry.name}/`);
+        // Skip subdirectories if maxDepth reached
+        if (maxDepth > 0 && currentDepth >= maxDepth) continue;
+        const subFiles = await listAllLocalFiles(fullPath, `${relativePath}${entry.name}/`, maxDepth, currentDepth + 1, fileFilter);
         result.push(...subFiles);
       } else {
+        // Skip files that don't match filter (early prune)
+        if (patterns.length > 0) {
+          const nameLower = entry.name.toLowerCase();
+          const matched = patterns.some((p) => {
+            if (p.startsWith('*.')) return nameLower.endsWith(p.slice(1));
+            if (p.includes('*')) return new RegExp('^' + p.replace(/\*/g, '.*') + '$').test(nameLower);
+            return nameLower === p;
+          });
+          if (!matched) continue;
+        }
         result.push({
           name: entry.name,
           path: fullPath,
@@ -386,15 +401,8 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
 
   console.log(`[Sync] Upload sync for "${profile.name}" — localPath=${profile.localPath}`);
 
-  const allLocalFiles = await listAllLocalFiles(profile.localPath);
-  console.log(`[Sync] Found ${allLocalFiles.length} local files`);
-
-  const profileFilter = profile.fileFilter;
-  let localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
-  localFiles = applyMaxDepth(localFiles, profile.maxDepth);
-  if (profileFilter && localFiles.length !== allLocalFiles.length) {
-    console.log(`[Sync] Profile filter "${profileFilter}" matched ${localFiles.length}/${allLocalFiles.length} local files`);
-  }
+  const localFiles = await listAllLocalFiles(profile.localPath, '/', profile.maxDepth, 1, profile.fileFilter);
+  console.log(`[Sync] Found ${localFiles.length} local files (after filter + depth)`);
 
   session.totalFiles = localFiles.length;
   session.totalBytes = localFiles.reduce((sum, f) => sum + f.size, 0);
@@ -513,17 +521,14 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
 
   session.currentFile = 'Scanning local files...';
   sendProgress(session);
-  const allLocalFiles = await listAllLocalFiles(profile.localPath);
+  const localFiles = await listAllLocalFiles(profile.localPath, '/', profile.maxDepth, 1, profile.fileFilter);
 
-  // Apply file filter to both sides
+  // Apply file filter and depth to remote side
   const profileFilter = profile.fileFilter;
   let filteredRemote = profileFilter ? applyFileFilter(downloadable, profileFilter) : downloadable;
-  let localFiles = profileFilter ? applyFileFilter(allLocalFiles, profileFilter) : allLocalFiles;
   filteredRemote = applyMaxDepth(filteredRemote, profile.maxDepth);
-  localFiles = applyMaxDepth(localFiles, profile.maxDepth);
-  if (profileFilter) {
-    console.log(`[Sync] Bidirectional filter "${profileFilter}" matched ${filteredRemote.length}/${downloadable.length} remote, ${localFiles.length}/${allLocalFiles.length} local`);
-  }
+
+  console.log(`[Sync] Bidirectional: ${filteredRemote.length} remote, ${localFiles.length} local (after filter + depth)`);
 
   const remoteByPath = new Map(filteredRemote.map((f) => [f.relativePath, f]));
   const localByPath = new Map(localFiles.map((f) => [f.relativePath, f]));
