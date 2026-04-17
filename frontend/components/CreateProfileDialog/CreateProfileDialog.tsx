@@ -61,16 +61,30 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
   const [expandedFolders, setExpandedFolders] = useState<Record<string, DriveFile[]>>({});
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(null);
+  const [driveError, setDriveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setDrives(await window.api.drive.listDrives());
-      } finally {
-        setLoading(false);
+  async function loadDriveList() {
+    setLoading(true);
+    setDriveError(null);
+    try {
+      const result = await window.api.drive.listDrives();
+      setDrives(result);
+      if (result.length === 0) {
+        setDriveError('No drives found. Check your Google connection.');
       }
-    })();
-  }, []);
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to load drives';
+      if (msg.includes('invalid_grant') || msg.includes('expired')) {
+        setDriveError('Session expired. Sign out and sign in again.');
+      } else {
+        setDriveError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadDriveList(); }, []);
 
   async function toggleDrive(drive: DriveInfo) {
     const id = drive.id;
@@ -180,6 +194,15 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
   }
 
   if (loading) return <Box display="flex" justifyContent="center" py={3}><CircularProgress size={24} /></Box>;
+
+  if (driveError) {
+    return (
+      <Box p={2} textAlign="center">
+        <Typography variant="body2" color="error.main" mb={1}>{driveError}</Typography>
+        <Button size="small" variant="outlined" onClick={loadDriveList}>Retry</Button>
+      </Box>
+    );
+  }
 
   return (
     <List dense disablePadding sx={{ maxHeight: 300, overflow: 'auto' }}>
