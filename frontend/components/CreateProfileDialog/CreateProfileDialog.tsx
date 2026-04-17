@@ -199,6 +199,9 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
     return (
       <Box p={2} textAlign="center">
         <Typography variant="body2" color="error.main" mb={1}>{driveError}</Typography>
+        <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
+          Try signing out and signing back in if this persists.
+        </Typography>
         <Button size="small" variant="outlined" onClick={loadDriveList}>Retry</Button>
       </Box>
     );
