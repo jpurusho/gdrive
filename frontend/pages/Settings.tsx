@@ -372,7 +372,9 @@ export default function Settings() {
         {settingsTab === 3 && (
           <Box>
             <Typography variant="subtitle1" mb={1}>Google OAuth Credentials</Typography>
-            <Typography variant="body2" color="text.secondary" mb={2}>Client ID and Secret from your Google Cloud project.</Typography>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              Credentials are already embedded in the app. You only need to change these if you want to use a different Google Cloud project.
+            </Typography>
             <Box display="flex" flexDirection="column" gap={1.5} mb={1} maxWidth={500}>
               <TextField size="small" label="Client ID" value={googleClientId} onChange={(e) => { setGoogleClientId(e.target.value); setGoogleCredsSaved(false); }} fullWidth />
               <TextField size="small" label="Client Secret" type="password" value={googleClientSecret} onChange={(e) => { setGoogleClientSecret(e.target.value); setGoogleCredsSaved(false); }} placeholder={googleClientSecret ? undefined : 'Not set'} fullWidth />
