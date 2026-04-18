@@ -30,6 +30,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import { useThemeContext } from '../theme/ThemeContext';
@@ -397,6 +398,10 @@ export default function Settings() {
               and gsync handles the rest — comparing files by MD5 checksum, transferring only what changed, exporting Google Workspace files,
               and logging every operation. Supports pause/resume, scheduled auto-sync, mirror mode, HEIC conversion, and database backup to Drive.
             </Typography>
+            <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={async () => { setChecking(true); try { const r = await window.api.app.checkForUpdates(); if (r.status === 'available') { alert(`Update available: v${r.version}`); } else if (r.status === 'latest') { alert(`You're on the latest version (v${version}).`); } else { alert(r.message || 'Check failed'); } } finally { setChecking(false); } }} disabled={checking} sx={{ mb: 3 }}>
+              {checking ? 'Checking...' : 'Check for Updates'}
+            </Button>
+
             <Typography variant="subtitle2" fontWeight={700} mb={1}>Tech Stack</Typography>
             <Box sx={{ p: 2, borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.2)}`, maxWidth: 400, mb: 3 }}>
               {[['Desktop', 'Electron 33'], ['UI', 'React 18 + Material UI 5'], ['Build', 'Vite 6 + TypeScript 5'], ['APIs', 'Google Drive API v3'], ['Database', 'SQLite via better-sqlite3'], ['Scheduling', 'node-cron'], ['Testing', 'Vitest (30 tests)'], ['Author', 'Jerome Purushotham']].map(([k, v]) => (
