@@ -33,7 +33,6 @@ const NAV_ITEMS = [
   { id: 'home', label: 'Home', icon: DashboardIcon },
   { id: 'history', label: 'History', icon: HistoryIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
-  { id: 'about', label: 'About', icon: InfoOutlinedIcon },
 ];
 
 const EXPANDED_WIDTH = 220;

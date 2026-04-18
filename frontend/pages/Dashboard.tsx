@@ -19,7 +19,6 @@ import EmptyState from '../components/EmptyState/EmptyState';
 import CreateProfileDialog from '../components/CreateProfileDialog/CreateProfileDialog';
 import Settings from './Settings';
 import History from './History';
-import About from './About';
 import WelcomeSplash from '../components/WelcomeSplash/WelcomeSplash';
 import { useAppSettings } from '../context/AppSettingsContext';
 import type { UserInfo, SyncProfile, SyncSession } from '../../shared/types';
@@ -29,7 +28,7 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-type Page = 'home' | 'history' | 'settings' | 'about';
+type Page = 'home' | 'history' | 'settings';
 
 function formatDate(): string {
   return new Date().toLocaleDateString('en-US', {
@@ -272,8 +271,6 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {currentPage === 'history' && <History />}
         {currentPage === 'settings' && <Settings />}
-        {currentPage === 'about' && <About />}
-
         <WelcomeSplash />
       </Box>
 
