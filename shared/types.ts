@@ -164,6 +164,7 @@ export interface ElectronAPI {
   drive: {
     listDrives: () => Promise<DriveInfo[]>;
     listFiles: (driveId: string, folderId: string) => Promise<DriveFile[]>;
+    createFolder: (name: string, parentFolderId: string, driveId: string) => Promise<string>;
   };
   localFs: {
     listDirectory: (dirPath: string) => Promise<LocalFile[]>;

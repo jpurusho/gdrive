@@ -14,6 +14,8 @@ const api: ElectronAPI = {
     listDrives: () => ipcRenderer.invoke('drive:listDrives'),
     listFiles: (driveId: string, folderId: string) =>
       ipcRenderer.invoke('drive:listFiles', driveId, folderId),
+    createFolder: (name: string, parentFolderId: string, driveId: string) =>
+      ipcRenderer.invoke('drive:createFolder', name, parentFolderId, driveId),
   },
   localFs: {
     listDirectory: (dirPath: string) =>

@@ -93,6 +93,15 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('drive:createFolder', async (_event, name: string, parentFolderId: string, driveId: string) => {
+    try {
+      return await getDriveService().createFolder(name, parentFolderId, driveId);
+    } catch (err: any) {
+      console.error('Create folder failed:', err?.message);
+      throw new Error(err?.message || 'Failed to create folder');
+    }
+  });
+
   ipcMain.handle('drive:listFiles', async (_event, driveId: string, folderId: string) => {
     try {
       return await getDriveService().listFiles(driveId, folderId);
