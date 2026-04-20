@@ -107,7 +107,6 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
   }, [open]);
 
   async function loadDrives() {
-    if (drives.length > 0) return;
     setLoadingDrives(true);
     try {
       setDrives(await window.api.drive.listDrives());
@@ -115,6 +114,13 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
       setLoadingDrives(false);
     }
   }
+
+  // Load drives when entering a step that needs them
+  useEffect(() => {
+    if (!open) return;
+    if (step === 1 && direction === 'download' && drives.length === 0) loadDrives();
+    if (step === 2 && direction === 'upload' && drives.length === 0) loadDrives();
+  }, [open, step, direction]);
 
   async function toggleDrive(drive: DriveInfo) {
     const exp = new Set(expandedDrives);
@@ -489,7 +495,7 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         <Box display="flex" gap={1}>
           {step > 0 && <Button onClick={() => setStep(step - 1)} disabled={creating}>Back</Button>}
           {step < 4 ? (
-            <Button variant="contained" onClick={() => { if (step === 1 && direction === 'download') loadDrives(); if (step === 2 && direction === 'upload') loadDrives(); setStep(step + 1); }}
+            <Button variant="contained" onClick={() => setStep(step + 1)}
               disabled={step === 1 && sourceCount === 0 || step === 2 && !hasDest}>
               Next
             </Button>
