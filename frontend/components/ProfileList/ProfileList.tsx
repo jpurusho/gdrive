@@ -11,6 +11,7 @@ import {
   keyframes,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -48,9 +49,10 @@ interface Props {
   selectedId: number | null;
   onSelect: (id: number) => void;
   onAdd: () => void;
+  onQuickSync?: () => void;
 }
 
-export default function ProfileList({ profiles, sessions, selectedId, onSelect, onAdd }: Props) {
+export default function ProfileList({ profiles, sessions, selectedId, onSelect, onAdd, onQuickSync }: Props) {
   const theme = useTheme();
 
   return (
@@ -77,11 +79,20 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
         }}
       >
         <Typography variant="subtitle2" fontWeight={700}>Profiles</Typography>
-        <Tooltip title="Create new profile">
-          <IconButton size="small" onClick={onAdd} sx={{ color: 'primary.main' }}>
-            <AddIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Tooltip>
+        <Box display="flex" gap={0.5}>
+          {onQuickSync && (
+            <Tooltip title="Quick Sync (multi-select)">
+              <IconButton size="small" onClick={onQuickSync} sx={{ color: 'secondary.main' }}>
+                <FlashOnIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Create new profile">
+            <IconButton size="small" onClick={onAdd} sx={{ color: 'primary.main' }}>
+              <AddIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* Profile list */}

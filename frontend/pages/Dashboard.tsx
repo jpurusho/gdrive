@@ -11,12 +11,14 @@ import {
 } from '@mui/material';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import DownloadIcon from '@mui/icons-material/Download';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import Sidebar from '../components/Layout/Sidebar';
 import StatsBar from '../components/StatsBar/StatsBar';
 import ProfileList from '../components/ProfileList/ProfileList';
 import ProfileDetail from '../components/ProfileDetail/ProfileDetail';
 import EmptyState from '../components/EmptyState/EmptyState';
 import CreateProfileDialog from '../components/CreateProfileDialog/CreateProfileDialog';
+import QuickSyncDialog from '../components/QuickSyncDialog/QuickSyncDialog';
 import Settings from './Settings';
 import History from './History';
 import WelcomeSplash from '../components/WelcomeSplash/WelcomeSplash';
@@ -47,6 +49,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [sessions, setSessions] = useState<Record<number, SyncSession>>({});
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [quickSyncOpen, setQuickSyncOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { appTitle } = useAppSettings();
 
@@ -245,6 +248,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                     selectedId={selectedProfileId}
                     onSelect={setSelectedProfileId}
                     onAdd={() => setCreateOpen(true)}
+                    onQuickSync={() => setQuickSyncOpen(true)}
                   />
                   {selectedProfile ? (
                     <ProfileDetail
@@ -278,6 +282,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <QuickSyncDialog
+        open={quickSyncOpen}
+        onClose={() => setQuickSyncOpen(false)}
+        onCreated={(newProfiles) => {
+          setProfiles((prev) => [...newProfiles, ...prev]);
+          if (newProfiles.length > 0) setSelectedProfileId(newProfiles[0].id);
+        }}
       />
 
       {/* Update dialog */}
