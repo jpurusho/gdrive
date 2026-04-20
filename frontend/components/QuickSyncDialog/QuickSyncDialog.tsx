@@ -283,13 +283,14 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
               borderLeft: isSelected ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
             }}
             onClick={() => {
-              if (mode === 'source') toggleSource(drive, folder.id, folderPath, folder.name);
-              else selectDest(drive, folder.id, folderPath);
+              if (mode === 'dest') selectDest(drive, folder.id, folderPath);
               toggleFolder(driveId, folder);
             }}
           >
             {mode === 'source' && (
-              <Checkbox size="small" checked={isSelected} sx={{ p: 0, mr: 0.5 }} />
+              <Checkbox size="small" checked={isSelected} sx={{ p: 0, mr: 0.5 }}
+                onClick={(e) => { e.stopPropagation(); toggleSource(drive, folder.id, folderPath, folder.name); }}
+              />
             )}
             <ListItemIcon sx={{ minWidth: 22 }}>
               {loadingIds.has(folder.id) ? <CircularProgress size={12} /> : isExp ? <ExpandMoreIcon sx={{ fontSize: 14 }} /> : <ChevronRightIcon sx={{ fontSize: 14 }} />}
@@ -325,17 +326,18 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
                   <ListItemButton
                     sx={{
                       py: 0.5,
-                      bgcolor: isDriveSelected ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
-                      borderLeft: isDriveSelected ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
+                      bgcolor: isDriveSelected && mode === 'dest' ? (t: any) => alpha(t.palette.success.main, 0.1) : 'transparent',
+                      borderLeft: isDriveSelected && mode === 'dest' ? (t: any) => `3px solid ${t.palette.success.main}` : '3px solid transparent',
                     }}
                     onClick={() => {
-                      const fid = drive.id === 'root' ? 'root' : drive.id;
-                      if (mode === 'source') toggleSource(drive, fid, '/', drive.name);
-                      else selectDest(drive, fid, '/');
+                      // Drive roots: only expand (source mode) or select as destination
+                      if (mode === 'dest') {
+                        const fid = drive.id === 'root' ? 'root' : drive.id;
+                        selectDest(drive, fid, '/');
+                      }
                       toggleDrive(drive);
                     }}
                   >
-                    {mode === 'source' && <Checkbox size="small" checked={isDriveSelected} sx={{ p: 0, mr: 0.5 }} />}
                     <ListItemIcon sx={{ minWidth: 22 }}>
                       {loadingIds.has(drive.id) ? <CircularProgress size={14} /> : isExp ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
                     </ListItemIcon>
