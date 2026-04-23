@@ -2,15 +2,17 @@
 
 A standalone Electron desktop app for syncing Google Drive with your local filesystem. Profile-centric design — create sync profiles, monitor status, and let gsync handle the rest.
 
-```mermaid
-graph LR
-    A[My Drive] <-->|Sync Engine| B[gsync]
-    C[Shared Drives] <-->|Sync Engine| B
-    D[Shared with Me] <-->|Sync Engine| B
-    B <-->|File Operations| E[Local Filesystem]
+![Welcome](docs/screenshots/welcome.png)
 
-    style B fill:#6366f1,stroke:#4f46e5,color:#fff
-```
+## Screenshots
+
+| Home — Profile Command Center | Quick Sync — Multi-folder Selection |
+|:---:|:---:|
+| ![Home](docs/screenshots/home.png) | ![Quick Sync](docs/screenshots/quick-sync.png) |
+
+| Sync History | Settings & Themes |
+|:---:|:---:|
+| ![History](docs/screenshots/history.png) | ![Settings](docs/screenshots/settings.png) |
 
 ## Features
 
