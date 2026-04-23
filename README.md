@@ -4,8 +4,6 @@ A standalone Electron desktop app for syncing Google Drive with your local files
 
 ![Welcome](docs/screenshots/welcome.png)
 
-## Screenshots
-
 | Home — Profile Command Center | Quick Sync — Multi-folder Selection |
 |:---:|:---:|
 | ![Home](docs/screenshots/home.png) | ![Quick Sync](docs/screenshots/quick-sync.png) |
@@ -19,24 +17,27 @@ A standalone Electron desktop app for syncing Google Drive with your local files
 | Feature | Description |
 |---------|-------------|
 | **Profile Command Center** | Master-detail layout — profile list on the left, live detail on the right |
-| **Google OAuth** | System browser sign-in (Safari/Chrome) — passkeys, autofill, 2FA all work |
+| **Quick Sync** | Multi-select Drive or local folders, batch-create profiles in one wizard |
+| **Google OAuth** | System browser sign-in — passkeys, autofill, 2FA all work |
 | **Bidirectional Sync** | Download, upload, or bidirectional per profile |
+| **Mirror Mode** | Delete extras on destination to make an exact copy |
 | **MD5 Checksums** | Only transfers changed files — compares hashes before downloading |
-| **Pause & Resume** | Pause large transfers mid-sync; partial files saved as `.partial` for resume |
-| **HEIC to JPEG** | Auto-convert iPhone photos to JPEG during sync (per profile toggle) |
+| **Stop & Resume** | Stop large transfers mid-sync; partial files saved for resume |
+| **HEIC to JPEG** | Auto-convert iPhone photos to JPEG during sync |
 | **Google Workspace Export** | Docs→DOCX, Sheets→XLSX, Slides→PPTX, Drawings→PNG |
-| **Shared with Me** | Browse files shared to your email, bucketed by This Week / This Month / older |
-| **Scheduled Auto-Sync** | Cron schedules: every 15m, 30m, hourly, 6h, daily, weekdays |
+| **Shared with Me** | Browse shared files bucketed by This Week / This Month / older |
+| **Scheduled Auto-Sync** | Every 1m, 2m, 5m, 15m, 30m, hourly, daily, or custom cron |
 | **Active/Inactive Toggle** | Pause a profile's schedule without deleting it |
-| **File Filters** | Glob patterns per profile (e.g., `*.pdf, *.docx, reports/*`) |
-| **Source Folder Name** | Optionally creates a subfolder in destination named after the Drive folder |
-| **Activity History** | Filterable, sortable history with bulk delete — per profile and global |
-| **Database Backup** | Backup/restore/merge settings and history to Google Drive |
+| **File Filters** | Glob patterns per profile (e.g., `*.pdf, *.docx`) |
+| **Folder Depth Limit** | Root files only, 1 level deep, 2 levels, or unlimited |
+| **File Detail View** | Click "Files today" or any session to see per-file sync details |
+| **Activity History** | Filterable, sortable, bulk-delete sync history |
+| **Database Backup** | Backup/restore/merge settings to Google Drive |
+| **Create Folders on Drive** | Create new folders directly from the app |
 | **5 Themes** | Midnight, GitHub Dark, Ocean, Sunset, Light |
-| **Auto-Update** | In-app update checker with download progress |
-| **Collapsible Sidebar** | 4 nav items: Home, History, Settings, About |
-| **Customizable Title** | Change the app name in Settings — saved to database |
-| **Safe Sync Mode** | Never deletes files on either side — only adds and updates |
+| **Auto-Update** | Titlebar notification + in-app download with progress |
+| **Collapsible Sidebar** | 3 nav items: Home, History, Settings (with 5 tabs) |
+| **Safe Sync Mode** | Never deletes files unless mirror mode is enabled |
 | **Error Handling** | Retry with backoff, classified user-friendly errors, no raw traces |
 
 ## Download & Install
@@ -57,29 +58,6 @@ cd gdrive
 npm install
 cp .env.example .env  # Add your Google OAuth credentials
 npm run dev
-```
-
-## Screenshots
-
-### Home — Profile Command Center
-
-```
-+--------+------------------+--------------------------------------+
-| gsync  | STATS BAR: 3 profiles, 1 active, 847 files, 2.1 GB     |
-|--------|------------------+--------------------------------------|
-| Home   | PROFILES   [+]  |  WORK DOCUMENTS              [toggle]|
-| Hist   |                  |                                      |
-| Sett   | ● Work Docs      |  [====75%====] report.docx           |
-| About  |   Syncing 14/20  |  12 synced, 2 skipped, 0 failed     |
-|        |                  |                                      |
-|        | ○ Photos         |  ☁ My Drive/Docs/ → 📁 ~/Documents/ |
-|        |   ✓ 2h ago       |  ⬇ Download · ⏰ Every hour         |
-|        |                  |                                      |
-|        | ○ Team Docs      |  RECENT ACTIVITY                     |
-|        |   ✓ 8m ago       |  12:34  14 synced    0.8 MB   12s   |
-|--------|                  |  11:30  1,203 checked  --     3s    |
-| [user] |                  |  [Pause] [Edit] [Sync Now] [Delete]  |
-+--------+------------------+--------------------------------------+
 ```
 
 ## Architecture
@@ -106,12 +84,12 @@ graph TB
 
 | File Type | Method | Re-download When |
 |-----------|--------|-----------------|
-| Regular files | **MD5 hash** (from Google API vs local) | Hash mismatch |
+| Regular files | **MD5 hash** (Google API vs local) | Hash mismatch |
 | HEIC → JPEG | **modifiedTime** comparison | Remote newer than local JPEG |
 | Google Workspace | **Always re-export** | Every sync (no hash available) |
 | Deleted local files | **exists check** | File missing → re-downloaded |
 
-See [docs/architecture.md](docs/architecture.md) for the full architecture, sync engine flow diagrams, database schema, and IPC channel map.
+See [docs/architecture.md](docs/architecture.md) for sync engine flow diagrams, database schema, and IPC channel map.
 
 ## Project Structure
 
@@ -120,7 +98,7 @@ gdrive/
 ├── desktop/         # Electron main process (OAuth, Drive API, sync engine, scheduler)
 ├── frontend/        # React renderer (Profile Command Center, dialogs, themes)
 ├── shared/          # TypeScript types shared between processes
-├── tests/           # Unit tests (vitest — 25 tests)
+├── tests/           # Unit tests (vitest — 30 tests)
 ├── docs/            # Architecture, OAuth setup, phases, cost tracking
 ├── scripts/         # release.sh, prerelease-check.sh
 ├── resources/       # App icons (PNG + ICNS)
@@ -140,17 +118,16 @@ gdrive/
 ## Testing
 
 ```bash
-npm test                        # Run all 25 unit tests
+npm test                        # Run all 30 unit tests
 npm run test:watch              # Watch mode
-./scripts/prerelease-check.sh   # Full pre-release verification (5 steps)
+./scripts/prerelease-check.sh   # Full pre-release verification
 ```
 
 | Category | Tests | What's Verified |
 |----------|-------|-----------------|
 | MD5 Hash | 2 | File and string hash computation |
-| File Filters | 5 | Extension, multi-pattern, path glob, case |
-| HEIC Detection | 4 | Extension matching, JPEG path generation |
-| HEIC Conversion | 1 | macOS sips converts HEIC to JPEG |
+| File Filters | 10 | Extension, multi-pattern, path glob, case, HEIC, images, docs |
+| HEIC Conversion | 5 | Detection, path generation, sips conversion |
 | Workspace Types | 4 | Google Docs/Sheets detection, export map |
 | Retry Logic | 3 | Transient retry, max attempts, non-retryable |
 | Time Buckets | 2 | Shared-with-me grouping |
@@ -172,7 +149,6 @@ npm test              # Run unit tests
 | `dev` | Vite + Electron concurrently |
 | `build` | Production build (tsc + vite + embed credentials) |
 | `dist` | Package macOS .zip |
-| `dist:all` | Package all platforms |
 
 ### Data Directory
 
@@ -200,7 +176,7 @@ xattr -rc /Applications/gsync.app
 | Database | SQLite via better-sqlite3 |
 | Image | macOS sips (HEIC→JPEG) |
 | Scheduling | node-cron |
-| Testing | Vitest |
+| Testing | Vitest (30 tests) |
 | Auth | System browser + local HTTP callback |
 | Packaging | electron-builder |
 | CI/CD | GitHub Actions (test → build → release) |
