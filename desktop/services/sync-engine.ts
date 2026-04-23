@@ -336,7 +336,7 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
           file.mimeType,
           localPath,
           (bytes) => {
-            session.bytesTransferred = bytes;
+            session.bytesTransferred += bytes;
             sendProgress(session);
           },
           cancelToken,
@@ -371,10 +371,22 @@ async function runDownloadSync(ctx: SyncContext): Promise<void> {
   if (profile.mirrorMode) {
     session.currentFile = 'Mirror: scanning for extra local files...';
     sendProgress(session);
-    const localFiles = await listAllLocalFiles(profile.localPath);
-    const remoteRelPaths = new Set(finalFiles.map((f) => f.relativePath));
+    const mirrorLocalFiles = await listAllLocalFiles(profile.localPath);
 
-    for (const localFile of localFiles) {
+    // Build remote path set from ALL remote files (unfiltered) to avoid deleting filtered-out files
+    const allRemote = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+    const remoteRelPaths = new Set(allRemote.map((f) => f.relativePath));
+
+    // Also add HEIC→JPEG variants so converted files aren't deleted
+    if (profile.convertHeicToJpeg) {
+      for (const f of allRemote) {
+        if (/\.heic$/i.test(f.relativePath)) {
+          remoteRelPaths.add(f.relativePath.replace(/\.heic$/i, '.jpeg'));
+        }
+      }
+    }
+
+    for (const localFile of mirrorLocalFiles) {
       if (ctx.cancelled) break;
       if (!remoteRelPaths.has(localFile.relativePath)) {
         try {
@@ -452,7 +464,7 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
       }
 
       if (needsUpload) {
-        await driveService.uploadFile(
+        await retryWithBackoff(() => driveService.uploadFile(
           file.path,
           file.name,
           parentId,
@@ -462,7 +474,7 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
             session.bytesTransferred += bytes;
             sendProgress(session);
           },
-        );
+        ));
         logFile(session.id, file.name, file.relativePath, 'upload', 'completed', file.size, file.size);
         session.filesSynced++;
       }
@@ -479,7 +491,9 @@ async function runUploadSync(ctx: SyncContext): Promise<void> {
   if (profile.mirrorMode) {
     session.currentFile = 'Mirror: scanning for extra remote files...';
     sendProgress(session);
-    const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+    // Use uploadRootId (subfolder) if useSourceFolderName, otherwise profile root
+    const mirrorRemoteFolderId = profile.useSourceFolderName ? uploadRootId : profile.driveFolderId;
+    const remoteFiles = await driveService.listAllFiles(profile.driveId, mirrorRemoteFolderId);
     const localRelPaths = new Set(localFiles.map((f) => f.relativePath));
 
     for (const remoteFile of remoteFiles) {
@@ -560,10 +574,10 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
     try {
       if (remote && !local) {
         const localPath = path.join(profile.localPath, relPath.slice(1));
-        await driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
+        await retryWithBackoff(() => driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
           session.bytesTransferred += bytes;
           sendProgress(session);
-        });
+        }));
         logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0);
         session.filesSynced++;
       } else if (local && !remote) {
@@ -574,10 +588,10 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
             parentId = await driveService.ensureFolder(parentId, part, profile.driveId);
           }
         }
-        await driveService.uploadFile(local.path, local.name, parentId, profile.driveId, undefined, (bytes) => {
+        await retryWithBackoff(() => driveService.uploadFile(local.path, local.name, parentId, profile.driveId, undefined, (bytes) => {
           session.bytesTransferred += bytes;
           sendProgress(session);
-        });
+        }));
         logFile(session.id, fileName, relPath, 'upload', 'completed', local.size, local.size);
         session.filesSynced++;
       } else if (remote && local) {
@@ -592,10 +606,10 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
 
         if (remoteTime > localTime) {
           const localPath = path.join(profile.localPath, relPath.slice(1));
-          await driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
+          await retryWithBackoff(() => driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
             session.bytesTransferred += bytes;
             sendProgress(session);
-          });
+          }));
           logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0, localHash, remote.md5Checksum);
           session.filesSynced++;
         } else {
@@ -607,10 +621,10 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
             }
           }
           const existing = await driveService.findFile(parentId, local.name, profile.driveId);
-          await driveService.uploadFile(local.path, local.name, parentId, profile.driveId, existing?.id, (bytes) => {
+          await retryWithBackoff(() => driveService.uploadFile(local.path, local.name, parentId, profile.driveId, existing?.id, (bytes) => {
             session.bytesTransferred += bytes;
             sendProgress(session);
-          });
+          }));
           logFile(session.id, fileName, relPath, 'upload', 'completed', local.size, local.size, localHash);
           session.filesSynced++;
         }

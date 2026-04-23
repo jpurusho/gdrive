@@ -1,6 +1,6 @@
 {
   "name": "gsync",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "Google Drive Sync Desktop Application",
   "main": "dist/desktop/index.js",
   "author": "Jerome Purushotham",
