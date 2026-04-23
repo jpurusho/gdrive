@@ -603,6 +603,14 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
         }
         const remoteTime = remote.modifiedTime ? new Date(remote.modifiedTime).getTime() : 0;
         const localTime = local.modifiedTime.getTime();
+        const timeDiff = Math.abs(remoteTime - localTime);
+
+        // Within 2 seconds = same time — skip (no meaningful change)
+        if (timeDiff < 2000) {
+          session.filesSkipped++;
+          logFile(session.id, fileName, relPath, 'download', 'skipped', 0, 0, localHash, remote.md5Checksum);
+          continue;
+        }
 
         if (remoteTime > localTime) {
           const localPath = path.join(profile.localPath, relPath.slice(1));
@@ -759,6 +767,13 @@ export function cancelSync(profileId: number): void {
   } else {
     // Force-clear stuck entry (sync crashed but wasn't cleaned up)
     activeSyncs.delete(profileId);
+    // Mark any in_progress sessions as cancelled
+    const db = getDb();
+    db.prepare(`
+      UPDATE sync_history SET status = 'cancelled', completed_at = datetime('now'),
+      error_message = 'Force-cancelled (sync was stuck)'
+      WHERE profile_id = ? AND status = 'in_progress'
+    `).run(profileId);
   }
 }
 
