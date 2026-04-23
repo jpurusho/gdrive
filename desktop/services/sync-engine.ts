@@ -640,15 +640,15 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     WHERE profile_id = ? AND status = 'paused'
   `).run(profileId);
 
-  // useSourceFolderName: for download, create subfolder locally; for upload, create subfolder on Drive
+  // useSourceFolderName: create subfolder to keep source/dest aligned
   let effectiveProfile = profile;
   if (profile.useSourceFolderName) {
-    if (profile.syncDirection === 'download') {
+    if (profile.syncDirection === 'download' || profile.syncDirection === 'bidirectional') {
+      // Append drive folder name to local path so sync happens in a subfolder
       const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
       effectiveProfile = { ...profile, localPath: path.join(profile.localPath, folderName) };
     }
     // For upload, the Drive subfolder is created during sync (ensureFolder)
-    // For bidirectional, use the local path as-is
   }
 
   const session = createSession(profileId, effectiveProfile.name);
