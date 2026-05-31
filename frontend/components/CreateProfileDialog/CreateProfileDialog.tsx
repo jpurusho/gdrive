@@ -30,6 +30,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import GroupWorkIcon from '@mui/icons-material/GroupWork';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -153,14 +154,17 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
 
   function renderFolders(driveId: string, files: DriveFile[], depth: number, parentPath: string, permission: DrivePermission, driveInfo: DriveInfo) {
     const folders = files.filter((f) => f.isFolder);
-    if (folders.length === 0 && depth > 0) {
+    const individualFiles = driveId === 'shared_with_me' ? files.filter((f) => !f.isFolder) : [];
+
+    if (folders.length === 0 && individualFiles.length === 0 && depth > 0) {
       return (
         <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2, py: 0.5, display: 'block' }}>
           No subfolders
         </Typography>
       );
     }
-    return folders.map((folder) => {
+
+    const folderElements = folders.map((folder) => {
       const fkey = folder.id;
       const isExpanded = !!expandedFolders[fkey];
       const isSelected = selected === `folder:${fkey}`;
@@ -191,6 +195,30 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
         </React.Fragment>
       );
     });
+
+    return (
+      <>
+        {folderElements}
+        {individualFiles.length > 0 && (
+          <>
+            <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2, py: 0.5, display: 'block', fontStyle: 'italic' }}>
+              {individualFiles.length} shared file{individualFiles.length !== 1 ? 's' : ''} (select "Shared with me" root to sync these)
+            </Typography>
+            {individualFiles.slice(0, 10).map((f) => (
+              <Box key={f.id} sx={{ pl: 2 + depth * 2 + 2, py: 0.25, display: 'flex', alignItems: 'center', gap: 1, opacity: 0.7 }}>
+                <InsertDriveFileIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                <Typography variant="caption" color="text.secondary" noWrap>{f.name}</Typography>
+              </Box>
+            ))}
+            {individualFiles.length > 10 && (
+              <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2 + 2, py: 0.25, display: 'block' }}>
+                ...and {individualFiles.length - 10} more
+              </Typography>
+            )}
+          </>
+        )}
+      </>
+    );
   }
 
   if (loading) return <Box display="flex" justifyContent="center" py={3}><CircularProgress size={24} /></Box>;
