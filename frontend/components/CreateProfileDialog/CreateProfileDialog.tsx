@@ -54,7 +54,7 @@ interface FolderSelection {
   permission: DrivePermission;
 }
 
-function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: FolderSelection) => void; onFileFilterAdd?: (fileName: string) => void }) {
+function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: FolderSelection) => void; onFileFilterAdd?: (fileName: string, add: boolean) => void }) {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
@@ -62,6 +62,8 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
   const [expandedFolders, setExpandedFolders] = useState<Record<string, DriveFile[]>>({});
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [focusedFileIdx, setFocusedFileIdx] = useState(-1);
   const [driveError, setDriveError] = useState<string | null>(null);
 
   async function loadDriveList() {
@@ -202,27 +204,75 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
         {individualFiles.length > 0 && (
           <>
             <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2, py: 0.5, display: 'block', fontStyle: 'italic' }}>
-              {individualFiles.length} shared file{individualFiles.length !== 1 ? 's' : ''} — click to add to filter
+              {individualFiles.length} shared file{individualFiles.length !== 1 ? 's' : ''} — check to select for download
             </Typography>
-            {individualFiles.slice(0, 20).map((f) => (
-              <Box
-                key={f.id}
-                onClick={() => onFileFilterAdd?.(f.name)}
-                sx={{
-                  pl: 2 + depth * 2 + 2, py: 0.35, display: 'flex', alignItems: 'center', gap: 1,
-                  cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' }, borderRadius: 1,
-                }}
-              >
-                <InsertDriveFileIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-                <Typography variant="caption" noWrap flex={1}>{f.name}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>+ filter</Typography>
-              </Box>
-            ))}
-            {individualFiles.length > 10 && (
-              <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2 + 2, py: 0.25, display: 'block' }}>
-                ...and {individualFiles.length - 10} more
-              </Typography>
-            )}
+            <Box
+              tabIndex={0}
+              onKeyDown={(e) => {
+                const sortedFiles = [...individualFiles].sort((a, b) => (b.sharedWithMeTime || b.modifiedTime || '').localeCompare(a.sharedWithMeTime || a.modifiedTime || ''));
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setFocusedFileIdx((prev) => Math.min(prev + 1, sortedFiles.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setFocusedFileIdx((prev) => Math.max(prev - 1, 0));
+                } else if (e.key === ' ' && focusedFileIdx >= 0) {
+                  e.preventDefault();
+                  const f = sortedFiles[focusedFileIdx];
+                  if (f) {
+                    const next = new Set(selectedFiles);
+                    const isSelected = next.has(f.name);
+                    if (isSelected) { next.delete(f.name); onFileFilterAdd?.(f.name, false); }
+                    else { next.add(f.name); onFileFilterAdd?.(f.name, true); }
+                    setSelectedFiles(next);
+                  }
+                }
+              }}
+              sx={{ pl: 2 + depth * 2, maxHeight: 180, overflowY: 'auto', '&:focus': { outline: 'none' } }}
+            >
+              {[...individualFiles]
+                .sort((a, b) => {
+                  const ta = a.sharedWithMeTime || a.modifiedTime || '';
+                  const tb = b.sharedWithMeTime || b.modifiedTime || '';
+                  return tb.localeCompare(ta);
+                })
+                .map((f, idx) => {
+                  const isFileSelected = selectedFiles.has(f.name);
+                  const isFocused = idx === focusedFileIdx;
+                  return (
+                    <Box
+                      key={f.id}
+                      onClick={() => {
+                        setFocusedFileIdx(idx);
+                        const next = new Set(selectedFiles);
+                        if (isFileSelected) {
+                          next.delete(f.name);
+                          onFileFilterAdd?.(f.name, false);
+                        } else {
+                          next.add(f.name);
+                          onFileFilterAdd?.(f.name, true);
+                        }
+                        setSelectedFiles(next);
+                      }}
+                      sx={{
+                        py: 0.4, px: 1, display: 'flex', alignItems: 'center', gap: 1,
+                        cursor: 'pointer', borderRadius: 1,
+                        bgcolor: isFileSelected ? 'action.selected' : isFocused ? 'action.focus' : 'transparent',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        outline: isFocused ? '1px solid' : 'none',
+                        outlineColor: isFocused ? 'primary.main' : 'transparent',
+                      }}
+                    >
+                      <Checkbox size="small" checked={isFileSelected} sx={{ p: 0 }} />
+                      <InsertDriveFileIcon sx={{ fontSize: 14, color: isFileSelected ? 'primary.main' : 'text.secondary' }} />
+                      <Typography variant="caption" noWrap flex={1} fontWeight={isFileSelected ? 600 : 400}>{f.name}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, flexShrink: 0 }}>
+                        {f.size ? `${(f.size / 1024).toFixed(0)} KB` : ''}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+            </Box>
           </>
         )}
       </>
@@ -385,14 +435,18 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
           >
             <DriveFolderPicker
               onSelect={setFolderSel}
-              onFileFilterAdd={(name) => {
+              onFileFilterAdd={(name, add) => {
                 setFileFilter((prev) => {
                   const current = prev.split(',').map((s) => s.trim()).filter(Boolean);
-                  if (current.includes(name)) return prev;
-                  return current.length > 0 ? `${prev}, ${name}` : name;
+                  if (add) {
+                    if (current.includes(name)) return prev;
+                    return current.length > 0 ? `${prev}, ${name}` : name;
+                  } else {
+                    return current.filter((s) => s !== name).join(', ');
+                  }
                 });
                 // Auto-select "Shared with me" as the source if not already selected
-                if (!folderSel || folderSel.driveId !== 'shared_with_me') {
+                if (add && (!folderSel || folderSel.driveId !== 'shared_with_me')) {
                   setFolderSel({
                     driveId: 'shared_with_me',
                     driveName: 'Shared with me',
