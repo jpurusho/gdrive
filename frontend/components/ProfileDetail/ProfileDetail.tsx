@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -8,10 +8,16 @@ import {
   Divider,
   Switch,
   Tooltip,
+  Collapse,
+  TextField,
+  IconButton,
   alpha,
   useTheme,
   keyframes,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SortIcon from '@mui/icons-material/Sort';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import EditIcon from '@mui/icons-material/Edit';
@@ -28,7 +34,8 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import FileLogDialog from '../FileLogDialog/FileLogDialog';
-import type { SyncProfile, SyncSession } from '../../../shared/types';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import type { SyncProfile, SyncSession, SyncFileEntry } from '../../../shared/types';
 
 const directionLabels: Record<string, string> = { download: 'Download', upload: 'Upload', bidirectional: 'Bidirectional' };
 const directionIcons: Record<string, React.ElementType> = { download: CloudDownloadIcon, upload: CloudUploadIcon, bidirectional: SyncIcon };
@@ -69,9 +76,23 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
   const [editOpen, setEditOpen] = useState(false);
   const [recentSessions, setRecentSessions] = useState<SyncSession[]>([]);
   const [fileLogSessionId, setFileLogSessionId] = useState<number | null>(null);
+  const [syncedFiles, setSyncedFiles] = useState<SyncFileEntry[]>([]);
+  const [filesExpanded, setFilesExpanded] = useState(true);
+  const [filesFilter, setFilesFilter] = useState('');
+  const [filesSort, setFilesSort] = useState<'name' | 'size' | 'status'>('name');
+  const [filesSortDir, setFilesSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    window.api.sync.getSessions(profile.id).then(setRecentSessions);
+    window.api.sync.getSessions(profile.id).then((sessions) => {
+      setRecentSessions(sessions);
+      // Load file logs from latest completed session
+      const latest = sessions.find((s) => s.status === 'completed');
+      if (latest) {
+        window.api.sync.getFileLogs(latest.id).then(setSyncedFiles);
+      } else {
+        setSyncedFiles([]);
+      }
+    });
   }, [profile.id, session?.status]);
 
   const progress = session && session.totalFiles > 0
@@ -267,6 +288,85 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             </Box>
           )}
         </Box>
+
+        {/* Synced files list */}
+        {syncedFiles.length > 0 && (
+          <Box mb={3}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              <Box display="flex" alignItems="center" gap={1} sx={{ cursor: 'pointer' }} onClick={() => setFilesExpanded(!filesExpanded)}>
+                {filesExpanded ? <ExpandLessIcon sx={{ fontSize: 18, color: 'text.secondary' }} /> : <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />}
+                <Typography variant="subtitle2" fontWeight={600}>Synced Files</Typography>
+                <Chip label={syncedFiles.length} size="small" sx={{ height: 20, fontSize: 10 }} />
+              </Box>
+              {filesExpanded && (
+                <Box display="flex" gap={0.5}>
+                  <Tooltip title={`Sort by ${filesSort === 'name' ? 'size' : filesSort === 'size' ? 'status' : 'name'}`}>
+                    <IconButton size="small" onClick={() => {
+                      if (filesSort === 'name') { setFilesSort('size'); setFilesSortDir('desc'); }
+                      else if (filesSort === 'size') { setFilesSort('status'); setFilesSortDir('asc'); }
+                      else { setFilesSort('name'); setFilesSortDir('asc'); }
+                    }}>
+                      <SortIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
+            </Box>
+            <Collapse in={filesExpanded}>
+              <TextField
+                size="small"
+                placeholder="Filter files..."
+                value={filesFilter}
+                onChange={(e) => setFilesFilter(e.target.value)}
+                fullWidth
+                sx={{ mb: 1, '& .MuiInputBase-input': { fontSize: 12, py: 0.75 } }}
+              />
+              <Box
+                sx={{
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  borderRadius: 2,
+                  border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.2)}`,
+                }}
+              >
+                {syncedFiles
+                  .filter((f) => !filesFilter || f.fileName.toLowerCase().includes(filesFilter.toLowerCase()) || f.filePath.toLowerCase().includes(filesFilter.toLowerCase()))
+                  .sort((a, b) => {
+                    let cmp = 0;
+                    if (filesSort === 'name') cmp = a.fileName.localeCompare(b.fileName);
+                    else if (filesSort === 'size') cmp = a.fileSize - b.fileSize;
+                    else cmp = a.status.localeCompare(b.status);
+                    return filesSortDir === 'asc' ? cmp : -cmp;
+                  })
+                  .map((f) => (
+                    <Box
+                      key={f.id}
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                      px={1.5}
+                      py={0.5}
+                      sx={{ borderBottom: (t: any) => `1px solid ${alpha(t.palette.divider, 0.06)}`, '&:last-child': { borderBottom: 'none' } }}
+                    >
+                      {f.direction === 'download' ? <CloudDownloadIcon sx={{ fontSize: 12, color: 'primary.main' }} /> : <CloudUploadIcon sx={{ fontSize: 12, color: 'secondary.main' }} />}
+                      <Typography variant="caption" flex={1} noWrap title={f.filePath}>{f.fileName}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 50, textAlign: 'right' }}>{formatBytes(f.fileSize)}</Typography>
+                      {f.status === 'completed' ? (
+                        <CheckCircleIcon sx={{ fontSize: 12, color: 'success.main' }} />
+                      ) : f.status === 'skipped' ? (
+                        <SkipNextIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                      ) : (
+                        <ErrorOutlineIcon sx={{ fontSize: 12, color: 'error.main' }} />
+                      )}
+                    </Box>
+                  ))}
+              </Box>
+              <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
+                Sort: {filesSort} ({filesSortDir}) · Click header to collapse
+              </Typography>
+            </Collapse>
+          </Box>
+        )}
 
         {/* Recent activity for this profile */}
         <Typography variant="subtitle2" fontWeight={600} mb={1.5}>Recent Activity</Typography>
