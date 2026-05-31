@@ -54,7 +54,7 @@ interface FolderSelection {
   permission: DrivePermission;
 }
 
-function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => void }) {
+function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: FolderSelection) => void; onFileFilterAdd?: (fileName: string) => void }) {
   const [drives, setDrives] = useState<DriveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
@@ -202,12 +202,20 @@ function DriveFolderPicker({ onSelect }: { onSelect: (sel: FolderSelection) => v
         {individualFiles.length > 0 && (
           <>
             <Typography variant="caption" color="text.secondary" sx={{ pl: 2 + depth * 2, py: 0.5, display: 'block', fontStyle: 'italic' }}>
-              {individualFiles.length} shared file{individualFiles.length !== 1 ? 's' : ''} (select "Shared with me" root to sync these)
+              {individualFiles.length} shared file{individualFiles.length !== 1 ? 's' : ''} — click to add to filter
             </Typography>
-            {individualFiles.slice(0, 10).map((f) => (
-              <Box key={f.id} sx={{ pl: 2 + depth * 2 + 2, py: 0.25, display: 'flex', alignItems: 'center', gap: 1, opacity: 0.7 }}>
-                <InsertDriveFileIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary" noWrap>{f.name}</Typography>
+            {individualFiles.slice(0, 20).map((f) => (
+              <Box
+                key={f.id}
+                onClick={() => onFileFilterAdd?.(f.name)}
+                sx={{
+                  pl: 2 + depth * 2 + 2, py: 0.35, display: 'flex', alignItems: 'center', gap: 1,
+                  cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' }, borderRadius: 1,
+                }}
+              >
+                <InsertDriveFileIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                <Typography variant="caption" noWrap flex={1}>{f.name}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>+ filter</Typography>
               </Box>
             ))}
             {individualFiles.length > 10 && (
@@ -375,7 +383,27 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
               overflow: 'hidden',
             }}
           >
-            <DriveFolderPicker onSelect={setFolderSel} />
+            <DriveFolderPicker
+              onSelect={setFolderSel}
+              onFileFilterAdd={(name) => {
+                setFileFilter((prev) => {
+                  const current = prev.split(',').map((s) => s.trim()).filter(Boolean);
+                  if (current.includes(name)) return prev;
+                  return current.length > 0 ? `${prev}, ${name}` : name;
+                });
+                // Auto-select "Shared with me" as the source if not already selected
+                if (!folderSel || folderSel.driveId !== 'shared_with_me') {
+                  setFolderSel({
+                    driveId: 'shared_with_me',
+                    driveName: 'Shared with me',
+                    driveType: 'my_drive',
+                    folderId: 'shared_with_me',
+                    folderPath: '/',
+                    permission: 'reader',
+                  });
+                }
+              }}
+            />
           </Box>
           {folderSel && (
             <Typography variant="caption" color="primary.main" mt={0.5} display="block">
