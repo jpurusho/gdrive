@@ -13,8 +13,21 @@ import type { SyncProfile } from '../shared/types';
 let authService: GoogleAuthService;
 let driveService: GoogleDriveService | null = null;
 
-let lastUpdateCheck: { result: any; timestamp: number } | null = null;
 const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+
+function getCachedUpdateCheck(): { result: any; timestamp: number } | null {
+  try {
+    const cached = getSetting('update_check_cache');
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return null;
+}
+
+function setCachedUpdateCheck(result: any): void {
+  try {
+    setSetting('update_check_cache', JSON.stringify({ result, timestamp: Date.now() }));
+  } catch {}
+}
 
 function getDriveService(): GoogleDriveService {
   if (!driveService) {
@@ -370,8 +383,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
-    if (lastUpdateCheck && Date.now() - lastUpdateCheck.timestamp < UPDATE_CHECK_INTERVAL) {
-      return lastUpdateCheck.result;
+    const cached = getCachedUpdateCheck();
+    if (cached && Date.now() - cached.timestamp < UPDATE_CHECK_INTERVAL) {
+      return cached.result;
     }
 
     const currentVersion = app.getVersion();
@@ -392,19 +406,15 @@ export function registerIpcHandlers(): void {
             console.log(`[Update] GitHub API: ${res.statusCode}`);
             if (res.statusCode === 200) {
               resolve(JSON.parse(data));
-            } else if (res.statusCode === 404) {
-              reject(new Error('No releases found for this app.'));
-            } else if (res.statusCode === 403) {
-              reject(new Error('GitHub API rate limit reached. Try again in a few minutes.'));
             } else {
-              reject(new Error(`Update check failed (HTTP ${res.statusCode}). Try again later.`));
+              reject(new Error(`HTTP ${res.statusCode}`));
             }
           });
         }).on('error', (err: any) => {
-          reject(new Error(`Cannot reach GitHub: ${err.message}`));
+          reject(new Error(err.message));
         }).on('timeout', () => {
           req.destroy();
-          reject(new Error('Update check timed out.'));
+          reject(new Error('timeout'));
         });
       });
 
@@ -412,9 +422,8 @@ export function registerIpcHandlers(): void {
       const downloadUrl = release.html_url || '';
       const releaseNotes = release.body || '';
 
-      if (!latestVersion) return { status: 'error', message: 'Could not determine latest version' };
+      if (!latestVersion) return { status: 'latest', version: currentVersion };
 
-      // Simple semver comparison
       const current = currentVersion.split('.').map(Number);
       const latest = latestVersion.split('.').map(Number);
       const isNewer = latest[0] > current[0]
@@ -424,11 +433,13 @@ export function registerIpcHandlers(): void {
       const result = isNewer
         ? { status: 'available', version: latestVersion, url: downloadUrl, notes: releaseNotes }
         : { status: 'latest', version: currentVersion };
-      lastUpdateCheck = { result, timestamp: Date.now() };
+      setCachedUpdateCheck(result);
       return result;
     } catch (err: any) {
       console.error('[Update] Check failed:', err?.message);
-      return { status: 'error', message: err?.message || 'Update check failed' };
+      // Return stale cache if available, otherwise silently report "latest"
+      if (cached) return cached.result;
+      return { status: 'latest', version: currentVersion };
     }
   });
   ipcMain.handle('app:getPlatform', () => process.platform);

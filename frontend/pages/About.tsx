@@ -214,7 +214,7 @@ export default function About() {
           ['Database', 'SQLite via better-sqlite3'],
           ['Scheduling', 'node-cron'],
           ['Packaging', 'electron-builder'],
-          ['Auto-Update', 'electron-updater + GitHub Releases'],
+          ['Auto-Update', 'GitHub Releases'],
           ['Author', 'Jerome Purushotham'],
         ].map(([label, value]) => (
           <Box key={label} display="flex" gap={2} py={0.5}>

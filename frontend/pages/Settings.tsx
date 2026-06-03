@@ -108,6 +108,7 @@ export default function Settings() {
   const [version, setVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [checking, setChecking] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState('');
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
   const [editProfile, setEditProfile] = useState<SyncProfile | null>(null);
   const [backupInfo, setBackupInfo] = useState<BackupInfo>({ lastBackup: null, folderId: null, folderName: null });
@@ -400,9 +401,12 @@ export default function Settings() {
               and gsync handles the rest — comparing files by MD5 checksum, transferring only what changed, exporting Google Workspace files,
               and logging every operation. Supports pause/resume, scheduled auto-sync, mirror mode, HEIC conversion, and database backup to Drive.
             </Typography>
-            <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={async () => { setChecking(true); try { const r = await window.api.app.checkForUpdates(); if (r.status === 'available') { alert(`Update available: v${r.version}`); } else if (r.status === 'latest') { alert(`You're on the latest version (v${version}).`); } else { alert(r.message || 'Check failed'); } } finally { setChecking(false); } }} disabled={checking} sx={{ mb: 3 }}>
-              {checking ? 'Checking...' : 'Check for Updates'}
-            </Button>
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
+              <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={async () => { setChecking(true); setUpdateMsg(''); try { const r = await window.api.app.checkForUpdates(); if (r.status === 'available') { setUpdateMsg(`Update available: v${r.version}`); } else { setUpdateMsg(`You're on the latest version.`); } } catch { setUpdateMsg('Could not check for updates.'); } finally { setChecking(false); } }} disabled={checking}>
+                {checking ? 'Checking...' : 'Check for Updates'}
+              </Button>
+              {updateMsg && <Typography variant="caption" color="text.secondary">{updateMsg}</Typography>}
+            </Box>
 
             <Typography variant="subtitle2" fontWeight={700} mb={1}>Tech Stack</Typography>
             <Box sx={{ p: 2, borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.2)}`, maxWidth: 400, mb: 3 }}>
