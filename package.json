@@ -1,6 +1,6 @@
 {
   "name": "gsync",
-  "version": "2.9.9",
+  "version": "2.10.0",
   "description": "Google Drive Sync Desktop Application",
   "main": "dist/desktop/index.js",
   "author": "Jerome Purushotham",
@@ -22,7 +22,6 @@
   "dependencies": {
     "better-sqlite3": "^11.7.0",
     "dotenv": "^16.4.0",
-    "electron-updater": "^6.3.0",
     "google-auth-library": "^9.14.0",
     "googleapis": "^140.0.0",
     "node-cron": "^4.2.1"

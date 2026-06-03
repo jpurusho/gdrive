@@ -13,6 +13,9 @@ import type { SyncProfile } from '../shared/types';
 let authService: GoogleAuthService;
 let driveService: GoogleDriveService | null = null;
 
+let lastUpdateCheck: { result: any; timestamp: number } | null = null;
+const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+
 function getDriveService(): GoogleDriveService {
   if (!driveService) {
     const tokens = getTokens();
@@ -367,6 +370,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
+    if (lastUpdateCheck && Date.now() - lastUpdateCheck.timestamp < UPDATE_CHECK_INTERVAL) {
+      return lastUpdateCheck.result;
+    }
+
     const currentVersion = app.getVersion();
 
     try {
@@ -410,10 +417,11 @@ export function registerIpcHandlers(): void {
         || (latest[0] === current[0] && latest[1] > current[1])
         || (latest[0] === current[0] && latest[1] === current[1] && latest[2] > current[2]);
 
-      if (isNewer) {
-        return { status: 'available', version: latestVersion, url: downloadUrl, notes: releaseNotes };
-      }
-      return { status: 'latest', version: currentVersion };
+      const result = isNewer
+        ? { status: 'available', version: latestVersion, url: downloadUrl, notes: releaseNotes }
+        : { status: 'latest', version: currentVersion };
+      lastUpdateCheck = { result, timestamp: Date.now() };
+      return result;
     } catch (err: any) {
       console.error('[Update] Check failed:', err?.message);
       return { status: 'error', message: err?.message || 'Update check failed' };

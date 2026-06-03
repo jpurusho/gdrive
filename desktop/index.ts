@@ -5,7 +5,6 @@ import { registerIpcHandlers } from './ipc-handlers';
 import { initDatabase } from './services/database';
 import { initScheduler } from './services/scheduler';
 import { GoogleAuthService } from './services/google-auth';
-import { autoUpdater } from 'electron-updater';
 
 // Load .env from project root
 config({ path: path.join(__dirname, '../../.env') });
@@ -130,41 +129,6 @@ function createWindow(): void {
   });
 }
 
-function setupAutoUpdater(): void {
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'jpurusho',
-    repo: 'gdrive',
-  });
-
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
-
-  autoUpdater.on('update-available', (info) => {
-    console.log(`[Update] New version available: ${info.version}`);
-    const win = BrowserWindow.getAllWindows()[0];
-    if (win && !win.isDestroyed()) {
-      win.webContents.send('app:updateAvailable', info.version);
-    }
-  });
-
-  autoUpdater.on('update-downloaded', (info) => {
-    console.log(`[Update] Downloaded: ${info.version}`);
-    const win = BrowserWindow.getAllWindows()[0];
-    if (win && !win.isDestroyed()) {
-      win.webContents.send('app:updateReady', info.version);
-    }
-  });
-
-  autoUpdater.on('error', (err) => {
-    console.error('[Update] Error:', err?.message);
-  });
-
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    console.error('[Update] Check failed:', err?.message);
-  });
-}
-
 app.whenReady().then(() => {
   // Set dock icon
   if (process.platform === 'darwin') {
@@ -176,10 +140,6 @@ app.whenReady().then(() => {
   registerIpcHandlers();
   initScheduler(new GoogleAuthService());
   createWindow();
-
-  if (!isDev) {
-    setupAutoUpdater();
-  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
