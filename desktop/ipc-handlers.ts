@@ -380,10 +380,11 @@ export function registerIpcHandlers(): void {
       const https = require('https');
 
       const release: any = await new Promise((resolve, reject) => {
-        https.get({
+        const req = https.get({
           hostname: 'api.github.com',
           path: '/repos/jpurusho/gdrive/releases/latest',
           headers: { 'User-Agent': 'gsync-updater' },
+          timeout: 10000,
         }, (res: any) => {
           let data = '';
           res.on('data', (chunk: string) => { data += chunk; });
@@ -401,6 +402,9 @@ export function registerIpcHandlers(): void {
           });
         }).on('error', (err: any) => {
           reject(new Error(`Cannot reach GitHub: ${err.message}`));
+        }).on('timeout', () => {
+          req.destroy();
+          reject(new Error('Update check timed out.'));
         });
       });
 
