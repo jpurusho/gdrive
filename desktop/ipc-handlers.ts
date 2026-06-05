@@ -383,12 +383,22 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.handle('app:checkForUpdates', async () => {
+    const currentVersion = app.getVersion();
     const cached = getCachedUpdateCheck();
     if (cached && Date.now() - cached.timestamp < UPDATE_CHECK_INTERVAL) {
-      return cached.result;
+      // Invalidate stale "available" cache if user already installed that version
+      if (cached.result.status === 'available' && cached.result.version) {
+        const cachedVer = cached.result.version.split('.').map(Number);
+        const current = currentVersion.split('.').map(Number);
+        const stillNewer = cachedVer[0] > current[0]
+          || (cachedVer[0] === current[0] && cachedVer[1] > current[1])
+          || (cachedVer[0] === current[0] && cachedVer[1] === current[1] && cachedVer[2] > current[2]);
+        if (stillNewer) return cached.result;
+        // Fall through to re-check since cached version is no longer newer
+      } else {
+        return cached.result;
+      }
     }
-
-    const currentVersion = app.getVersion();
 
     try {
       const https = require('https');
