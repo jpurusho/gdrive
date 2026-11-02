@@ -117,7 +117,11 @@ export class GoogleDriveService {
           fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,parents,shared,md5Checksum,capabilities,sharedWithMeTime)',
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
-          ...(isSharedDrive ? { driveId, corpora: 'drive' } : {}),
+          ...(isSharedDrive
+            ? { driveId, corpora: 'drive' }
+            : (isSharedWithMe && folderId !== 'shared_with_me')
+              ? { corpora: 'allDrives' }
+              : {}),
           orderBy: isSharedWithMe && folderId === 'shared_with_me' ? 'sharedWithMeTime desc' : 'folder,name',
         });
 

@@ -133,7 +133,7 @@ app.whenReady().then(() => {
   // Set dock icon
   if (process.platform === 'darwin') {
     const iconPath = path.join(__dirname, '../resources/icon.png');
-    try { app.dock.setIcon(iconPath); } catch {}
+    try { app.dock?.setIcon(iconPath); } catch {}
   }
 
   initDatabase();
