@@ -39,7 +39,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddIcon from '@mui/icons-material/Add';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../shared/types';
 
@@ -298,7 +298,7 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
             <ListItemIcon sx={{ minWidth: 22 }}>
               <FolderIcon sx={{ fontSize: 14, color: isSelected ? 'success.main' : 'warning.main' }} />
             </ListItemIcon>
-            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }} />
+            <ListItemText primary={folder.name} slotProps={{ primary: { sx: { fontSize: 12, fontWeight: isSelected ? 700 : 400 } } }} />
             {isSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
           </ListItemButton>
           {isExp && expandedFolders[folder.id] && (
@@ -314,7 +314,7 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
   function renderDriveTree(mode: 'source' | 'dest') {
     return (
       <Box sx={{ maxHeight: 250, overflow: 'auto', borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.3)}`, bgcolor: 'background.default' }}>
-        {loadingDrives ? <Box display="flex" justifyContent="center" py={2}><CircularProgress size={20} /></Box> : (
+        {loadingDrives ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={20} /></Box> : (
           <List dense disablePadding>
             {drives.map((drive) => {
               if (drive.id === 'shared_with_me') return null;
@@ -344,7 +344,7 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
                     <ListItemIcon sx={{ minWidth: 22 }}>
                       {drive.type === 'shared_drive' ? <GroupWorkIcon sx={{ fontSize: 16, color: 'secondary.main' }} /> : <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
                     </ListItemIcon>
-                    <ListItemText primary={drive.name} primaryTypographyProps={{ fontSize: 12, fontWeight: 500 }} />
+                    <ListItemText primary={drive.name} slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 500 } } }} />
                     {isDriveSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
                   </ListItemButton>
                   <Collapse in={isExp} timeout="auto">
@@ -357,8 +357,8 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         )}
         {/* New folder creation */}
         {mode === 'dest' && destFolderId && (
-          <Box display="flex" gap={1} p={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
-            <TextField size="small" placeholder="New folder name" value={newFolderName} onChange={(e) => { setNewFolderName(e.target.value); setNewFolderParent(destFolderId); }} sx={{ flex: 1 }} InputProps={{ sx: { fontSize: 12 } }} />
+          <Box sx={{ display: 'flex', gap: 1, p: 1, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
+            <TextField size="small" placeholder="New folder name" value={newFolderName} onChange={(e) => { setNewFolderName(e.target.value); setNewFolderParent(destFolderId); }} sx={{ flex: 1 }} slotProps={{ input: { sx: { fontSize: 12 } } }} />
             <Button size="small" variant="outlined" startIcon={<CreateNewFolderIcon sx={{ fontSize: 14 }} />} onClick={handleCreateFolder} disabled={!newFolderName.trim() || creatingFolder} sx={{ fontSize: 11, textTransform: 'none' }}>
               {creatingFolder ? '...' : 'Create'}
             </Button>
@@ -369,9 +369,9 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3, overflow: 'hidden' } } }}>
       <Box sx={{ px: 3, py: 2, background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.12)}, ${alpha(t.palette.secondary.main, 0.08)})`, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>
-        <Typography variant="h6" fontWeight={700}>Quick Sync</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>Quick Sync</Typography>
         <Typography variant="caption" color="text.secondary">Select multiple folders to sync at once</Typography>
       </Box>
 
@@ -382,8 +382,8 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
 
         {/* Step 0: Direction */}
         {step === 0 && (
-          <Box textAlign="center">
-            <Typography variant="body2" color="text.secondary" mb={2}>Choose sync direction</Typography>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Choose sync direction</Typography>
             <ToggleButtonGroup value={direction} exclusive onChange={(_e, v) => v && setDirection(v)} fullWidth>
               <ToggleButton value="download"><CloudDownloadIcon sx={{ mr: 1, fontSize: 18 }} /> Download from Drive</ToggleButton>
               <ToggleButton value="upload"><CloudUploadIcon sx={{ mr: 1, fontSize: 18 }} /> Upload to Drive</ToggleButton>
@@ -394,14 +394,14 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         {/* Step 1: Sources */}
         {step === 1 && (
           <Box>
-            <Typography variant="body2" color="text.secondary" mb={1.5}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
               {direction === 'download' ? 'Select Drive folders to download (check multiple)' : 'Add local folders to upload'}
             </Typography>
             {direction === 'download' ? (
               <>
                 {renderDriveTree('source')}
                 {selectedSources.length > 0 && (
-                  <Box display="flex" flexWrap="wrap" gap={0.5} mt={1.5}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1.5 }}>
                     {selectedSources.map((s) => (
                       <Chip key={s.folderId} label={s.folderName} size="small" onDelete={() => setSelectedSources((prev) => prev.filter((x) => x.folderId !== s.folderId))} sx={{ height: 24, fontSize: 11 }} />
                     ))}
@@ -411,8 +411,8 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
             ) : (
               <Box>
                 <Button variant="outlined" startIcon={<FolderOpenIcon />} onClick={handleAddLocalSource} sx={{ mb: 1.5 }}>Add Local Folder</Button>
-                {localSources.length === 0 && <Typography variant="caption" color="text.secondary" display="block">No folders selected yet.</Typography>}
-                <Box display="flex" flexDirection="column" gap={0.5}>
+                {localSources.length === 0 && <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>No folders selected yet.</Typography>}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                   {localSources.map((p) => (
                     <Chip key={p} label={p} size="small" onDelete={() => setLocalSources((prev) => prev.filter((x) => x !== p))} icon={<FolderIcon sx={{ fontSize: '14px !important' }} />} sx={{ height: 28, fontSize: 11, justifyContent: 'flex-start' }} />
                   ))}
@@ -425,21 +425,21 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         {/* Step 2: Destination */}
         {step === 2 && (
           <Box>
-            <Typography variant="body2" color="text.secondary" mb={1.5}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
               {direction === 'download' ? 'Choose local destination folder' : 'Choose Drive destination folder'}
             </Typography>
             {direction === 'download' ? (
               <Box>
-                <Box display="flex" gap={1}>
-                  <TextField size="small" fullWidth value={destLocalPath} placeholder="Select destination..." InputProps={{ readOnly: true }} />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField size="small" fullWidth value={destLocalPath} placeholder="Select destination..." slotProps={{ input: { readOnly: true } }} />
                   <Button variant="outlined" onClick={async () => { const d = await window.api.localFs.selectDirectory(); if (d) setDestLocalPath(d); }}>Browse</Button>
                 </Box>
-                {destLocalPath && <Typography variant="caption" color="success.main" mt={0.5} display="block">Each source folder will create a subfolder here.</Typography>}
+                {destLocalPath && <Typography variant="caption" color="success.main" sx={{ mt: 0.5, display: 'block' }}>Each source folder will create a subfolder here.</Typography>}
               </Box>
             ) : (
               <>
                 {renderDriveTree('dest')}
-                {destFolderId && <Typography variant="caption" color="success.main" mt={0.5} display="block">{destDriveName}: {destFolderPath} — each local folder creates a subfolder here.</Typography>}
+                {destFolderId && <Typography variant="caption" color="success.main" sx={{ mt: 0.5, display: 'block' }}>{destDriveName}: {destFolderPath} — each local folder creates a subfolder here.</Typography>}
               </>
             )}
           </Box>
@@ -448,10 +448,10 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         {/* Step 3: Options */}
         {step === 3 && (
           <Box>
-            <Typography variant="body2" color="text.secondary" mb={1.5}>Configure sync options (applies to all profiles)</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Configure sync options (applies to all profiles)</Typography>
             <FormControlLabel control={<Checkbox checked={convertHeic} onChange={(e) => setConvertHeic(e.target.checked)} size="small" />} label={<Typography variant="body2">Convert HEIC to JPEG</Typography>} />
             <FormControlLabel control={<Checkbox checked={mirrorMode} onChange={(e) => setMirrorMode(e.target.checked)} size="small" />} label={<Box><Typography variant="body2">Mirror mode (delete extras)</Typography>{mirrorMode && <Typography variant="caption" color="warning.main">Files not in source will be deleted.</Typography>}</Box>} />
-            <Box mt={2}>
+            <Box sx={{ mt: 2 }}>
               <FormControl size="small" fullWidth>
                 <InputLabel>Schedule</InputLabel>
                 <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
@@ -472,12 +472,12 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
         {/* Step 4: Review */}
         {step === 4 && (
           <Box>
-            <Typography variant="body2" color="text.secondary" mb={1.5}>Review — {sourceCount} profile{sourceCount !== 1 ? 's' : ''} will be created</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Review — {sourceCount} profile{sourceCount !== 1 ? 's' : ''} will be created</Typography>
             <Box sx={{ borderRadius: 2, border: (t) => `1.5px solid ${alpha(t.palette.primary.light, 0.2)}`, overflow: 'hidden' }}>
               {(direction === 'download' ? selectedSources : localSources.map((p) => ({ folderName: p.split('/').pop() || 'Sync', folderPath: p }))).map((source: any, i: number) => (
-                <Box key={i} display="flex" alignItems="center" gap={1.5} px={2} py={1} sx={{ borderBottom: i < sourceCount - 1 ? (t: any) => `1px solid ${alpha(t.palette.divider, 0.08)}` : 'none' }}>
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderBottom: i < sourceCount - 1 ? (t: any) => `1px solid ${alpha(t.palette.divider, 0.08)}` : 'none' }}>
                   {direction === 'download' ? <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} /> : <FolderIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
-                  <Typography variant="caption" fontWeight={600}>{source.folderName || source.folderPath}</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>{source.folderName || source.folderPath}</Typography>
                   <Typography variant="caption" color="text.secondary">→</Typography>
                   {direction === 'download' ? <FolderIcon sx={{ fontSize: 16, color: 'warning.main' }} /> : <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
                   <Typography variant="caption" color="text.secondary" noWrap>
@@ -486,15 +486,15 @@ export default function QuickSyncDialog({ open, onClose, onCreated }: Props) {
                 </Box>
               ))}
             </Box>
-            {mirrorMode && <Typography variant="caption" color="warning.main" mt={1} display="block">Mirror mode enabled — extras will be deleted.</Typography>}
-            {schedule && <Typography variant="caption" color="text.secondary" mt={0.5} display="block">Schedule: {schedule === 'custom' ? customCron : schedule}</Typography>}
+            {mirrorMode && <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>Mirror mode enabled — extras will be deleted.</Typography>}
+            {schedule && <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>Schedule: {schedule === 'custom' ? customCron : schedule}</Typography>}
           </Box>
         )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
         <Button onClick={onClose} disabled={creating}>Cancel</Button>
-        <Box display="flex" gap={1}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           {step > 0 && <Button onClick={() => setStep(step - 1)} disabled={creating}>Back</Button>}
           {step < 4 ? (
             <Button variant="contained" onClick={() => setStep(step + 1)}

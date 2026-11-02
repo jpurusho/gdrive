@@ -16,8 +16,8 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
 
@@ -68,18 +68,18 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
     >
       {/* Header */}
       <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={2}
-        py={1.25}
         sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.25,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Typography variant="subtitle2" fontWeight={700}>Profiles</Typography>
-        <Box display="flex" gap={0.5}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Profiles</Typography>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           {onQuickSync && (
             <Tooltip title="Quick Sync (multi-select)">
               <IconButton size="small" onClick={onQuickSync} sx={{ color: 'secondary.main' }}>
@@ -96,9 +96,9 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
       </Box>
 
       {/* Profile list */}
-      <Box flex={1} overflow="auto">
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
         {profiles.length === 0 ? (
-          <Box p={3} textAlign="center">
+          <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary">
               No profiles yet
             </Typography>
@@ -143,17 +143,17 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
                     },
                   }}
                 >
-                  <Box flex={1} minWidth={0} sx={{ opacity: isProfileInactive ? 0.5 : 1 }}>
-                    <Box display="flex" alignItems="center" gap={0.75} mb={0.25}>
+                  <Box sx={{ flex: 1, minWidth: 0, opacity: isProfileInactive ? 0.5 : 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
                       <DirIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                      <Typography variant="body2" fontWeight={isSelected ? 600 : 500} noWrap>
+                      <Typography variant="body2" noWrap sx={{ fontWeight: isSelected ? 600 : 500 }}>
                         {profile.name}
                       </Typography>
                       {isProfileInactive && (
                         <Typography variant="caption" color="warning.main" sx={{ fontSize: 10 }}>OFF</Typography>
                       )}
                     </Box>
-                    <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       {isActive ? (
                         <>
                           <SyncIcon sx={{ fontSize: 12, color: 'primary.main', animation: `${spin} 1.5s linear infinite` }} />

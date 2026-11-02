@@ -158,10 +158,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const selectedProfile = profiles.find((p) => p.id === selectedProfileId);
 
   return (
-    <Box display="flex" height="100vh" overflow="hidden">
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar user={user} currentPage={currentPage} onNavigate={setCurrentPage} onLogout={onLogout} />
 
-      <Box flex={1} display="flex" flexDirection="column" overflow="hidden" sx={{ background: (t) => t.palette.background.default }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: (t) => t.palette.background.default }}>
         {/* Titlebar */}
         <Box
           className="titlebar-drag"
@@ -189,7 +189,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           >
             {appTitle}
           </Typography>
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography
               variant="caption"
               sx={{
@@ -235,13 +235,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
         {/* Home page — profile command center */}
         {currentPage === 'home' && (
-          <Box flex={1} display="flex" flexDirection="column" overflow="hidden">
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {profiles.length === 0 && !loading ? (
               <EmptyState onCreateProfile={() => setCreateOpen(true)} />
             ) : (
               <>
                 <StatsBar profiles={profiles} sessions={sessions} />
-                <Box flex={1} display="flex" overflow="hidden">
+                <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                   <ProfileList
                     profiles={profiles}
                     sessions={sessions}
@@ -261,7 +261,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                       onUpdated={handleUpdated}
                     />
                   ) : (
-                    <Box flex={1} display="flex" alignItems="center" justifyContent="center">
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Typography variant="body2" color="text.secondary">
                         Select a profile to view details
                       </Typography>
@@ -299,7 +299,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         onClose={() => !downloading && setUpdateDialogOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+        slotProps={{ paper: { sx: { borderRadius: 3, overflow: 'hidden' } } }}
       >
         <Box
           sx={{
@@ -311,7 +311,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         >
           <SystemUpdateIcon sx={{ color: 'warning.main' }} />
           <Box>
-            <Typography variant="h6" fontWeight={700}>Update Available</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Update Available</Typography>
             <Typography variant="caption" color="text.secondary">
               v{version} → v{updateAvailable?.version}
             </Typography>
@@ -328,16 +328,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                     border: (t) => `1px solid ${alpha(t.palette.primary.light, 0.15)}`,
                   }}
                 >
-                  <Typography variant="subtitle2" fontWeight={600} mb={1}>What's New</Typography>
-                  <Typography variant="caption" color="text.secondary" component="div" whiteSpace="pre-line" lineHeight={1.8}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>What's New</Typography>
+                  <Typography variant="caption" color="text.secondary" component="div" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>
                     {updateAvailable.notes}
                   </Typography>
                 </Box>
               )}
-              <Typography variant="body2" color="text.secondary" mb={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Your data and profiles won't be affected by the update.
               </Typography>
-              <Box display="flex" gap={1}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   variant="contained"
                   startIcon={<DownloadIcon />}
@@ -357,9 +357,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
           {downloading && (
             <Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Downloading...</Typography>
-                <Typography variant="body2" fontWeight={700} color="primary.main">{downloadProgress}%</Typography>
+                <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700 }}>{downloadProgress}%</Typography>
               </Box>
               <LinearProgress
                 variant="determinate"
@@ -378,10 +378,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   border: (t) => `1.5px solid ${alpha(t.palette.success.main, 0.2)}`,
                 }}
               >
-                <Typography variant="body2" fontWeight={700} color="success.main" mb={1.5}>
+                <Typography variant="body2" color="success.main" sx={{ fontWeight: 700, mb: 1.5 }}>
                   Download complete
                 </Typography>
-                <Typography variant="caption" color="text.secondary" component="div" lineHeight={2}>
+                <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 2 }}>
                   <strong>To install:</strong>
                   <ol style={{ margin: '4px 0 0 0', paddingLeft: 18 }}>
                     <li>Quit gsync</li>
@@ -395,14 +395,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   Saved to: {downloadedPath}
                 </Typography>
               </Box>
-              <Box display="flex" justifyContent="flex-end" mt={2}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button variant="outlined" onClick={() => setUpdateDialogOpen(false)}>Close</Button>
               </Box>
             </Box>
           )}
 
           {updateError && (
-            <Typography variant="body2" color="error.main" mt={2}>{updateError}</Typography>
+            <Typography variant="body2" color="error.main" sx={{ mt: 2 }}>{updateError}</Typography>
           )}
         </DialogContent>
       </Dialog>

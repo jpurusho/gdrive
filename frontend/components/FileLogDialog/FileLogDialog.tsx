@@ -18,9 +18,9 @@ import {
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import type { SyncFileEntry } from '../../../shared/types';
 
 function formatBytes(bytes: number): string {
@@ -71,7 +71,7 @@ export default function FileLogDialog({ open, onClose, title, sessionIds }: Prop
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 3, overflow: 'hidden' } } }}>
       <Box
         sx={{
           px: 3, py: 2,
@@ -79,9 +79,9 @@ export default function FileLogDialog({ open, onClose, title, sessionIds }: Prop
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Typography variant="h6" fontWeight={700}>{title}</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{title}</Typography>
         {!loading && (
-          <Box display="flex" gap={2} mt={0.5}>
+          <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
             <Typography variant="caption" color="text.secondary">{files.length} files</Typography>
             {synced > 0 && <Typography variant="caption" color="success.main">{synced} synced</Typography>}
             {skipped > 0 && <Typography variant="caption" color="text.secondary">{skipped} skipped</Typography>}
@@ -92,11 +92,11 @@ export default function FileLogDialog({ open, onClose, title, sessionIds }: Prop
       </Box>
       <DialogContent sx={{ p: 0 }}>
         {loading ? (
-          <Box display="flex" justifyContent="center" py={4}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={28} />
           </Box>
         ) : files.length === 0 ? (
-          <Box py={4} textAlign="center">
+          <Box sx={{ py: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">No file records found.</Typography>
           </Box>
         ) : (
@@ -118,7 +118,7 @@ export default function FileLogDialog({ open, onClose, title, sessionIds }: Prop
                   return (
                     <TableRow key={file.id} hover>
                       <TableCell>
-                        <Typography variant="caption" fontWeight={500}>{file.fileName}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 500 }}>{file.fileName}</Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 200, display: 'block' }}>

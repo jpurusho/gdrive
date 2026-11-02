@@ -146,7 +146,7 @@ function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, se
         <ListItemIcon sx={{ minWidth: 28 }}>
           <FolderIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
         </ListItemIcon>
-        <ListItemText primary={file.name} primaryTypographyProps={{ fontSize: 13, noWrap: true }} />
+        <ListItemText primary={file.name} slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } } }} />
         {selectionMode && selectedFolderId === file.id && (
           <CheckIcon sx={{ fontSize: 16, color: 'success.main' }} />
         )}
@@ -157,15 +157,14 @@ function FolderNode({ file, driveId, driveName, driveType, depth, parentPath, se
             <FolderNode key={child.id} file={child} driveId={driveId} driveName={driveName} driveType={driveType} depth={depth + 1} parentPath={`${parentPath}${file.name}/`} selectionMode={selectionMode} selectedFolderId={selectedFolderId} onSelect={onSelect} />
           ) : (
             <ListItemButton key={child.id} sx={{ pl: 2 + (depth + 1) * 2, py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 28 }}><Box sx={{ width: 18 }} /></ListItemIcon>
               <ListItemIcon sx={{ minWidth: 28 }}>
                 <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               </ListItemIcon>
               <ListItemText
                 primary={child.name}
                 secondary={formatSize(child.size)}
-                primaryTypographyProps={{ fontSize: 13, noWrap: true }}
-                secondaryTypographyProps={{ fontSize: 11 }}
+                slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
               />
             </ListItemButton>
           ),
@@ -205,8 +204,7 @@ function SharedMonthGroup({ label, files, defaultOpen, driveId, driveName, drive
         <ListItemText
           primary={label}
           secondary={`${files.length} item${files.length !== 1 ? 's' : ''}`}
-          primaryTypographyProps={{ fontSize: 12, fontWeight: 600 }}
-          secondaryTypographyProps={{ fontSize: 10 }}
+          slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 600 } }, secondary: { sx: { fontSize: 10 } } }}
         />
       </ListItemButton>
       <Collapse in={open} timeout="auto">
@@ -215,15 +213,14 @@ function SharedMonthGroup({ label, files, defaultOpen, driveId, driveName, drive
             <FolderNode key={file.id} file={file} driveId={driveId} driveName={driveName} driveType={driveType} depth={2} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolderId} onSelect={onSelect} />
           ) : (
             <ListItemButton key={file.id} sx={{ pl: 8, py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 28 }}><Box sx={{ width: 18 }} /></ListItemIcon>
               <ListItemIcon sx={{ minWidth: 28 }}>
                 <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               </ListItemIcon>
               <ListItemText
                 primary={file.name}
                 secondary={formatSize(file.size)}
-                primaryTypographyProps={{ fontSize: 13, noWrap: true }}
-                secondaryTypographyProps={{ fontSize: 11 }}
+                slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
               />
             </ListItemButton>
           ),
@@ -292,21 +289,21 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
   return (
     <>
       <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={2}
-        py={1.25}
         sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.25,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.15)}, ${alpha(t.palette.secondary.main, 0.1)})`,
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <CloudIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-          <Typography variant="subtitle2" fontWeight={700}>Google Drive</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Google Drive</Typography>
         </Box>
-        <Box display="flex" alignItems="center" gap={0.5}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           {selectionMode && (
             <Button
               size="small"
@@ -325,13 +322,13 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
         </Box>
       </Box>
 
-      <Box flex={1} overflow="auto">
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
         {loading ? (
-          <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
         ) : error ? (
           (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={loadDrives} />; })()
         ) : drives.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
             No drives found. Sign in to see your drives.
           </Typography>
         ) : (
@@ -367,7 +364,7 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                       <CloudIcon sx={{ fontSize: 18, color: '#6366f1' }} />
                     )}
                   </ListItemIcon>
-                  <ListItemText primary={drive.name} primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }} />
+                  <ListItemText primary={drive.name} slotProps={{ primary: { sx: { fontSize: 13, fontWeight: 500 } } }} />
                   <Chip
                     label={drive.permission}
                     size="small"
@@ -397,15 +394,14 @@ export default function DriveTree({ selectionMode, onFolderSelect }: DriveTreePr
                         <FolderNode key={file.id} file={file} driveId={drive.id} driveName={drive.name} driveType={drive.type} depth={1} parentPath="/" selectionMode={selectionMode} selectedFolderId={selectedFolder?.folderId} onSelect={setSelectedFolder} />
                       ) : (
                         <ListItemButton key={file.id} sx={{ pl: 6, py: 0.5 }}>
-                          <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+                          <ListItemIcon sx={{ minWidth: 28 }}><Box sx={{ width: 18 }} /></ListItemIcon>
                           <ListItemIcon sx={{ minWidth: 28 }}>
                             <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                           </ListItemIcon>
                           <ListItemText
                             primary={file.name}
                             secondary={formatSize(file.size)}
-                            primaryTypographyProps={{ fontSize: 13, noWrap: true }}
-                            secondaryTypographyProps={{ fontSize: 11 }}
+                            slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }}
                           />
                         </ListItemButton>
                       ),

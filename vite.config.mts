@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const dir = import.meta.dirname;
+
 export default defineConfig({
   plugins: [react()],
   root: 'frontend',
@@ -12,8 +14,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, 'shared'),
-      '@': path.resolve(__dirname, 'frontend'),
+      '@shared': path.resolve(dir, 'shared'),
+      '@': path.resolve(dir, 'frontend'),
     },
   },
   server: {

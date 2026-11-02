@@ -17,8 +17,8 @@ import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -27,7 +27,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import CreateProfileDialog from '../CreateProfileDialog/CreateProfileDialog';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import type { SyncProfile, SyncSession } from '../../../shared/types';
@@ -135,13 +135,13 @@ function ProfileCard({
             justifyContent: 'space-between',
           }}
         >
-          <Box display="flex" alignItems="center" gap={1} minWidth={0}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
             <DirIcon sx={{ fontSize: 18, color: primary, flexShrink: 0 }} />
-            <Typography variant="subtitle2" fontWeight={700} noWrap>
+            <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
               {profile.name}
             </Typography>
           </Box>
-          <Box display="flex" gap={0.25} flexShrink={0} onClick={(e) => e.stopPropagation()}>
+          <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             {isActive ? (
               <Tooltip title="Pause sync">
                 <IconButton size="small" onClick={onPause} sx={{ color: 'warning.main' }}>
@@ -184,7 +184,7 @@ function ProfileCard({
               }}
             >
               <ErrorOutlineIcon sx={{ fontSize: 14, color: 'error.main' }} />
-              <Typography variant="caption" color="error.main" fontWeight={600}>
+              <Typography variant="caption" color="error.main" sx={{ fontWeight: 600 }}>
                 Inactive — folder missing or inaccessible
               </Typography>
             </Box>
@@ -202,21 +202,21 @@ function ProfileCard({
             }}
           />
 
-          <Box display="flex" flexDirection="column" gap={0.75}>
-            <Box display="flex" alignItems="center" gap={0.75}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <CloudIcon sx={{ fontSize: 14, color: 'primary.main' }} />
               <Typography variant="caption" color="text.secondary" noWrap title={`${profile.driveName}: ${profile.driveFolderPath}`}>
                 {profile.driveName}: {profile.driveFolderPath}
               </Typography>
             </Box>
-            <Box display="flex" alignItems="center" gap={0.75}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <FolderIcon sx={{ fontSize: 14, color: 'warning.main' }} />
               <Typography variant="caption" color="text.secondary" noWrap title={profile.localPath}>
                 {profile.localPath}
               </Typography>
             </Box>
             {profile.schedule && (
-              <Box display="flex" alignItems="center" gap={0.75}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <ScheduleIcon sx={{ fontSize: 14, color: 'secondary.main' }} />
                 <Typography variant="caption" color="text.secondary">
                   {profile.schedule}
@@ -224,7 +224,7 @@ function ProfileCard({
               </Box>
             )}
             {profile.lastSyncAt && (
-              <Box display="flex" alignItems="center" gap={0.75}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                 <Typography variant="caption" color="text.secondary">
                   Last: {new Date(profile.lastSyncAt).toLocaleString()}
@@ -235,11 +235,11 @@ function ProfileCard({
 
           {/* Active sync status */}
           {isActive && session?.currentFile && (
-            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+            <Box sx={{ mt: 1.5, pt: 1, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
               <Typography variant="caption" color="primary.main" noWrap>
                 {session.currentFile}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                 {session.totalFiles > 0
                   ? `${session.filesSynced + session.filesSkipped + session.filesFailed}/${session.totalFiles} checked — ${session.filesSynced} synced, ${session.filesSkipped} skipped`
                   : 'Scanning...'}
@@ -249,8 +249,8 @@ function ProfileCard({
 
           {/* Completed status */}
           {isCompleted && !isActive && (
-            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
-              <Box display="flex" alignItems="center" gap={0.5}>
+            <Box sx={{ mt: 1.5, pt: 1, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
                 <Typography variant="caption" color="success.main">
                   {session.totalFiles} found — {session.filesSynced} synced, {session.filesSkipped} unchanged
@@ -258,7 +258,7 @@ function ProfileCard({
                 </Typography>
               </Box>
               {session.errorMessage && (
-                <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 0.25 }}>
+                <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.25 }}>
                   {session.errorMessage}
                 </Typography>
               )}
@@ -267,14 +267,14 @@ function ProfileCard({
 
           {/* Paused status */}
           {isPaused && (
-            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
-              <Box display="flex" alignItems="center" gap={0.5}>
+            <Box sx={{ mt: 1.5, pt: 1, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <PauseCircleOutlineIcon sx={{ fontSize: 14, color: 'warning.main' }} />
                 <Typography variant="caption" color="warning.main">
                   Paused — {session.filesSynced} synced, {session.filesSkipped} skipped
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
                 Partial downloads saved. Click play to resume.
               </Typography>
             </Box>
@@ -282,18 +282,18 @@ function ProfileCard({
 
           {/* Failed status */}
           {isFailed && (
-            <Box mt={1.5} pt={1} sx={{ borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
-              <Box display="flex" alignItems="center" gap={0.5}>
+            <Box sx={{ mt: 1.5, pt: 1, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.2)}` }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <ErrorOutlineIcon sx={{ fontSize: 14, color: 'error.main' }} />
                 <Typography variant="caption" color="error.main">Sync failed</Typography>
               </Box>
               {session.totalFiles > 0 && (
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
                   {session.totalFiles} found — {session.filesSynced} synced, {session.filesFailed} failed
                 </Typography>
               )}
               {session.errorMessage && (
-                <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ mt: 0.25 }}>
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.25 }}>
                   {session.errorMessage}
                 </Typography>
               )}
@@ -389,7 +389,7 @@ export default function SyncCards() {
           }}
           onClick={() => setDialogOpen(true)}
         >
-          <Box display="flex" flexDirection="column" alignItems="center" gap={1} p={3}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, p: 3 }}>
             <Box
               sx={{
                 width: 44,
@@ -403,7 +403,7 @@ export default function SyncCards() {
             >
               <AddIcon sx={{ color: 'primary.main' }} />
             </Box>
-            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
               New Sync Profile
             </Typography>
           </Box>

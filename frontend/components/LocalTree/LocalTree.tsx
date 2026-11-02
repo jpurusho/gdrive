@@ -85,7 +85,7 @@ function FolderNode({ file, depth, showHidden }: FolderNodeProps) {
         </ListItemIcon>
         <ListItemText
           primary={file.name}
-          primaryTypographyProps={{ fontSize: 13, noWrap: true, sx: { opacity: file.isHidden ? 0.5 : 1 } }}
+          slotProps={{ primary: { noWrap: true, sx: { fontSize: 13, opacity: file.isHidden ? 0.5 : 1 } } }}
         />
       </ListItemButton>
       <Collapse in={open} timeout="auto">
@@ -94,15 +94,14 @@ function FolderNode({ file, depth, showHidden }: FolderNodeProps) {
             <FolderNode key={child.path} file={child} depth={depth + 1} showHidden={showHidden} />
           ) : (
             <ListItemButton key={child.path} sx={{ pl: 2 + (depth + 1) * 2, py: 0.5 }}>
-              <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 28 }}><Box sx={{ width: 18 }} /></ListItemIcon>
               <ListItemIcon sx={{ minWidth: 28 }}>
                 <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: child.isHidden ? 0.5 : 1 }} />
               </ListItemIcon>
               <ListItemText
                 primary={child.name}
                 secondary={formatSize(child.size)}
-                primaryTypographyProps={{ fontSize: 13, noWrap: true, sx: { opacity: child.isHidden ? 0.5 : 1 } }}
-                secondaryTypographyProps={{ fontSize: 11 }}
+                slotProps={{ primary: { noWrap: true, sx: { fontSize: 13, opacity: child.isHidden ? 0.5 : 1 } }, secondary: { sx: { fontSize: 11 } } }}
               />
             </ListItemButton>
           ),
@@ -185,24 +184,24 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
   return (
     <>
       <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={2}
-        py={1.25}
         sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.25,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.success.main, 0.12)}, ${alpha(t.palette.primary.main, 0.08)})`,
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ComputerIcon sx={{ fontSize: 18, color: 'success.main' }} />
-          <Typography variant="subtitle2" fontWeight={700}>Local Files</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Local Files</Typography>
           {selectionMode && (
             <Chip label="Navigate & select" size="small" color="success" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
           )}
         </Box>
-        <Box display="flex" gap={0.5}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
           {selectionMode && (
             <Button
               size="small"
@@ -229,7 +228,7 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
         </Box>
       </Box>
 
-      <Box px={2} py={0.75} sx={{ borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>
+      <Box sx={{ px: 2, py: 0.75, borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}` }}>
         <Breadcrumbs separator="/" sx={{ '& .MuiBreadcrumbs-separator': { mx: 0.5, color: 'text.secondary', fontSize: 12 } }}>
           {breadcrumbs.slice(-3).map((crumb, i) => (
             <Link
@@ -246,9 +245,9 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
         </Breadcrumbs>
       </Box>
 
-      <Box flex={1} overflow="auto">
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
         {loading ? (
-          <Box display="flex" justifyContent="center" py={4}><CircularProgress size={24} /></Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
         ) : error ? (
           (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={loadHome} />; })()
         ) : (
@@ -258,15 +257,14 @@ export default function LocalTree({ selectionMode, onFolderSelect }: LocalTreePr
                 <FolderNode key={file.path} file={file} depth={0} showHidden={showHidden} />
               ) : (
                 <ListItemButton key={file.path} sx={{ pl: 2, py: 0.5 }}>
-                  <ListItemIcon sx={{ minWidth: 28 }}><Box width={18} /></ListItemIcon>
+                  <ListItemIcon sx={{ minWidth: 28 }}><Box sx={{ width: 18 }} /></ListItemIcon>
                   <ListItemIcon sx={{ minWidth: 28 }}>
                     <InsertDriveFileIcon sx={{ fontSize: 16, color: 'text.secondary', opacity: file.isHidden ? 0.5 : 1 }} />
                   </ListItemIcon>
                   <ListItemText
                     primary={file.name}
                     secondary={formatSize(file.size)}
-                    primaryTypographyProps={{ fontSize: 13, noWrap: true, sx: { opacity: file.isHidden ? 0.5 : 1 } }}
-                    secondaryTypographyProps={{ fontSize: 11 }}
+                    slotProps={{ primary: { noWrap: true, sx: { fontSize: 13, opacity: file.isHidden ? 0.5 : 1 } }, secondary: { sx: { fontSize: 11 } } }}
                   />
                 </ListItemButton>
               ),

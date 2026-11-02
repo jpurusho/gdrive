@@ -186,7 +186,7 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
             <ListItemIcon sx={{ minWidth: 24 }}>
               {isExpanded ? <FolderOpenIcon sx={{ fontSize: 16, color: isSelected ? 'success.main' : 'warning.main' }} /> : <FolderIcon sx={{ fontSize: 16, color: isSelected ? 'success.main' : 'warning.main' }} />}
             </ListItemIcon>
-            <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 13, noWrap: true, fontWeight: isSelected ? 700 : 400 }} />
+            <ListItemText primary={folder.name} slotProps={{ primary: { noWrap: true, sx: { fontSize: 13, fontWeight: isSelected ? 700 : 400 } } }} />
             {isSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
           </ListItemButton>
           {isExpanded && expandedFolders[fkey] && (
@@ -265,7 +265,7 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
                     >
                       <Checkbox size="small" checked={isFileSelected} sx={{ p: 0 }} />
                       <InsertDriveFileIcon sx={{ fontSize: 14, color: isFileSelected ? 'primary.main' : 'text.secondary' }} />
-                      <Typography variant="caption" noWrap flex={1} fontWeight={isFileSelected ? 600 : 400}>{f.name}</Typography>
+                      <Typography variant="caption" noWrap sx={{ flex: 1, fontWeight: isFileSelected ? 600 : 400 }}>{f.name}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, flexShrink: 0 }}>
                         {f.size ? `${(f.size / 1024).toFixed(0)} KB` : ''}
                       </Typography>
@@ -279,13 +279,13 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
     );
   }
 
-  if (loading) return <Box display="flex" justifyContent="center" py={3}><CircularProgress size={24} /></Box>;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>;
 
   if (driveError) {
     return (
-      <Box p={2} textAlign="center">
-        <Typography variant="body2" color="error.main" mb={1}>{driveError}</Typography>
-        <Typography variant="caption" color="text.secondary" mb={1.5} display="block">
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="body2" color="error.main" sx={{ mb: 1 }}>{driveError}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
           Try signing out and signing back in if this persists.
         </Typography>
         <Button size="small" variant="outlined" onClick={loadDriveList}>Retry</Button>
@@ -316,7 +316,7 @@ function DriveFolderPicker({ onSelect, onFileFilterAdd }: { onSelect: (sel: Fold
               <ListItemText
                 primary={drive.name}
                 onClick={() => { selectDriveRoot(drive); toggleDrive(drive); }}
-                primaryTypographyProps={{ fontSize: 13, fontWeight: isDriveSelected ? 700 : 500 }}
+                slotProps={{ primary: { sx: { fontSize: 13, fontWeight: isDriveSelected ? 700 : 500 } } }}
               />
               {isDriveSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main', mr: 0.5 }} />}
               <Chip label={drive.permission} size="small" sx={{ height: 18, fontSize: 10 }} />
@@ -410,7 +410,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontWeight: 600 }}>Create Sync Profile</DialogTitle>
       <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 2 }}>
         <TextField
@@ -424,7 +424,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* Drive folder picker */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Google Drive Folder</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Google Drive Folder</Typography>
           <Box
             sx={{
               border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
@@ -460,7 +460,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
             />
           </Box>
           {folderSel && (
-            <Typography variant="caption" color="primary.main" mt={0.5} display="block">
+            <Typography variant="caption" color="primary.main" sx={{ mt: 0.5, display: 'block' }}>
               {folderSel.driveName}: {folderSel.folderPath}
             </Typography>
           )}
@@ -468,14 +468,14 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* Local folder */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Local Folder</Typography>
-          <Box display="flex" gap={1}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Local Folder</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
               size="small"
               fullWidth
               value={localPath}
               placeholder="Select a local folder..."
-              InputProps={{ readOnly: true }}
+              slotProps={{ input: { readOnly: true } }}
             />
             <Button variant="outlined" onClick={handleBrowseLocal} sx={{ whiteSpace: 'nowrap' }}>
               Browse
@@ -522,7 +522,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* Sync direction */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Sync Direction</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Sync Direction</Typography>
           <ToggleButtonGroup
             value={direction}
             exclusive
@@ -544,7 +544,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
             </ToggleButton>
           </ToggleButtonGroup>
           {isReadOnly && (
-            <Typography variant="caption" color="warning.main" mt={0.5} display="block">
+            <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
               This drive is read-only. Only download is available.
             </Typography>
           )}
@@ -552,7 +552,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* File filter */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>File Filter (optional)</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>File Filter (optional)</Typography>
           <TextField
             size="small"
             fullWidth
@@ -565,7 +565,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* Schedule */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Auto-sync Schedule (optional)</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Auto-sync Schedule (optional)</Typography>
           <FormControl size="small" fullWidth>
             <InputLabel>Schedule</InputLabel>
             <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>

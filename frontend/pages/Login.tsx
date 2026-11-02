@@ -96,7 +96,7 @@ export default function Login({ onLogin }: LoginProps) {
 
   if (checking) {
     return (
-      <Box display="flex" alignItems="center" justifyContent="center" height="100vh" bgcolor="background.default">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: 'background.default' }}>
         <CircularProgress size={36} />
       </Box>
     );
@@ -104,16 +104,16 @@ export default function Login({ onLogin }: LoginProps) {
 
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      height="100vh"
       sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
         background: `linear-gradient(160deg, ${bg} 0%, ${bgPaper} 50%, ${alpha(theme.palette.primary.dark, 0.15)} 100%)`,
       }}
     >
-      <Box className="titlebar-drag" position="fixed" top={0} left={0} right={0} height={52} />
+      <Box className="titlebar-drag" sx={{ position: 'fixed', top: 0, left: 0, right: 0, height: 52 }} />
 
       <Box
         sx={{
@@ -158,7 +158,7 @@ export default function Login({ onLogin }: LoginProps) {
           gsync
         </Typography>
 
-        <Typography variant="body2" color="text.secondary" textAlign="center" lineHeight={1.6} maxWidth={350}>
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.6, maxWidth: 350 }}>
           Sync your Google Drive files with local folders.
         </Typography>
 
@@ -178,11 +178,11 @@ export default function Login({ onLogin }: LoginProps) {
               mb: 1,
             }}
           >
-            <Typography variant="caption" color="text.secondary" display="block" mb={0.75}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
               <strong>Data directory</strong> — where profiles and sync history are stored
             </Typography>
-            <Box display="flex" gap={1} alignItems="center">
-              <Typography variant="caption" color="text.secondary" noWrap flex={1} title={dataDir}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }} title={dataDir}>
                 {dataDir || 'Loading...'}
               </Typography>
               <Button size="small" variant="outlined" onClick={handleChangeDataDir} sx={{ fontSize: 11, height: 24, textTransform: 'none' }}>
@@ -190,7 +190,7 @@ export default function Login({ onLogin }: LoginProps) {
               </Button>
             </Box>
             {dataDirChanged && (
-              <Typography variant="caption" color="success.main" display="block" mt={0.5}>
+              <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>
                 Updated. The app will use this location.
               </Typography>
             )}
@@ -200,7 +200,7 @@ export default function Login({ onLogin }: LoginProps) {
         {/* Sign In — shown when credentials are available */}
         {hasCredentials && !showSetup && (
           <Box sx={{ width: '100%', textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary" mb={2} display="block">
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
               Your browser will open for Google sign-in.
             </Typography>
             <Button
@@ -228,7 +228,7 @@ export default function Login({ onLogin }: LoginProps) {
                 border: `1px solid ${alpha(theme.palette.warning.main, 0.12)}`,
               }}
             >
-              <Typography variant="caption" color="text.secondary" lineHeight={1.7}>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.7 }}>
                 <strong>Getting "Access blocked"?</strong> Your email must be added as a test user by the app administrator.
                 Ask them to add your email in Google Cloud Console → OAuth consent screen → Test users.
               </Typography>
@@ -250,7 +250,7 @@ export default function Login({ onLogin }: LoginProps) {
         {/* Setup — shown when no credentials or user clicked configure */}
         {showSetup && (
           <Box sx={{ width: '100%' }}>
-            <Typography variant="subtitle2" fontWeight={600} mb={1.5}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
               {hasCredentials ? 'Update OAuth Credentials' : 'First-Time Setup'}
             </Typography>
 
@@ -263,7 +263,7 @@ export default function Login({ onLogin }: LoginProps) {
                 mb: 2,
               }}
             >
-              <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.9}>
+              <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.9 }}>
                 <strong>Google Cloud Console</strong> setup (one time):
               </Typography>
               <Typography variant="caption" color="text.secondary" component="ol" sx={{ pl: 2, mt: 0.5, mb: 0, lineHeight: 1.9 }}>
@@ -275,7 +275,7 @@ export default function Login({ onLogin }: LoginProps) {
               </Typography>
             </Box>
 
-            <Box display="flex" flexDirection="column" gap={1.5}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <TextField
                 size="small"
                 label="Client ID"
@@ -293,7 +293,7 @@ export default function Login({ onLogin }: LoginProps) {
                 placeholder="GOCSPX-..."
                 fullWidth
               />
-              <Box display="flex" gap={1}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   variant="contained"
                   onClick={handleSaveCredentials}
@@ -315,7 +315,7 @@ export default function Login({ onLogin }: LoginProps) {
           </Box>
         )}
 
-        <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ opacity: 0.6 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', opacity: 0.6 }}>
           Credentials are stored locally and never shared.
         </Typography>
       </Box>

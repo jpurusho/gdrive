@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button, alpha } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import FolderOffIcon from '@mui/icons-material/FolderOff';
@@ -80,9 +80,9 @@ export default function StatusMessage({ type = 'error', title, detail, onRetry, 
 
   if (compact) {
     return (
-      <Box display="flex" alignItems="center" gap={1} px={2} py={1}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1 }}>
         <Icon sx={{ fontSize: 16, color, flexShrink: 0 }} />
-        <Typography variant="caption" color={color} fontWeight={500}>{title}</Typography>
+        <Typography variant="caption" color={color} sx={{ fontWeight: 500 }}>{title}</Typography>
         {onRetry && (
           <Typography
             variant="caption"
@@ -98,18 +98,11 @@ export default function StatusMessage({ type = 'error', title, detail, onRetry, 
   }
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      p={4}
-      gap={1.5}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, gap: 1.5 }}>
       <Icon sx={{ fontSize: 40, color, opacity: 0.6 }} />
-      <Typography variant="subtitle2" fontWeight={600} textAlign="center">{title}</Typography>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, textAlign: 'center' }}>{title}</Typography>
       {detail && (
-        <Typography variant="caption" color="text.secondary" textAlign="center" maxWidth={300}>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 300 }}>
           {detail}
         </Typography>
       )}

@@ -19,7 +19,7 @@ import {
 import CloudIcon from '@mui/icons-material/Cloud';
 import FolderIcon from '@mui/icons-material/Folder';
 import SyncIcon from '@mui/icons-material/Sync';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -243,11 +243,11 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Typography variant="subtitle2" fontWeight={700}>Create your first sync profile</Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Create your first sync profile</Typography>
       </Box>
 
       {/* Step indicators */}
-      <Box display="flex" alignItems="center" gap={0.5} px={2} py={1.5} sx={{ overflowX: 'auto' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 2, py: 1.5, overflowX: 'auto' }}>
         {STEPS.map((step, i) => {
           const isDone = completed.has(step.id);
           const isActive = activeStep === step.id;
@@ -279,9 +279,8 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
                 )}
                 <Typography
                   variant="caption"
-                  fontWeight={isActive ? 700 : 500}
                   color={isDone ? 'success.main' : isActive ? paletteColor : 'text.secondary'}
-                  sx={{ textDecoration: isDone ? 'line-through' : 'none' }}
+                  sx={{ fontWeight: isActive ? 700 : 500, textDecoration: isDone ? 'line-through' : 'none' }}
                 >
                   {step.title}
                 </Typography>
@@ -299,7 +298,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
         <Box sx={{ px: 2.5, py: 1.5, borderTop: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}` }}>
 
           {/* Always-visible summary of completed selections */}
-          <Box display="flex" flexWrap="wrap" gap={1} mb={activeStep ? 1.5 : 0}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: activeStep ? 1.5 : 0 }}>
             {name && (
               <Chip
                 icon={<AddCircleOutlineIcon sx={{ fontSize: '14px !important' }} />}
@@ -354,7 +353,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
 
           {/* Active step input */}
           {activeStep === 'name' && (
-            <Box display="flex" gap={1} alignItems="flex-end">
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
               <TextField
                 size="small"
                 label="Profile Name"
@@ -402,7 +401,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
                   <SyncIcon sx={{ fontSize: 16, mr: 0.5 }} /> Bidirectional
                 </ToggleButton>
               </ToggleButtonGroup>
-              <Box mb={1.5}>
+              <Box sx={{ mb: 1.5 }}>
                 <FormControlLabel
                   control={<Checkbox checked={useSourceFolder} onChange={(e) => setUseSourceFolder(e.target.checked)} size="small" />}
                   label={<Typography variant="caption">Create source folder in destination</Typography>}
@@ -413,7 +412,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
           )}
 
           {activeStep === 'schedule' && (
-            <Box display="flex" gap={1} alignItems="flex-end">
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
               <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>Schedule</InputLabel>
                 <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
@@ -433,7 +432,7 @@ export default function WorkflowGuide({ onProfileCreated, onActiveStepChange, ex
             <Box>
               {allReady ? (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" mb={1.5}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                     <strong>{name}</strong> — {driveName}: {driveFolderPath} → {localPath}
                     {useSourceFolder && ` / ${driveFolderPath.split('/').filter(Boolean).pop() || driveName}`}
                   </Typography>

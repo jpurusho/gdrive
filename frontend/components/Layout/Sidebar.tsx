@@ -44,11 +44,11 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
 
   return (
     <Box
-      width={width}
-      flexShrink={0}
-      display="flex"
-      flexDirection="column"
       sx={{
+        width,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
         bgcolor: (t) => alpha(t.palette.background.paper, 0.7),
         borderRight: (t) => `1px solid ${alpha(t.palette.divider, 0.3)}`,
         backdropFilter: 'blur(20px)',
@@ -71,7 +71,7 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
       >
         <CloudSyncIcon sx={{ color: 'primary.main', fontSize: 22, flexShrink: 0 }} />
         {!collapsed && (
-          <Typography variant="subtitle1" fontWeight={700} letterSpacing={-0.3} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{ fontWeight: 700, letterSpacing: -0.3 }}>
             gsync
           </Typography>
         )}
@@ -105,7 +105,7 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
               {!collapsed && (
                 <ListItemText
                   primary={item.label}
-                  primaryTypographyProps={{ fontSize: 14, fontWeight: currentPage === item.id ? 600 : 400 }}
+                  slotProps={{ primary: { sx: { fontSize: 14, fontWeight: currentPage === item.id ? 600 : 400 } } }}
                 />
               )}
             </ListItemButton>
@@ -114,7 +114,7 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
       </List>
 
       {/* Collapse toggle */}
-      <Box display="flex" justifyContent="center" py={0.5}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
         <Tooltip title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} placement="right">
           <IconButton
             size="small"
@@ -130,12 +130,14 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
 
       {/* User section */}
       <Box
-        display="flex"
-        alignItems="center"
-        gap={collapsed ? 0 : 1.5}
-        p={collapsed ? 1 : 2}
-        justifyContent={collapsed ? 'center' : 'flex-start'}
         className="titlebar-nodrag"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: collapsed ? 0 : 1.5,
+          p: collapsed ? 1 : 2,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+        }}
       >
         <Tooltip title={collapsed ? `${user.name} — Sign out` : ''} placement="right">
           <Avatar
@@ -148,9 +150,9 @@ export default function Sidebar({ user, currentPage, onNavigate, onLogout }: Sid
         </Tooltip>
         {!collapsed && (
           <>
-            <Box flex={1} overflow="hidden">
-              <Typography variant="body2" fontWeight={500} noWrap>{user.name}</Typography>
-              <Typography variant="caption" color="text.secondary" noWrap display="block">{user.email}</Typography>
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>{user.name}</Typography>
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>{user.email}</Typography>
             </Box>
             <Tooltip title="Sign out">
               <IconButton size="small" onClick={onLogout} sx={{ color: 'text.secondary' }}>

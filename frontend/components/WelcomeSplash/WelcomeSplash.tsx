@@ -53,7 +53,7 @@ export default function WelcomeSplash() {
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+      slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}
     >
       {/* Hero header */}
       <Box
@@ -90,30 +90,30 @@ export default function WelcomeSplash() {
         >
           Welcome to {appTitle}
         </Typography>
-        <Typography variant="body2" color="text.secondary" maxWidth={350} mx="auto" lineHeight={1.7}>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 350, mx: 'auto', lineHeight: 1.7 }}>
           Sync your Google Drive files with local folders. Fast, reliable, and built for daily use.
         </Typography>
       </Box>
 
       <DialogContent sx={{ px: 4, py: 3 }}>
-        <Typography variant="subtitle2" fontWeight={600} mb={2}>What you can do</Typography>
-        <Box display="flex" flexDirection="column" gap={1.5} mb={3}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>What you can do</Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
           {highlights.map((h) => (
-            <Box key={h.text} display="flex" alignItems="center" gap={1.5}>
+            <Box key={h.text} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <h.icon sx={{ fontSize: 20, color: 'primary.main', flexShrink: 0 }} />
               <Typography variant="body2" color="text.secondary">{h.text}</Typography>
             </Box>
           ))}
         </Box>
 
-        <Typography variant="subtitle2" fontWeight={600} mb={1}>Getting started</Typography>
-        <Typography variant="body2" color="text.secondary" lineHeight={1.8} mb={3}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Getting started</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8, mb: 3 }}>
           1. <strong>Create a sync profile</strong> — pick a Google Drive folder and a local folder{'\n'}
           2. <strong>Choose direction</strong> — download, upload, or bidirectional{'\n'}
           3. <strong>Hit sync</strong> — or set a schedule and let it run automatically
         </Typography>
 
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <FormControlLabel
             control={<Checkbox checked={dontShow} onChange={(e) => setDontShow(e.target.checked)} size="small" />}
             label={<Typography variant="caption" color="text.secondary">Don't show this again</Typography>}

@@ -35,41 +35,38 @@ export default function StatsBar({ profiles, sessions }: Props) {
   return (
     <>
       <Box
-        display="flex"
-        gap={3}
-        px={2.5}
-        py={1}
         sx={{
+          display: 'flex',
+          gap: 3,
+          px: 2.5,
+          py: 1,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.08)}, ${alpha(t.palette.secondary.main, 0.05)})`,
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.1)}`,
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <FolderIcon sx={{ fontSize: 16, color: theme.palette.primary.main, opacity: 0.8 }} />
-          <Typography variant="caption" fontWeight={700} color={theme.palette.primary.main}>{profiles.length}</Typography>
+          <Typography variant="caption" color={theme.palette.primary.main} sx={{ fontWeight: 700 }}>{profiles.length}</Typography>
           <Typography variant="caption" color="text.secondary">Profiles</Typography>
         </Box>
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <SyncIcon sx={{ fontSize: 16, color: activeCount > 0 ? theme.palette.success.main : 'text.secondary', opacity: 0.8 }} />
-          <Typography variant="caption" fontWeight={700} color={activeCount > 0 ? theme.palette.success.main : 'text.secondary'}>{activeCount}</Typography>
+          <Typography variant="caption" color={activeCount > 0 ? theme.palette.success.main : 'text.secondary'} sx={{ fontWeight: 700 }}>{activeCount}</Typography>
           <Typography variant="caption" color="text.secondary">Active</Typography>
         </Box>
         <Tooltip title={todayFiles > 0 ? 'Click to see synced files' : ''}>
           <Box
-            display="flex"
-            alignItems="center"
-            gap={1}
             onClick={() => todayFiles > 0 && setFileDialogOpen(true)}
-            sx={{ cursor: todayFiles > 0 ? 'pointer' : 'default', '&:hover': todayFiles > 0 ? { opacity: 0.7 } : {} }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: todayFiles > 0 ? 'pointer' : 'default', '&:hover': todayFiles > 0 ? { opacity: 0.7 } : {} }}
           >
             <InsertDriveFileIcon sx={{ fontSize: 16, color: theme.palette.info?.main || theme.palette.primary.main, opacity: 0.8 }} />
-            <Typography variant="caption" fontWeight={700} color={theme.palette.info?.main || theme.palette.primary.main}>{todayFiles}</Typography>
+            <Typography variant="caption" color={theme.palette.info?.main || theme.palette.primary.main} sx={{ fontWeight: 700 }}>{todayFiles}</Typography>
             <Typography variant="caption" color="text.secondary" sx={{ textDecoration: todayFiles > 0 ? 'underline' : 'none' }}>Files today</Typography>
           </Box>
         </Tooltip>
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <StorageIcon sx={{ fontSize: 16, color: theme.palette.secondary.main, opacity: 0.8 }} />
-          <Typography variant="caption" fontWeight={700} color={theme.palette.secondary.main}>{formatBytes(todayBytes)}</Typography>
+          <Typography variant="caption" color={theme.palette.secondary.main} sx={{ fontWeight: 700 }}>{formatBytes(todayBytes)}</Typography>
           <Typography variant="caption" color="text.secondary">Transferred</Typography>
         </Box>
       </Box>

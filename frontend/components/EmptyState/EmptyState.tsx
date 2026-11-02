@@ -2,10 +2,10 @@ import React from 'react';
 import { Box, Typography, Button, alpha, useTheme } from '@mui/material';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import AddIcon from '@mui/icons-material/Add';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import SecurityIcon from '@mui/icons-material/Security';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import PaletteIcon from '@mui/icons-material/Palette';
 import BackupIcon from '@mui/icons-material/Backup';
 import { useAppSettings } from '../../context/AppSettingsContext';
@@ -28,14 +28,7 @@ export default function EmptyState({ onCreateProfile }: Props) {
   const { appTitle } = useAppSettings();
 
   return (
-    <Box
-      flex={1}
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      p={4}
-    >
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4 }}>
       <Box
         sx={{
           maxWidth: 500,
@@ -76,7 +69,7 @@ export default function EmptyState({ onCreateProfile }: Props) {
         </Typography>
 
         {/* Description */}
-        <Typography variant="body2" color="text.secondary" lineHeight={1.7} maxWidth={400}>
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, maxWidth: 400 }}>
           Sync your Google Drive files with local folders. Create a profile to map a Drive folder
           to a local folder, choose a direction, and let gsync handle the rest.
         </Typography>
@@ -90,7 +83,7 @@ export default function EmptyState({ onCreateProfile }: Props) {
           }}
         >
           {['Pick a Drive folder', 'Choose local folder', 'Sync!'].map((step, i) => (
-            <Box key={step} display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+            <Box key={step} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
               <Box
                 sx={{
                   width: 32,
@@ -103,9 +96,9 @@ export default function EmptyState({ onCreateProfile }: Props) {
                   border: `1.5px solid ${alpha(theme.palette.primary.light, 0.3)}`,
                 }}
               >
-                <Typography variant="caption" fontWeight={700} color="primary.main">{i + 1}</Typography>
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700 }}>{i + 1}</Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ maxWidth: 100 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 100 }}>
                 {step}
               </Typography>
             </Box>
@@ -129,9 +122,9 @@ export default function EmptyState({ onCreateProfile }: Props) {
         </Button>
 
         {/* Feature list */}
-        <Box display="flex" flexWrap="wrap" justifyContent="center" gap={2} mt={1}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, mt: 1 }}>
           {features.map((f) => (
-            <Box key={f.text} display="flex" alignItems="center" gap={0.75}>
+            <Box key={f.text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <f.icon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.6 }} />
               <Typography variant="caption" color="text.secondary">{f.text}</Typography>
             </Box>

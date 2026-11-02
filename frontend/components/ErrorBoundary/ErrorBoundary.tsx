@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button, alpha } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface Props {
@@ -30,20 +30,12 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          p={4}
-          gap={2}
-          sx={{ minHeight: 200 }}
-        >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, gap: 2, minHeight: 200 }}>
           <ErrorOutlineIcon sx={{ fontSize: 48, color: 'error.main', opacity: 0.6 }} />
-          <Typography variant="subtitle1" fontWeight={600}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             {this.props.fallbackTitle || 'Something went wrong'}
           </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center" maxWidth={400}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
             An unexpected error occurred. This has been logged. Try refreshing the view.
           </Typography>
           <Button

@@ -21,7 +21,7 @@ import SortIcon from '@mui/icons-material/Sort';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -30,8 +30,8 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import FileLogDialog from '../FileLogDialog/FileLogDialog';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
@@ -100,22 +100,22 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
     : 0;
 
   return (
-    <Box flex={1} display="flex" flexDirection="column" overflow="hidden">
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <Box
-        px={3}
-        py={1.5}
         sx={{
+          px: 3,
+          py: 1.5,
           background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.12)}, ${alpha(t.palette.secondary.main, 0.08)})`,
           borderBottom: (t) => `1px solid ${alpha(t.palette.divider, 0.15)}`,
         }}
       >
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <DirIcon sx={{ fontSize: 22, color: profile.isActive ? 'primary.main' : 'text.secondary' }} />
             <Box>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography variant="h6" fontWeight={700} lineHeight={1.2} sx={{ opacity: profile.isActive ? 1 : 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, opacity: profile.isActive ? 1 : 0.5 }}>
                   {profile.name}
                 </Typography>
                 {!profile.isActive && (
@@ -134,7 +134,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
               />
             </Tooltip>
           </Box>
-          <Box display="flex" gap={1}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             {isActive ? (
               <Button size="small" variant="outlined" color="error" startIcon={<PauseIcon />} onClick={onPause}>
                 Stop
@@ -155,11 +155,11 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
       </Box>
 
       {/* Content */}
-      <Box flex={1} overflow="auto" px={3} py={2}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 3, py: 2 }}>
         {/* Status section */}
         {isActive && session && (
-          <Box mb={3}>
-            <Typography variant="subtitle2" fontWeight={600} mb={1}>Sync Progress</Typography>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Sync Progress</Typography>
             <Box
               sx={{
                 p: 2,
@@ -168,11 +168,11 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                 border: `1.5px solid ${alpha(theme.palette.primary.light, 0.3)}`,
               }}
             >
-              <Box display="flex" justifyContent="space-between" mb={0.5}>
-                <Typography variant="caption" color="primary.main" fontWeight={600}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
                   {session.currentFile || 'Scanning...'}
                 </Typography>
-                <Typography variant="caption" color="primary.main" fontWeight={700}>
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700 }}>
                   {Math.round(progress)}%
                 </Typography>
               </Box>
@@ -185,7 +185,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         )}
 
         {isCancelled && session && (
-          <Box mb={3}>
+          <Box sx={{ mb: 3 }}>
             <Box
               sx={{
                 p: 2, borderRadius: 2,
@@ -196,7 +196,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             >
               <PauseCircleOutlineIcon sx={{ color: 'warning.main' }} />
               <Box>
-                <Typography variant="body2" fontWeight={600} color="warning.main">Stopped</Typography>
+                <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>Stopped</Typography>
                 <Typography variant="caption" color="text.secondary">
                   {session.filesSynced} synced, {session.filesSkipped} skipped. Click Sync Now to restart.
                 </Typography>
@@ -206,7 +206,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         )}
 
         {isFailed && session && (
-          <Box mb={3}>
+          <Box sx={{ mb: 3 }}>
             <Box
               sx={{
                 p: 2, borderRadius: 2,
@@ -217,7 +217,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             >
               <ErrorOutlineIcon sx={{ color: 'error.main' }} />
               <Box>
-                <Typography variant="body2" fontWeight={600} color="error.main">Sync Failed</Typography>
+                <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>Sync Failed</Typography>
                 <Typography variant="caption" color="text.secondary">{session.errorMessage || 'Unknown error'}</Typography>
               </Box>
             </Box>
@@ -225,7 +225,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         )}
 
         {isCompleted && session && !isActive && (
-          <Box mb={3}>
+          <Box sx={{ mb: 3 }}>
             <Box
               sx={{
                 p: 2, borderRadius: 2,
@@ -236,7 +236,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             >
               <CheckCircleIcon sx={{ color: 'success.main' }} />
               <Box>
-                <Typography variant="body2" fontWeight={600} color="success.main">Last sync completed</Typography>
+                <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>Last sync completed</Typography>
                 <Typography variant="caption" color="text.secondary">
                   {session.totalFiles} found · {session.filesSynced} synced · {session.filesSkipped} unchanged · {formatBytes(session.bytesTransferred)}
                 </Typography>
@@ -246,7 +246,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         )}
 
         {/* Configuration */}
-        <Typography variant="subtitle2" fontWeight={600} mb={1.5}>Configuration</Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>Configuration</Typography>
         <Box
           sx={{
             p: 2, borderRadius: 2, mb: 3,
@@ -254,15 +254,15 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             display: 'flex', flexDirection: 'column', gap: 1,
           }}
         >
-          <Box display="flex" alignItems="center" gap={1.5}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />
             <Typography variant="body2" color="text.secondary">{profile.driveName}: {profile.driveFolderPath}</Typography>
           </Box>
-          <Box display="flex" alignItems="center" gap={1.5}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <FolderIcon sx={{ fontSize: 16, color: 'warning.main' }} />
             <Typography variant="body2" color="text.secondary">{profile.localPath}</Typography>
           </Box>
-          <Box display="flex" alignItems="center" gap={1.5}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <DirIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
             <Typography variant="body2" color="text.secondary">{directionLabels[profile.syncDirection]}</Typography>
             {profile.useSourceFolderName && (
@@ -276,13 +276,13 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             )}
           </Box>
           {profile.schedule && (
-            <Box display="flex" alignItems="center" gap={1.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <ScheduleIcon sx={{ fontSize: 16, color: 'info.main' }} />
               <Typography variant="body2" color="text.secondary">{profile.schedule}</Typography>
             </Box>
           )}
           {profile.fileFilter && (
-            <Box display="flex" alignItems="center" gap={1.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <FilterListIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary">{profile.fileFilter}</Typography>
             </Box>
@@ -291,15 +291,15 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
 
         {/* Synced files list */}
         {syncedFiles.length > 0 && (
-          <Box mb={3}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-              <Box display="flex" alignItems="center" gap={1} sx={{ cursor: 'pointer' }} onClick={() => setFilesExpanded(!filesExpanded)}>
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setFilesExpanded(!filesExpanded)}>
                 {filesExpanded ? <ExpandLessIcon sx={{ fontSize: 18, color: 'text.secondary' }} /> : <ExpandMoreIcon sx={{ fontSize: 18, color: 'text.secondary' }} />}
-                <Typography variant="subtitle2" fontWeight={600}>Synced Files</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Synced Files</Typography>
                 <Chip label={syncedFiles.length} size="small" sx={{ height: 20, fontSize: 10 }} />
               </Box>
               {filesExpanded && (
-                <Box display="flex" gap={0.5}>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
                   <Tooltip title={`Sort by ${filesSort === 'name' ? 'size' : filesSort === 'size' ? 'status' : 'name'}`}>
                     <IconButton size="small" onClick={() => {
                       if (filesSort === 'name') { setFilesSort('size'); setFilesSortDir('desc'); }
@@ -341,15 +341,10 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                   .map((f) => (
                     <Box
                       key={f.id}
-                      display="flex"
-                      alignItems="center"
-                      gap={1}
-                      px={1.5}
-                      py={0.5}
-                      sx={{ borderBottom: (t: any) => `1px solid ${alpha(t.palette.divider, 0.06)}`, '&:last-child': { borderBottom: 'none' } }}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.5, borderBottom: (t: any) => `1px solid ${alpha(t.palette.divider, 0.06)}`, '&:last-child': { borderBottom: 'none' } }}
                     >
                       {f.direction === 'download' ? <CloudDownloadIcon sx={{ fontSize: 12, color: 'primary.main' }} /> : <CloudUploadIcon sx={{ fontSize: 12, color: 'secondary.main' }} />}
-                      <Typography variant="caption" flex={1} noWrap title={f.filePath}>{f.fileName}</Typography>
+                      <Typography variant="caption" noWrap title={f.filePath} sx={{ flex: 1 }}>{f.fileName}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ minWidth: 50, textAlign: 'right' }}>{formatBytes(f.fileSize)}</Typography>
                       {f.status === 'completed' ? (
                         <CheckCircleIcon sx={{ fontSize: 12, color: 'success.main' }} />
@@ -361,7 +356,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                     </Box>
                   ))}
               </Box>
-              <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 Sort: {filesSort} ({filesSortDir}) · Click header to collapse
               </Typography>
             </Collapse>
@@ -369,7 +364,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         )}
 
         {/* Recent activity for this profile */}
-        <Typography variant="subtitle2" fontWeight={600} mb={1.5}>Recent Activity</Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>Recent Activity</Typography>
         {recentSessions.length === 0 ? (
           <Typography variant="caption" color="text.secondary">No sync history yet.</Typography>
         ) : (
@@ -383,13 +378,8 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
             {recentSessions.slice(0, 8).map((s, i) => (
               <Box
                 key={s.id}
-                display="flex"
-                alignItems="center"
-                gap={2}
-                px={2}
-                py={0.75}
                 onClick={() => setFileLogSessionId(s.id)}
-                sx={{
+                sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 0.75,
                   cursor: 'pointer',
                   '&:hover': { bgcolor: (t: any) => alpha(t.palette.primary.main, 0.04) },
                   borderBottom: i < Math.min(recentSessions.length, 8) - 1
@@ -409,7 +399,7 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                 <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60 }}>
                   {new Date(s.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" flex={1}>
+                <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
                   {s.filesSynced} synced, {s.filesSkipped} skip{s.filesFailed > 0 ? `, ${s.filesFailed} fail` : ''}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

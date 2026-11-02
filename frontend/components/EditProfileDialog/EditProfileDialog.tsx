@@ -95,13 +95,13 @@ function FolderPickerNode({
               {open ? <ExpandMoreIcon sx={{ fontSize: 14, color: 'text.secondary' }} /> : <ChevronRightIcon sx={{ fontSize: 14, color: 'text.secondary' }} />}
             </Box>
           ) : (
-            <Box width={14} />
+            <Box sx={{ width: 14 }} />
           )}
         </ListItemIcon>
         <ListItemIcon sx={{ minWidth: 22 }}>
           <FolderIcon sx={{ fontSize: 14, color: isSelected ? 'success.main' : 'warning.main' }} />
         </ListItemIcon>
-        <ListItemText primary={folder.name} primaryTypographyProps={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }} />
+        <ListItemText primary={folder.name} slotProps={{ primary: { sx: { fontSize: 12, fontWeight: isSelected ? 700 : 400 } } }} />
         {isSelected && <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />}
       </ListItemButton>
       <Collapse in={open} timeout="auto">
@@ -251,7 +251,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
   const DirIcon = direction === 'download' ? CloudDownloadIcon : direction === 'upload' ? CloudUploadIcon : SyncIcon;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth slotProps={{ paper: { sx: { borderRadius: 3, overflow: 'hidden' } } }}>
       {/* Styled title banner */}
       <Box
         sx={{
@@ -266,7 +266,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       >
         <DirIcon sx={{ fontSize: 24, color: theme.palette.primary.main }} />
         <Box>
-          <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
+          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
             {profile.name || 'Edit Profile'}
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -285,7 +285,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
         {/* Drive Folder */}
         <Box>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="subtitle2">Google Drive Folder</Typography>
             <Button size="small" variant="text" onClick={() => { if (!changingDrive) { setChangingDrive(true); loadDrives(); } else { setChangingDrive(false); } }}>
               {changingDrive ? 'Cancel' : 'Change'}
@@ -303,7 +303,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
             }}
           >
             <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="body2" color={driveFolderId !== profile.driveFolderId ? 'primary.main' : 'text.secondary'} flex={1} noWrap>
+            <Typography variant="body2" color={driveFolderId !== profile.driveFolderId ? 'primary.main' : 'text.secondary'} noWrap sx={{ flex: 1 }}>
               {driveName}: {driveFolderPath}
             </Typography>
           </Box>
@@ -319,7 +319,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
               }}
             >
               {loadingDrives ? (
-                <Box display="flex" justifyContent="center" py={2}><CircularProgress size={20} /></Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={20} /></Box>
               ) : (
                 <List dense disablePadding>
                   {drives.map((drive) => (
@@ -349,7 +349,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
                         <ListItemIcon sx={{ minWidth: 24 }}>
                           {drive.type === 'shared_drive' ? <GroupWorkIcon sx={{ fontSize: 16, color: 'secondary.main' }} /> : <CloudIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
                         </ListItemIcon>
-                        <ListItemText primary={drive.name} primaryTypographyProps={{ fontSize: 12, fontWeight: 500 }} />
+                        <ListItemText primary={drive.name} slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 500 } } }} />
                         {driveId === drive.id && driveFolderPath === '/' && (
                           <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />
                         )}
@@ -383,18 +383,18 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         </Box>
 
         <Box>
-          <Typography variant="subtitle2" mb={1}>Local Folder</Typography>
-          <Box display="flex" gap={1}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Local Folder</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
               size="small"
               fullWidth
               value={localPath}
-              InputProps={{
+              slotProps={{ input: {
                 readOnly: true,
                 startAdornment: (
                   <FolderIcon sx={{ fontSize: 16, color: localChanged ? 'primary.main' : 'warning.main', mr: 1 }} />
                 ),
-              }}
+              } }}
               sx={localChanged ? { '& .MuiOutlinedInput-root': { borderColor: theme.palette.primary.main } } : {}}
             />
             <Button
@@ -407,7 +407,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
             </Button>
           </Box>
           {localChanged && (
-            <Typography variant="caption" color="primary.main" mt={0.5} display="block">
+            <Typography variant="caption" color="primary.main" sx={{ mt: 0.5, display: 'block' }}>
               Changed from: {profile.localPath}
             </Typography>
           )}
@@ -451,7 +451,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
         {/* Sync direction */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Sync Direction</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Sync Direction</Typography>
           <ToggleButtonGroup
             value={direction}
             exclusive
@@ -476,7 +476,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
         {/* File filter */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>File Filter</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>File Filter</Typography>
           <TextField
             size="small"
             fullWidth
@@ -489,7 +489,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
 
         {/* Schedule */}
         <Box>
-          <Typography variant="subtitle2" mb={1}>Auto-sync Schedule</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Auto-sync Schedule</Typography>
           <FormControl size="small" fullWidth>
             <InputLabel>Schedule</InputLabel>
             <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
@@ -523,7 +523,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         {/* Stats */}
         {profile.lastSyncAt && (
           <Box>
-            <Typography variant="subtitle2" mb={0.5}>Last Sync</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Last Sync</Typography>
             <Typography variant="body2" color="text.secondary">
               {new Date(profile.lastSyncAt).toLocaleString()}
             </Typography>
@@ -531,16 +531,16 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         )}
 
         <Box>
-          <Typography variant="subtitle2" mb={0.5}>Profile ID</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Profile ID</Typography>
           <Chip label={`#${profile.id}`} size="small" variant="outlined" />
-          <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
             Created: {new Date(profile.createdAt).toLocaleString()}
           </Typography>
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
         <Button color="error" onClick={onDelete}>Delete Profile</Button>
-        <Box display="flex" gap={1}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant="outlined" onClick={onSync}>Sync Now</Button>
           <Button onClick={onClose} disabled={saving}>Cancel</Button>
           <Button

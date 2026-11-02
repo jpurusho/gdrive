@@ -46,7 +46,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100vh" gap={2} bgcolor="background.default">
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 2, bgcolor: 'background.default' }}>
         <CircularProgress size={36} />
         <Typography variant="caption" color="text.secondary">Loading...</Typography>
       </Box>

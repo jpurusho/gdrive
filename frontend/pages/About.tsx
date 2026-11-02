@@ -11,7 +11,7 @@ import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import StorageIcon from '@mui/icons-material/Storage';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -105,7 +105,7 @@ export default function About() {
   }
 
   return (
-    <Box flex={1} overflow="auto" px={4} py={3}>
+    <Box sx={{ flex: 1, overflow: 'auto', px: 4, py: 3 }}>
       {/* Hero */}
       <Box
         sx={{
@@ -129,11 +129,11 @@ export default function About() {
         >
           {appTitle}
         </Typography>
-        <Typography variant="body1" color="text.secondary" mb={2} maxWidth={500} mx="auto" lineHeight={1.7}>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 2, maxWidth: 500, mx: 'auto', lineHeight: 1.7 }}>
           A standalone desktop application for syncing Google Drive files with your local filesystem.
           Built for speed, reliability, and daily use.
         </Typography>
-        <Box display="flex" gap={1.5} justifyContent="center" flexWrap="wrap">
+        <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Chip
             label={`v${version}`}
             sx={{
@@ -148,8 +148,8 @@ export default function About() {
       </Box>
 
       {/* What it does */}
-      <Typography variant="h6" fontWeight={700} mb={1}>What does this app do?</Typography>
-      <Typography variant="body2" color="text.secondary" mb={3} maxWidth={700} lineHeight={1.8}>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>What does this app do?</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 700, lineHeight: 1.8 }}>
         GDrive Sync connects your Google Drive (personal and shared drives) to folders on your local machine.
         You create sync profiles that map a Drive folder to a local folder, choose a direction (download, upload, or bidirectional),
         and the app takes care of the rest — comparing files by MD5 checksum, transferring only what changed,
@@ -161,7 +161,7 @@ export default function About() {
       <Divider sx={{ opacity: 0.2, mb: 3 }} />
 
       {/* Features grid */}
-      <Typography variant="h6" fontWeight={700} mb={2}>Features</Typography>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Features</Typography>
       <Box
         sx={{
           display: 'grid',
@@ -185,8 +185,8 @@ export default function About() {
           >
             <f.icon sx={{ fontSize: 22, color: 'primary.main', mt: 0.25, flexShrink: 0 }} />
             <Box>
-              <Typography variant="subtitle2" fontWeight={600} mb={0.25}>{f.title}</Typography>
-              <Typography variant="caption" color="text.secondary" lineHeight={1.5}>{f.desc}</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.25 }}>{f.title}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>{f.desc}</Typography>
             </Box>
           </Box>
         ))}
@@ -195,7 +195,7 @@ export default function About() {
       <Divider sx={{ opacity: 0.2, mb: 3 }} />
 
       {/* Tech stack */}
-      <Typography variant="h6" fontWeight={700} mb={2}>Tech Stack</Typography>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Tech Stack</Typography>
       <Box
         sx={{
           p: 2.5,
@@ -207,9 +207,9 @@ export default function About() {
         }}
       >
         {[
-          ['Desktop', 'Electron 33'],
-          ['UI', 'React 18 + Material UI 5'],
-          ['Build', 'Vite 6 + TypeScript 5'],
+          ['Desktop', 'Electron 35'],
+          ['UI', 'React 19 + Material UI 9'],
+          ['Build', 'Vite 8 + TypeScript 5'],
           ['APIs', 'Google Drive API v3 (googleapis)'],
           ['Database', 'SQLite via better-sqlite3'],
           ['Scheduling', 'node-cron'],
@@ -217,7 +217,7 @@ export default function About() {
           ['Auto-Update', 'GitHub Releases'],
           ['Author', 'Jerome Purushotham'],
         ].map(([label, value]) => (
-          <Box key={label} display="flex" gap={2} py={0.5}>
+          <Box key={label} sx={{ display: 'flex', gap: 2, py: 0.5 }}>
             <Typography variant="caption" color="text.secondary" sx={{ minWidth: 90 }}>{label}</Typography>
             <Typography variant="caption">{value}</Typography>
           </Box>
@@ -225,19 +225,19 @@ export default function About() {
       </Box>
 
       {/* Update */}
-      <Box display="flex" flexDirection="column" gap={1.5} alignItems="flex-start">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'flex-start' }}>
         <Button variant="outlined" startIcon={<SystemUpdateIcon />} onClick={checkUpdates} disabled={checking || downloading}>
           {checking ? 'Checking...' : 'Check for Updates'}
         </Button>
 
         {updateResult && (
-          <Typography variant="caption" color={updateVersion ? 'primary.main' : 'text.secondary'} fontWeight={updateVersion ? 600 : 400}>
+          <Typography variant="caption" color={updateVersion ? 'primary.main' : 'text.secondary'} sx={{ fontWeight: updateVersion ? 600 : 400 }}>
             {updateResult}
           </Typography>
         )}
 
         {updateVersion && !downloading && !downloadedPath && (
-          <Box display="flex" gap={1}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="contained" size="small" onClick={handleDownload}>
               Download v{updateVersion}
             </Button>
@@ -249,9 +249,9 @@ export default function About() {
 
         {downloading && (
           <Box sx={{ width: '100%', maxWidth: 400 }}>
-            <Box display="flex" justifyContent="space-between" mb={0.5}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
               <Typography variant="caption" color="text.secondary">Downloading...</Typography>
-              <Typography variant="caption" color="primary.main" fontWeight={600}>{downloadProgress}%</Typography>
+              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>{downloadProgress}%</Typography>
             </Box>
             <Box sx={{ width: '100%', height: 6, borderRadius: 3, bgcolor: (t) => alpha(t.palette.primary.main, 0.1) }}>
               <Box sx={{ width: `${downloadProgress}%`, height: '100%', borderRadius: 3, bgcolor: 'primary.main', transition: 'width 0.3s' }} />
@@ -269,10 +269,10 @@ export default function About() {
               maxWidth: 450,
             }}
           >
-            <Typography variant="body2" color="success.main" fontWeight={600} mb={1}>
+            <Typography variant="body2" color="success.main" sx={{ fontWeight: 600, mb: 1 }}>
               Download complete
             </Typography>
-            <Typography variant="caption" color="text.secondary" component="div" lineHeight={1.9}>
+            <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.9 }}>
               <strong>To install:</strong>
               <ol style={{ margin: '4px 0 0 0', paddingLeft: 16 }}>
                 <li>Quit gsync</li>

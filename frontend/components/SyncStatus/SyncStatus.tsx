@@ -18,9 +18,9 @@ import {
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -121,17 +121,17 @@ export default function SyncStatus() {
             return (
               <TableRow key={profile.id} hover sx={{ position: 'relative' }}>
                 <TableCell sx={{ py: 0.75 }}>
-                  <Box display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <DirIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="body2" fontWeight={500} noWrap>{profile.name}</Typography>
+                    <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>{profile.name}</Typography>
                   </Box>
                 </TableCell>
                 <TableCell sx={{ py: 0.75 }}>
                   {isActive ? (
-                    <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                       <SyncIcon sx={{ fontSize: 14, color: 'primary.main', animation: `${spin} 1.5s linear infinite` }} />
-                      <Box flex={1} minWidth={60}>
-                        <Typography variant="caption" color="primary.main" noWrap display="block" sx={{ maxWidth: 150 }}>
+                      <Box sx={{ flex: 1, minWidth: 60 }}>
+                        <Typography variant="caption" color="primary.main" noWrap sx={{ display: 'block', maxWidth: 150 }}>
                           {session?.currentFile || 'Syncing...'}
                         </Typography>
                         {session && session.totalFiles > 0 && (

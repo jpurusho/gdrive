@@ -24,12 +24,12 @@ import {
   alpha,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelIcon from '@mui/icons-material/Cancel';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import type { SyncSession } from '../../shared/types';
 
@@ -193,15 +193,15 @@ export default function History() {
   const thStyle = { fontWeight: 700, fontSize: 12, py: 1.25, borderBottom: (t: any) => `1px solid ${alpha(t.palette.divider, 0.15)}` };
 
   return (
-    <Box flex={1} overflow="auto" px={4} py={3}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+    <Box sx={{ flex: 1, overflow: 'auto', px: 4, py: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Box>
-          <Typography variant="h5" mb={0.5}>Sync History</Typography>
+          <Typography variant="h5" sx={{ mb: 0.5 }}>Sync History</Typography>
           <Typography variant="body2" color="text.secondary">
             {filteredSessions.length}{hasFilters ? ` of ${sessions.length}` : ''} session{filteredSessions.length !== 1 ? 's' : ''}
           </Typography>
         </Box>
-        <Box display="flex" gap={1}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           {selected.size > 0 && (
             <Button size="small" color="error" variant="outlined" startIcon={<DeleteOutlineIcon />} onClick={handleDeleteSelected}>
               Delete {selected.size}
@@ -216,7 +216,7 @@ export default function History() {
       </Box>
 
       {/* Filters */}
-      <Box display="flex" gap={1.5} mb={2} flexWrap="wrap" alignItems="center">
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
         <FilterListIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel>Profile</InputLabel>
@@ -244,7 +244,7 @@ export default function History() {
           label="From"
           value={filterDateFrom}
           onChange={(e) => setFilterDateFrom(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          slotProps={{ inputLabel: { shrink: true } }}
           sx={{ width: 150 }}
         />
         <TextField
@@ -253,7 +253,7 @@ export default function History() {
           label="To"
           value={filterDateTo}
           onChange={(e) => setFilterDateTo(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          slotProps={{ inputLabel: { shrink: true } }}
           sx={{ width: 150 }}
         />
         {hasFilters && (
@@ -262,13 +262,13 @@ export default function History() {
       </Box>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" py={6}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress size={28} />
         </Box>
       ) : error ? (
         (() => { const e = classifyError(error); return <StatusMessage type={e.type} title={e.title} detail={e.detail} onRetry={load} />; })()
       ) : filteredSessions.length === 0 ? (
-        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" py={8} sx={{ opacity: 0.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8, opacity: 0.5 }}>
           <HourglassEmptyIcon sx={{ fontSize: 48, mb: 1 }} />
           <Typography color="text.secondary">
             {hasFilters ? 'No sessions match your filters.' : 'No sync sessions yet.'}
@@ -340,7 +340,7 @@ export default function History() {
                       <Checkbox size="small" checked={selected.has(session.id)} onChange={() => toggleSelect(session.id)} />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>{session.profileName}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{session.profileName}</Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
