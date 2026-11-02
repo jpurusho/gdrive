@@ -27,6 +27,13 @@ mac:
       arch: [universal]
   darkModeSupport: true
   identity: null
+  # better-sqlite3 v13 ships prebuilt binaries for all archs in prebuilds/.
+  # Both the x64 and arm64 packaging steps include the same prebuilds dir,
+  # so darwin-arm64.node (and others) are identical in both builds.
+  # x64ArchFiles tells the universal merger to take these files from the x64
+  # build as-is rather than lipo-merging — the prebuilds dir contains both
+  # darwin-x64.node and darwin-arm64.node so both archs still work at runtime.
+  x64ArchFiles: "**/better-sqlite3/prebuilds/**"
 
 win:
   target:
