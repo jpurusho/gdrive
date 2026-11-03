@@ -341,13 +341,18 @@ export class GoogleDriveService {
 
   /** Get or create a folder by path segments under a parent */
   async ensureFolder(parentId: string, folderName: string, driveId: string): Promise<string> {
-    const isSharedDrive = driveId !== 'root';
+    const isSharedWithMe = driveId === 'shared_with_me';
+    const isSharedDrive = !isSharedWithMe && driveId !== 'root';
     const res = await this.drive.files.list({
       q: `'${parentId}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
       fields: 'files(id)',
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
-      ...(isSharedDrive ? { driveId, corpora: 'drive' } : {}),
+      ...(isSharedDrive
+        ? { driveId, corpora: 'drive' }
+        : isSharedWithMe
+          ? { corpora: 'allDrives' }
+          : {}),
     });
 
     if (res.data.files && res.data.files.length > 0) {
@@ -358,13 +363,18 @@ export class GoogleDriveService {
 
   /** Find a file by name under a parent folder */
   async findFile(parentId: string, fileName: string, driveId: string): Promise<DriveFile | null> {
-    const isSharedDrive = driveId !== 'root';
+    const isSharedWithMe = driveId === 'shared_with_me';
+    const isSharedDrive = !isSharedWithMe && driveId !== 'root';
     const res = await this.drive.files.list({
       q: `'${parentId}' in parents and name = '${fileName.replace(/'/g, "\\'")}' and trashed = false`,
       fields: 'files(id,name,mimeType,size,modifiedTime,md5Checksum)',
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
-      ...(isSharedDrive ? { driveId, corpora: 'drive' } : {}),
+      ...(isSharedDrive
+        ? { driveId, corpora: 'drive' }
+        : isSharedWithMe
+          ? { corpora: 'allDrives' }
+          : {}),
     });
 
     const f = res.data.files?.[0];
