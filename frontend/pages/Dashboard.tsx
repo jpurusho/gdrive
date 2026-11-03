@@ -114,7 +114,6 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   function handleCreate(profile: SyncProfile) {
     setProfiles((prev) => [profile, ...prev]);
     setSelectedProfileId(profile.id);
-    handleSync(profile.id);
   }
 
   function handleUpdated(updated: SyncProfile) {

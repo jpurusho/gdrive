@@ -606,7 +606,8 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
         const timeDiff = Math.abs(remoteTime - localTime);
 
         // Within 2 seconds = same time — skip (no meaningful change)
-        if (timeDiff < 2000) {
+        const SYNC_TIMESTAMP_TOLERANCE_MS = 2000;
+        if (timeDiff < SYNC_TIMESTAMP_TOLERANCE_MS) {
           session.filesSkipped++;
           logFile(session.id, fileName, relPath, 'download', 'skipped', 0, 0, localHash, remote.md5Checksum);
           continue;
@@ -654,6 +655,24 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   if (activeSyncs.has(profileId)) {
     throw new Error('Sync already in progress for this profile');
   }
+
+  // Clean up stale .partial files (> 24h old) left by interrupted syncs
+  try {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const walkDir = async (dir: string) => {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walkDir(full);
+        } else if (entry.name.endsWith('.partial')) {
+          const stat = await fs.promises.stat(full);
+          if (stat.mtimeMs < cutoff) await fs.promises.unlink(full);
+        }
+      }
+    };
+    await walkDir(profile.localPath);
+  } catch { /* best-effort cleanup — never block a sync */ }
 
   // Mark any previous paused sessions for this profile as cancelled
   const db = getDb();
@@ -737,17 +756,29 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
         session.errorMessage = 'No files found in source folder';
       }
       console.log(`[Sync] Completed: ${session.totalFiles} found, ${session.filesSynced} synced, ${session.filesSkipped} skipped, ${session.filesFailed} failed`);
+      // Native OS notification for background/scheduled syncs
+      try {
+        const { Notification } = await import('electron');
+        if (Notification.isSupported() && session.filesSynced > 0) {
+          new Notification({
+            title: 'gsync — sync complete',
+            body: `${session.filesSynced} file${session.filesSynced !== 1 ? 's' : ''} synced${session.filesFailed > 0 ? `, ${session.filesFailed} failed` : ''}`,
+          }).show();
+        }
+      } catch { /* notifications not available in dev renderer context */ }
     }
   } catch (err: any) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();
     session.currentFile = undefined;
 
-    // Detect expired/revoked tokens
+    // Classify error into a user-friendly message
     const errMsg = err?.message || '';
     const errData = err?.response?.data;
     if (errMsg.includes('invalid_grant') || errData?.error === 'invalid_grant') {
       session.errorMessage = 'Session expired — please sign out and sign in again.';
+    } else if (err?.code === 'ENOSPC' || errMsg.includes('ENOSPC') || errMsg.toLowerCase().includes('no space left')) {
+      session.errorMessage = 'Disk full — free up space and try again.';
     } else {
       session.errorMessage = errMsg || 'Sync failed';
     }

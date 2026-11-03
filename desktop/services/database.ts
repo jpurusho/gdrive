@@ -14,16 +14,22 @@ interface AppConfig {
   dataDir?: string;
 }
 
+let _configCache: AppConfig | null = null;
+
 function loadConfig(): AppConfig {
+  if (_configCache !== null) return _configCache;
   try {
     if (fs.existsSync(CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      _configCache = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      return _configCache!;
     }
   } catch {}
-  return {};
+  _configCache = {};
+  return _configCache;
 }
 
 function saveConfig(config: AppConfig): void {
+  _configCache = config;
   try {
     if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));

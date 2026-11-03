@@ -327,7 +327,13 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:openExternal', (_event, url: string) => {
     const { shell } = require('electron');
-    shell.openExternal(url);
+    try {
+      const parsed = new URL(url);
+      const allowed = ['github.com', 'google.com', 'accounts.google.com', 'developers.google.com'];
+      const isAllowed = ['https:', 'http:'].includes(parsed.protocol) &&
+        allowed.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h));
+      if (isAllowed) shell.openExternal(url);
+    } catch { /* invalid URL — ignore */ }
   });
 
   ipcMain.handle('app:downloadUpdate', async (_event, downloadUrl: string, destDir?: string) => {

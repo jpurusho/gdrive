@@ -27,9 +27,8 @@ import SyncProblemIcon from '@mui/icons-material/SyncProblem';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
+import { directionIcons } from '@/utils/syncDirection';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
@@ -39,11 +38,6 @@ import EditProfileDialog from '../components/EditProfileDialog/EditProfileDialog
 import type { ThemeDefinition } from '../theme/themes';
 import type { SyncProfile, BackupInfo } from '../../shared/types';
 
-const directionIcons: Record<string, React.ElementType> = {
-  download: CloudDownloadIcon,
-  upload: CloudUploadIcon,
-  bidirectional: SyncIcon,
-};
 
 function ThemeCard({ def, selected, onSelect }: { def: ThemeDefinition; selected: boolean; onSelect: () => void }) {
   const { colors, mode } = def;

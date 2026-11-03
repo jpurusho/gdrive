@@ -32,6 +32,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import type { SyncSession } from '../../shared/types';
+import { formatBytes, formatDuration } from '@/utils/format';
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   completed: { icon: <CheckCircleIcon sx={{ fontSize: 16 }} />, color: 'success', label: 'Completed' },
@@ -41,22 +42,6 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
   cancelled: { icon: <CancelIcon sx={{ fontSize: 16 }} />, color: 'warning', label: 'Cancelled' },
   idle: { icon: <HourglassEmptyIcon sx={{ fontSize: 16 }} />, color: 'default', label: 'Idle' },
 };
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return '0 B';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-function formatDuration(start: string, end?: string): string {
-  if (!end) return 'running...';
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms < 1000) return '<1s';
-  if (ms < 60000) return `${Math.round(ms / 1000)}s`;
-  return `${Math.round(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
-}
 
 type SortField = 'profileName' | 'status' | 'startedAt' | 'filesSynced' | 'bytesTransferred';
 type SortDir = 'asc' | 'desc';

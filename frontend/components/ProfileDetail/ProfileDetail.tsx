@@ -36,25 +36,8 @@ import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import FileLogDialog from '../FileLogDialog/FileLogDialog';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import type { SyncProfile, SyncSession, SyncFileEntry } from '../../../shared/types';
-
-const directionLabels: Record<string, string> = { download: 'Download', upload: 'Upload', bidirectional: 'Bidirectional' };
-const directionIcons: Record<string, React.ElementType> = { download: CloudDownloadIcon, upload: CloudUploadIcon, bidirectional: SyncIcon };
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return '0 B';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-function formatDuration(start: string, end?: string): string {
-  if (!end) return 'running...';
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms < 1000) return '<1s';
-  if (ms < 60000) return `${Math.round(ms / 1000)}s`;
-  return `${Math.round(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
-}
+import { directionIcons, directionLabels } from '@/utils/syncDirection';
+import { formatBytes, formatDuration } from '@/utils/format';
 
 interface Props {
   profile: SyncProfile;

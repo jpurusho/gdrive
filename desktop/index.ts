@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme, globalShortcut, Menu } from 'electron';
+import { app, BrowserWindow, nativeTheme, globalShortcut, Menu, Tray, nativeImage } from 'electron';
 import * as path from 'path';
 import { config } from 'dotenv';
 import { registerIpcHandlers } from './ipc-handlers';
@@ -14,6 +14,33 @@ app.setName('gsync');
 
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let appIsQuitting = false;
+
+function createTray(): void {
+  const iconPath = path.join(__dirname, '../resources/icon.png');
+  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  tray = new Tray(icon);
+  tray.setToolTip('gsync');
+
+  const rebuild = () => {
+    const menu = Menu.buildFromTemplate([
+      {
+        label: 'Show gsync',
+        click: () => { mainWindow?.show(); mainWindow?.focus(); },
+      },
+      { type: 'separator' },
+      {
+        label: 'Quit',
+        click: () => { appIsQuitting = true; app.quit(); },
+      },
+    ]);
+    tray?.setContextMenu(menu);
+  };
+
+  rebuild();
+  tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
+}
 
 function createWindow(): void {
   nativeTheme.themeSource = 'dark';
@@ -124,6 +151,14 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
+  // Hide to tray instead of closing (macOS & Windows)
+  mainWindow.on('close', (event) => {
+    if (!appIsQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -139,10 +174,16 @@ app.whenReady().then(() => {
   initDatabase();
   registerIpcHandlers();
   initScheduler(new GoogleAuthService());
+  createTray();
   createWindow();
 
+  app.on('before-quit', () => { appIsQuitting = true; });
+
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    // macOS: clicking dock icon shows window if hidden
+    if (mainWindow) {
+      mainWindow.show();
+    } else {
       createWindow();
     }
   });

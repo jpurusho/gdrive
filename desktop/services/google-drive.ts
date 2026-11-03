@@ -157,13 +157,22 @@ export class GoogleDriveService {
   }
 
   /** Recursively list all files under a folder */
-  async listAllFiles(driveId: string, folderId: string, basePath: string = '/'): Promise<(DriveFile & { relativePath: string })[]> {
+  async listAllFiles(
+    driveId: string,
+    folderId: string,
+    basePath: string = '/',
+    _depth: number = 0,
+    _visited: Set<string> = new Set(),
+  ): Promise<(DriveFile & { relativePath: string })[]> {
+    if (_depth > 20 || _visited.has(folderId)) return [];
+    _visited.add(folderId);
+
     const result: (DriveFile & { relativePath: string })[] = [];
     const files = await this.listFiles(driveId, folderId);
 
     for (const file of files) {
       if (file.isFolder) {
-        const subFiles = await this.listAllFiles(driveId, file.id, `${basePath}${file.name}/`);
+        const subFiles = await this.listAllFiles(driveId, file.id, `${basePath}${file.name}/`, _depth + 1, _visited);
         result.push(...subFiles);
       } else {
         const exportInfo = getExportInfo(file.mimeType);
@@ -239,7 +248,7 @@ export class GoogleDriveService {
           return;
         }
         bytesWritten += chunk.length;
-        if (onProgress) onProgress(bytesWritten);
+        if (onProgress) onProgress(chunk.length);
       });
 
       stream.on('error', (err) => {
@@ -298,7 +307,7 @@ export class GoogleDriveService {
     const stream = media.body;
     stream.on('data', (chunk: string | Buffer) => {
       bytesUploaded += chunk.length;
-      if (onProgress) onProgress(bytesUploaded);
+      if (onProgress) onProgress(typeof chunk === 'string' ? chunk.length : chunk.length);
     });
 
     if (existingFileId) {

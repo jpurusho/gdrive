@@ -19,9 +19,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import SyncIcon from '@mui/icons-material/Sync';
+import { directionIcons, directionLabels } from '@/utils/syncDirection';
 import FolderIcon from '@mui/icons-material/Folder';
 import CloudIcon from '@mui/icons-material/Cloud';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -42,18 +40,6 @@ const borderGlow = keyframes`
     box-shadow: inset 0 0 0 1px var(--glow-bright), 0 0 24px var(--glow-color), 0 0 8px var(--glow-color);
   }
 `;
-
-const directionIcons = {
-  download: CloudDownloadIcon,
-  upload: CloudUploadIcon,
-  bidirectional: SyncIcon,
-};
-
-const directionLabels = {
-  download: 'Download',
-  upload: 'Upload',
-  bidirectional: 'Bidirectional',
-};
 
 function ProfileCard({
   profile,
