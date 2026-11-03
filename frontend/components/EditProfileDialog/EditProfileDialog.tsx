@@ -37,6 +37,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
 import type { SyncProfile, SyncDirection, DriveInfo, DriveFile } from '../../../shared/types';
+import { isValidCron, formatNextRun } from '@/utils/cron';
 
 function FolderPickerNode({
   folder,
@@ -494,16 +495,17 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
             <InputLabel>Schedule</InputLabel>
             <Select value={schedule} label="Schedule" onChange={(e) => setSchedule(e.target.value)}>
               <MenuItem value="">Manual only</MenuItem>
-              <MenuItem value="*/1 * * * *">Every 1 minute</MenuItem>
-              <MenuItem value="*/2 * * * *">Every 2 minutes</MenuItem>
               <MenuItem value="*/5 * * * *">Every 5 minutes</MenuItem>
               <MenuItem value="*/15 * * * *">Every 15 minutes</MenuItem>
               <MenuItem value="*/30 * * * *">Every 30 minutes</MenuItem>
               <MenuItem value="0 * * * *">Every hour</MenuItem>
               <MenuItem value="0 */6 * * *">Every 6 hours</MenuItem>
+              <MenuItem value="0 */12 * * *">Every 12 hours</MenuItem>
               <MenuItem value="0 0 * * *">Daily at midnight</MenuItem>
+              <MenuItem value="0 9 * * *">Daily at 9 AM</MenuItem>
               <MenuItem value="0 9 * * 1-5">Weekdays at 9 AM</MenuItem>
-              <MenuItem value="custom">Custom cron expression</MenuItem>
+              <MenuItem value="0 0 * * 0">Weekly (Sunday midnight)</MenuItem>
+              <MenuItem value="custom">Custom…</MenuItem>
             </Select>
           </FormControl>
           {schedule === 'custom' && (
@@ -512,12 +514,26 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
               label="Cron Expression"
               value={customCron}
               onChange={(e) => setCustomCron(e.target.value)}
-              placeholder="*/5 * * * *"
-              helperText="Standard cron: min hour day month weekday"
+              placeholder="0 */6 * * *"
+              error={customCron.length > 0 && !isValidCron(customCron)}
+              helperText={
+                customCron.length > 0 && !isValidCron(customCron)
+                  ? 'Invalid cron expression (5 fields: min hour day month weekday)'
+                  : 'Standard cron: min hour day month weekday'
+              }
               sx={{ mt: 1.5 }}
               fullWidth
             />
           )}
+          {(() => {
+            const effectiveCron = schedule === 'custom' ? customCron : schedule;
+            const nextRun = effectiveCron ? formatNextRun(effectiveCron) : '';
+            return nextRun ? (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Next run: {nextRun}
+              </Typography>
+            ) : null;
+          })()}
         </Box>
 
         {/* Stats */}

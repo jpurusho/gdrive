@@ -7,6 +7,52 @@ import type { AuthTokens, UserInfo, SyncProfile } from '../../shared/types';
 
 let db: Database.Database;
 
+// ─── SQLite row types ────────────────────────────────────────────────────────
+
+interface PragmaColumnRow { name: string; }
+
+interface AuthTokenRow {
+  id: number;
+  access_token: string;
+  refresh_token: string | null;
+  token_type: string | null;
+  expiry_date: number | null;
+  scope: string | null;
+}
+
+interface UserInfoRow {
+  id: number;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+interface SettingRow {
+  value: string;
+}
+
+interface ProfileRow {
+  id: number;
+  name: string;
+  drive_id: string;
+  drive_name: string;
+  drive_type: string;
+  drive_folder_id: string;
+  drive_folder_path: string;
+  local_path: string;
+  sync_direction: string;
+  use_source_folder_name: number;
+  convert_heic_to_jpeg: number;
+  mirror_mode: number;
+  max_depth: number | null;
+  file_filter: string | null;
+  schedule: string | null;
+  is_active: number;
+  last_sync_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const CONFIG_DIR = path.join(os.homedir(), '.gsync');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
@@ -147,8 +193,8 @@ export function initDatabase(): void {
   `);
 
   // Migrations for existing databases
-  const profileCols = db.pragma('table_info(sync_profiles)') as any[];
-  const profileColNames = new Set(profileCols.map((c: any) => c.name));
+  const profileCols = db.pragma('table_info(sync_profiles)') as PragmaColumnRow[];
+  const profileColNames = new Set(profileCols.map((c) => c.name));
   if (!profileColNames.has('file_filter')) {
     db.exec('ALTER TABLE sync_profiles ADD COLUMN file_filter TEXT');
   }
@@ -165,8 +211,8 @@ export function initDatabase(): void {
     db.exec('ALTER TABLE sync_profiles ADD COLUMN max_depth INTEGER DEFAULT 0');
   }
 
-  const cols = db.pragma('table_info(sync_history)') as any[];
-  const colNames = new Set(cols.map((c: any) => c.name));
+  const cols = db.pragma('table_info(sync_history)') as PragmaColumnRow[];
+  const colNames = new Set(cols.map((c) => c.name));
   if (!colNames.has('total_files')) {
     db.exec('ALTER TABLE sync_history ADD COLUMN total_files INTEGER DEFAULT 0');
   }
@@ -190,14 +236,14 @@ export function saveTokens(tokens: AuthTokens): void {
 }
 
 export function getTokens(): AuthTokens | null {
-  const row = db.prepare('SELECT * FROM auth_tokens WHERE id = 1').get() as any;
+  const row = db.prepare('SELECT * FROM auth_tokens WHERE id = 1').get() as AuthTokenRow | undefined;
   if (!row) return null;
   return {
     access_token: row.access_token,
-    refresh_token: row.refresh_token,
-    token_type: row.token_type,
-    expiry_date: row.expiry_date,
-    scope: row.scope,
+    refresh_token: row.refresh_token ?? undefined,
+    token_type: row.token_type ?? undefined,
+    expiry_date: row.expiry_date ?? undefined,
+    scope: row.scope ?? undefined,
   };
 }
 
@@ -216,7 +262,7 @@ export function saveUserInfo(user: UserInfo): void {
 }
 
 export function getUserInfo(): UserInfo | null {
-  const row = db.prepare('SELECT * FROM user_info WHERE id = 1').get() as any;
+  const row = db.prepare('SELECT * FROM user_info WHERE id = 1').get() as UserInfoRow | undefined;
   if (!row) return null;
   return {
     email: row.email,
@@ -232,7 +278,7 @@ export function clearUserInfo(): void {
 // ─── App settings helpers ──────────────────────────────────────────────────
 
 export function getSetting(key: string): string | null {
-  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key) as any;
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key) as SettingRow | undefined;
   return row?.value ?? null;
 }
 
@@ -242,17 +288,17 @@ export function setSetting(key: string, value: string): void {
 
 // ─── Sync profile helpers ──────────────────────────────────────────────────
 
-function rowToProfile(row: any): SyncProfile {
+function rowToProfile(row: ProfileRow): SyncProfile {
   return {
     id: row.id,
     name: row.name,
     driveId: row.drive_id,
     driveName: row.drive_name,
-    driveType: row.drive_type,
+    driveType: row.drive_type as SyncProfile['driveType'],
     driveFolderId: row.drive_folder_id,
     driveFolderPath: row.drive_folder_path,
     localPath: row.local_path,
-    syncDirection: row.sync_direction,
+    syncDirection: row.sync_direction as SyncProfile['syncDirection'],
     useSourceFolderName: row.use_source_folder_name === 1,
     convertHeicToJpeg: row.convert_heic_to_jpeg === 1,
     mirrorMode: row.mirror_mode === 1,
@@ -267,12 +313,12 @@ function rowToProfile(row: any): SyncProfile {
 }
 
 export function getProfiles(): SyncProfile[] {
-  const rows = db.prepare('SELECT * FROM sync_profiles ORDER BY created_at DESC').all() as any[];
+  const rows = db.prepare('SELECT * FROM sync_profiles ORDER BY created_at DESC').all() as ProfileRow[];
   return rows.map(rowToProfile);
 }
 
 export function getProfile(id: number): SyncProfile | null {
-  const row = db.prepare('SELECT * FROM sync_profiles WHERE id = ?').get(id) as any;
+  const row = db.prepare('SELECT * FROM sync_profiles WHERE id = ?').get(id) as ProfileRow | undefined;
   return row ? rowToProfile(row) : null;
 }
 

@@ -6,15 +6,17 @@ import {
   ListItemButton,
   IconButton,
   Tooltip,
+  Button,
+  CircularProgress,
   alpha,
   useTheme,
   keyframes,
 } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 import AddIcon from '@mui/icons-material/Add';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
@@ -50,9 +52,12 @@ interface Props {
   onSelect: (id: number) => void;
   onAdd: () => void;
   onQuickSync?: () => void;
+  onSyncAll?: () => void;
+  syncAllDisabled?: boolean;
+  syncAllLabel?: string;
 }
 
-export default function ProfileList({ profiles, sessions, selectedId, onSelect, onAdd, onQuickSync }: Props) {
+export default function ProfileList({ profiles, sessions, selectedId, onSelect, onAdd, onQuickSync, onSyncAll, syncAllDisabled, syncAllLabel }: Props) {
   const theme = useTheme();
 
   return (
@@ -94,6 +99,26 @@ export default function ProfileList({ profiles, sessions, selectedId, onSelect, 
           </Tooltip>
         </Box>
       </Box>
+
+      {/* Sync All button — only shown when 2+ active profiles */}
+      {onSyncAll && (
+        <Box sx={{ px: 1.5, pt: 1.25, pb: 0.5 }}>
+          <Button
+            fullWidth
+            size="small"
+            variant="outlined"
+            disabled={syncAllDisabled}
+            onClick={onSyncAll}
+            startIcon={syncAllDisabled
+              ? <CircularProgress size={14} color="inherit" />
+              : <SyncIcon sx={{ fontSize: 16 }} />
+            }
+            sx={{ borderRadius: 1.5, fontSize: 12, textTransform: 'none', py: 0.6 }}
+          >
+            {syncAllLabel ?? 'Sync All'}
+          </Button>
+        </Box>
+      )}
 
       {/* Profile list */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>

@@ -5,7 +5,7 @@ import { GoogleAuthService } from './services/google-auth';
 import { GoogleDriveService } from './services/google-drive';
 import { LocalFsService } from './services/local-fs';
 import { getTokens, getProfiles, createProfile, deleteProfile, updateProfile, getSetting, setSetting, getDataDir, setDataDir } from './services/database';
-import { startSync, cancelSync, getSessions, getFileLogs } from './services/sync-engine';
+import { startSync, cancelSync, getSessions, getSessionsPaged, getFileLogs } from './services/sync-engine';
 import { refreshSchedules, scheduleProfile, unscheduleProfile } from './services/scheduler';
 import { backupDatabase, restoreDatabase, syncMergeDatabase, getBackupInfo, recordBackup } from './services/db-backup';
 import type { SyncProfile } from '../shared/types';
@@ -240,6 +240,15 @@ export function registerIpcHandlers(): void {
     } catch (err: any) {
       console.error('Get sessions failed:', err?.message);
       return [];
+    }
+  });
+
+  ipcMain.handle('sync:getSessionsPaged', async (_event, opts: { page: number; pageSize: number; profileId?: number }) => {
+    try {
+      return getSessionsPaged(opts);
+    } catch (err: any) {
+      console.error('Get sessions paged failed:', err?.message);
+      return { sessions: [], total: 0, page: opts.page, pageSize: opts.pageSize };
     }
   });
 

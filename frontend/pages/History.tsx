@@ -21,6 +21,7 @@ import {
   MenuItem,
   Button,
   Checkbox,
+  Pagination,
   alpha,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -31,7 +32,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import type { SyncSession } from '../../shared/types';
+import type { SyncSession, SessionsPage } from '../../shared/types';
 import { formatBytes, formatDuration } from '@/utils/format';
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
@@ -46,10 +47,13 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
 type SortField = 'profileName' | 'status' | 'startedAt' | 'filesSynced' | 'bytesTransferred';
 type SortDir = 'asc' | 'desc';
 
+const PAGE_SIZE = 25;
+
 export default function History() {
-  const [sessions, setSessions] = useState<SyncSession[]>([]);
+  const [page, setPage] = useState<SessionsPage>({ sessions: [], total: 0, page: 1, pageSize: PAGE_SIZE });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filters
   const [filterProfile, setFilterProfile] = useState('');
@@ -64,12 +68,16 @@ export default function History() {
   // Selection for delete
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
-  async function load() {
+  // All sessions loaded for the current page (for live-update merging)
+  const [liveSessions, setLiveSessions] = useState<SyncSession[]>([]);
+
+  async function load(p = currentPage) {
     setLoading(true);
     setError(null);
     try {
-      const result = await window.api.sync.getSessions();
-      setSessions(result);
+      const result = await window.api.sync.getSessionsPaged({ page: p, pageSize: PAGE_SIZE });
+      setPage(result);
+      setLiveSessions(result.sessions);
     } catch (err: any) {
       setError(err?.message || 'Failed to load history');
     } finally {
@@ -78,20 +86,29 @@ export default function History() {
   }
 
   useEffect(() => {
-    load();
+    load(currentPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
+  useEffect(() => {
     const unsub = window.api.sync.onSyncProgress((session) => {
-      setSessions((prev) => {
+      setLiveSessions((prev) => {
         const idx = prev.findIndex((s) => s.id === session.id);
         if (idx >= 0) {
           const next = [...prev];
           next[idx] = session;
           return next;
         }
-        return [session, ...prev];
+        // New session: prepend on page 1 only
+        if (currentPage === 1) return [session, ...prev.slice(0, PAGE_SIZE - 1)];
+        return prev;
       });
     });
     return unsub;
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
+  const sessions = liveSessions;
 
   // Unique profile names for filter dropdown
   const profileNames = useMemo(() =>
@@ -99,7 +116,7 @@ export default function History() {
     [sessions],
   );
 
-  // Filtered and sorted sessions
+  // Client-side filter + sort on the loaded page
   const filteredSessions = useMemo(() => {
     let result = sessions;
 
@@ -162,8 +179,8 @@ export default function History() {
   async function handleDeleteSelected() {
     if (selected.size === 0) return;
     await window.api.sync.deleteSessions([...selected]);
-    setSessions((prev) => prev.filter((s) => !selected.has(s.id)));
     setSelected(new Set());
+    load(currentPage);
   }
 
   function clearFilters() {
@@ -183,7 +200,9 @@ export default function History() {
         <Box>
           <Typography variant="h5" sx={{ mb: 0.5 }}>Sync History</Typography>
           <Typography variant="body2" color="text.secondary">
-            {filteredSessions.length}{hasFilters ? ` of ${sessions.length}` : ''} session{filteredSessions.length !== 1 ? 's' : ''}
+            {hasFilters
+              ? `${filteredSessions.length} of ${sessions.length} on this page`
+              : `${Math.min((currentPage - 1) * PAGE_SIZE + 1, page.total)}–${Math.min(currentPage * PAGE_SIZE, page.total)} of ${page.total} session${page.total !== 1 ? 's' : ''}`}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -193,7 +212,7 @@ export default function History() {
             </Button>
           )}
           <Tooltip title="Refresh">
-            <IconButton onClick={load} sx={{ color: 'text.secondary' }}>
+            <IconButton onClick={() => load(currentPage)} sx={{ color: 'text.secondary' }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -375,6 +394,21 @@ export default function History() {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {/* Pagination */}
+      {page.total > PAGE_SIZE && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', pt: 2, gap: 2 }}>
+          <Pagination
+            count={Math.ceil(page.total / PAGE_SIZE)}
+            page={currentPage}
+            onChange={(_e, p) => { setCurrentPage(p); setSelected(new Set()); }}
+            color="primary"
+            size="small"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
       )}
     </Box>
   );

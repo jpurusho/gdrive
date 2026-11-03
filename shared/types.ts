@@ -115,6 +115,13 @@ export interface SyncFileEntry {
   errorMessage?: string;
 }
 
+export interface SessionsPage {
+  sessions: SyncSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 // ─── DB Backup ──────────────────────────────────────────────────────────────
 
 export interface BackupResult {
@@ -179,6 +186,7 @@ export interface ElectronAPI {
     startSync: (profileId: number) => Promise<void>;
     cancelSync: (sessionId: number) => Promise<void>;
     getSessions: (profileId?: number) => Promise<SyncSession[]>;
+    getSessionsPaged: (opts: { page: number; pageSize: number; profileId?: number }) => Promise<SessionsPage>;
     getFileLogs: (sessionId: number) => Promise<SyncFileEntry[]>;
     deleteSessions: (ids: number[]) => Promise<void>;
     onSyncProgress: (callback: (session: SyncSession) => void) => () => void;

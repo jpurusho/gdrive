@@ -31,6 +31,7 @@ const api: ElectronAPI = {
     startSync: (profileId) => ipcRenderer.invoke('sync:startSync', profileId),
     cancelSync: (sessionId) => ipcRenderer.invoke('sync:cancelSync', sessionId),
     getSessions: (profileId) => ipcRenderer.invoke('sync:getSessions', profileId),
+    getSessionsPaged: (opts) => ipcRenderer.invoke('sync:getSessionsPaged', opts),
     getFileLogs: (sessionId: number) => ipcRenderer.invoke('sync:getFileLogs', sessionId),
     deleteSessions: (ids: number[]) => ipcRenderer.invoke('sync:deleteSessions', ids),
     onSyncProgress: (callback) => {

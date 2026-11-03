@@ -8,7 +8,9 @@ import {
   Button,
   LinearProgress,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import DownloadIcon from '@mui/icons-material/Download';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
@@ -98,6 +100,19 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   async function handleSync(profileId: number) {
     await window.api.sync.startSync(profileId);
   }
+
+  async function handleSyncAll() {
+    const activeProfiles = profiles.filter((p) => p.isActive);
+    for (const p of activeProfiles) {
+      const session = sessions[p.id];
+      if (session?.status === 'in_progress') continue;
+      await window.api.sync.startSync(p.id);
+    }
+  }
+
+  const activeProfiles = profiles.filter((p) => p.isActive);
+  const runningSessions = Object.values(sessions).filter((s) => s.status === 'in_progress');
+  const isSyncingAny = runningSessions.length > 0;
 
   async function handlePause(profileId: number) {
     await window.api.sync.cancelSync(profileId);
@@ -248,6 +263,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                     onSelect={setSelectedProfileId}
                     onAdd={() => setCreateOpen(true)}
                     onQuickSync={() => setQuickSyncOpen(true)}
+                    onSyncAll={activeProfiles.length >= 2 ? handleSyncAll : undefined}
+                    syncAllDisabled={isSyncingAny}
+                    syncAllLabel={
+                      isSyncingAny
+                        ? `Syncing ${runningSessions.length}/${activeProfiles.length}…`
+                        : `Sync All (${activeProfiles.length})`
+                    }
                   />
                   {selectedProfile ? (
                     <ProfileDetail

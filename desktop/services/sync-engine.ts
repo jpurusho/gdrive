@@ -7,6 +7,41 @@ import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportIn
 import { getProfile, updateProfile, getDb } from './database';
 import type { SyncProfile, SyncSession, SyncFileEntry } from '../../shared/types';
 
+// ─── SQLite row types ────────────────────────────────────────────────────────
+
+interface SessionRow {
+  id: number;
+  profile_id: number;
+  profile_name: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  total_files: number | null;
+  files_synced: number;
+  files_skipped: number | null;
+  files_failed: number;
+  bytes_transferred: number;
+  total_bytes: number;
+  current_file: string | null;
+  error_message: string | null;
+}
+
+interface FileLogRow {
+  id: number;
+  history_id: number;
+  file_name: string;
+  file_path: string;
+  direction: string;
+  status: string;
+  file_size: number;
+  bytes_transferred: number;
+  local_hash: string | null;
+  remote_hash: string | null;
+  error_message: string | null;
+}
+
+interface CountRow { total: number; }
+
 const execFileAsync = promisify(execFile);
 
 /** Convert HEIC file to JPEG using macOS sips (built-in, no dependencies) */
@@ -613,13 +648,16 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
           continue;
         }
 
+        // Both sides differ — last-write-wins. Log a conflict note so the user can see what was overwritten.
+        const conflictNote = `conflict: both sides modified, ${remoteTime > localTime ? 'remote' : 'local'} version kept (last-write-wins)`;
+
         if (remoteTime > localTime) {
           const localPath = path.join(profile.localPath, relPath.slice(1));
           await retryWithBackoff(() => driveService.downloadFile(remote.id, remote.mimeType, localPath, (bytes) => {
             session.bytesTransferred += bytes;
             sendProgress(session);
           }));
-          logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0, localHash, remote.md5Checksum);
+          logFile(session.id, fileName, relPath, 'download', 'completed', remote.size || 0, remote.size || 0, localHash, remote.md5Checksum, conflictNote);
           session.filesSynced++;
         } else {
           const relDir = path.dirname(relPath);
@@ -634,7 +672,7 @@ async function runBidirectionalSync(ctx: SyncContext): Promise<void> {
             session.bytesTransferred += bytes;
             sendProgress(session);
           }));
-          logFile(session.id, fileName, relPath, 'upload', 'completed', local.size, local.size, localHash);
+          logFile(session.id, fileName, relPath, 'upload', 'completed', local.size, local.size, localHash, undefined, conflictNote);
           session.filesSynced++;
         }
       }
@@ -810,14 +848,14 @@ export function cancelSync(profileId: number): void {
 
 export function getFileLogs(sessionId: number): SyncFileEntry[] {
   const db = getDb();
-  const rows = db.prepare('SELECT * FROM sync_file_log WHERE history_id = ? ORDER BY completed_at DESC').all(sessionId) as any[];
+  const rows = db.prepare('SELECT * FROM sync_file_log WHERE history_id = ? ORDER BY completed_at DESC').all(sessionId) as FileLogRow[];
   return rows.map((r) => ({
     id: r.id,
     sessionId: r.history_id,
     fileName: r.file_name,
     filePath: r.file_path,
-    direction: r.direction,
-    status: r.status,
+    direction: r.direction as SyncFileEntry['direction'],
+    status: r.status as SyncFileEntry['status'],
     fileSize: r.file_size,
     bytesTransferred: r.bytes_transferred,
     localHash: r.local_hash ?? undefined,
@@ -828,7 +866,7 @@ export function getFileLogs(sessionId: number): SyncFileEntry[] {
 
 export function getSessions(profileId?: number): SyncSession[] {
   const db = getDb();
-  let rows: any[];
+  let rows: SessionRow[];
 
   if (profileId) {
     rows = db.prepare(`
@@ -837,21 +875,21 @@ export function getSessions(profileId?: number): SyncSession[] {
       JOIN sync_profiles sp ON sh.profile_id = sp.id
       WHERE sh.profile_id = ?
       ORDER BY sh.started_at DESC LIMIT 50
-    `).all(profileId) as any[];
+    `).all(profileId) as SessionRow[];
   } else {
     rows = db.prepare(`
       SELECT sh.*, sp.name as profile_name
       FROM sync_history sh
       JOIN sync_profiles sp ON sh.profile_id = sp.id
       ORDER BY sh.started_at DESC LIMIT 100
-    `).all() as any[];
+    `).all() as SessionRow[];
   }
 
   return rows.map((r) => ({
     id: r.id,
     profileId: r.profile_id,
     profileName: r.profile_name,
-    status: r.status,
+    status: r.status as SyncSession['status'],
     startedAt: r.started_at,
     completedAt: r.completed_at ?? undefined,
     totalFiles: r.total_files ?? 0,
@@ -863,4 +901,56 @@ export function getSessions(profileId?: number): SyncSession[] {
     currentFile: r.current_file ?? undefined,
     errorMessage: r.error_message ?? undefined,
   }));
+}
+
+export interface SessionsPage {
+  sessions: SyncSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export function getSessionsPaged(opts: { page: number; pageSize: number; profileId?: number }): SessionsPage {
+  const db = getDb();
+  const { page, pageSize, profileId } = opts;
+  const offset = (page - 1) * pageSize;
+
+  const where = profileId ? 'WHERE sh.profile_id = ?' : '';
+  const params: (number)[] = profileId ? [profileId, pageSize, offset] : [pageSize, offset];
+  const countParams: (number)[] = profileId ? [profileId] : [];
+
+  const total = (db.prepare(`
+    SELECT COUNT(*) as total FROM sync_history sh ${where}
+  `).get(...countParams) as CountRow).total;
+
+  const rows = db.prepare(`
+    SELECT sh.*, sp.name as profile_name
+    FROM sync_history sh
+    JOIN sync_profiles sp ON sh.profile_id = sp.id
+    ${where}
+    ORDER BY sh.started_at DESC
+    LIMIT ? OFFSET ?
+  `).all(...params) as SessionRow[];
+
+  return {
+    sessions: rows.map((r) => ({
+      id: r.id,
+      profileId: r.profile_id,
+      profileName: r.profile_name,
+      status: r.status as SyncSession['status'],
+      startedAt: r.started_at,
+      completedAt: r.completed_at ?? undefined,
+      totalFiles: r.total_files ?? 0,
+      filesSynced: r.files_synced,
+      filesSkipped: r.files_skipped ?? 0,
+      filesFailed: r.files_failed,
+      bytesTransferred: r.bytes_transferred,
+      totalBytes: r.total_bytes,
+      currentFile: r.current_file ?? undefined,
+      errorMessage: r.error_message ?? undefined,
+    })),
+    total,
+    page,
+    pageSize,
+  };
 }
