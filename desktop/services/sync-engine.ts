@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { BrowserWindow } from 'electron';
 import { GoogleDriveService, computeLocalMd5, isGoogleWorkspaceFile, getExportInfo } from './google-drive';
 import { getProfile, updateProfile, getDb } from './database';
-import type { SyncProfile, SyncSession, SyncFileEntry } from '../../shared/types';
+import type { SyncProfile, SyncSession, SyncFileEntry, SyncPreview, SyncPreviewItem } from '../../shared/types';
 
 // ─── SQLite row types ────────────────────────────────────────────────────────
 
@@ -844,6 +844,90 @@ export function cancelSync(profileId: number): void {
       WHERE profile_id = ? AND status = 'in_progress'
     `).run(profileId);
   }
+}
+
+export async function previewSync(profileId: number, driveService: GoogleDriveService): Promise<SyncPreview> {
+  const profile = getProfile(profileId);
+  if (!profile) throw new Error('Profile not found');
+  const start = Date.now();
+
+  const preview: SyncPreview = {
+    profileId: profile.id,
+    profileName: profile.name,
+    direction: profile.syncDirection,
+    toDownload: [],
+    toUpload: [],
+    alreadySynced: 0,
+    totalDownloadBytes: 0,
+    totalUploadBytes: 0,
+    durationMs: 0,
+  };
+
+  const profileFilter = profile.fileFilter?.trim();
+
+  if (profile.syncDirection === 'download' || profile.syncDirection === 'bidirectional') {
+    const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+    const allRemote = remoteFiles.filter(f => !f.isFolder);
+    let filtered = profileFilter ? applyFileFilter(allRemote, profileFilter) : allRemote;
+    filtered = applyMaxDepth(filtered, profile.maxDepth);
+
+    for (const file of filtered) {
+      const exportInfo = getExportInfo(file.mimeType);
+      const fileName = exportInfo ? `${file.name}${exportInfo.ext}` : file.name;
+      const relPath = exportInfo
+        ? file.relativePath.substring(0, file.relativePath.lastIndexOf('/') + 1) + fileName
+        : file.relativePath;
+      const localPath = path.join(profile.localPath, relPath.slice(1));
+
+      if (!fs.existsSync(localPath)) {
+        preview.toDownload.push({ fileName, relativePath: relPath, direction: 'download', fileSize: file.size || 0, reason: 'new' });
+        preview.totalDownloadBytes += file.size || 0;
+      } else if (!exportInfo && file.md5Checksum) {
+        const localHash = await computeLocalMd5(localPath);
+        if (localHash !== file.md5Checksum) {
+          preview.toDownload.push({ fileName, relativePath: relPath, direction: 'download', fileSize: file.size || 0, reason: 'updated' });
+          preview.totalDownloadBytes += file.size || 0;
+        } else {
+          preview.alreadySynced++;
+        }
+      } else {
+        const localStat = fs.statSync(localPath);
+        const remoteTime = file.modifiedTime ? new Date(file.modifiedTime).getTime() : 0;
+        if (remoteTime > localStat.mtimeMs + 2000) {
+          preview.toDownload.push({ fileName, relativePath: relPath, direction: 'download', fileSize: file.size || 0, reason: 'updated' });
+          preview.totalDownloadBytes += file.size || 0;
+        } else {
+          preview.alreadySynced++;
+        }
+      }
+    }
+  }
+
+  if (profile.syncDirection === 'upload' || profile.syncDirection === 'bidirectional') {
+    const localFiles = await listAllLocalFiles(profile.localPath, '/', profile.maxDepth, 1, profile.fileFilter);
+    const remoteFiles = await driveService.listAllFiles(profile.driveId, profile.driveFolderId);
+    const remoteMap = new Map(remoteFiles.filter(f => !f.isFolder).map(f => [f.relativePath, f]));
+
+    for (const local of localFiles) {
+      const remote = remoteMap.get(local.relativePath);
+      if (!remote) {
+        preview.toUpload.push({ fileName: local.name, relativePath: local.relativePath, direction: 'upload', fileSize: local.size, reason: 'new' });
+        preview.totalUploadBytes += local.size;
+      } else {
+        const localHash = await computeLocalMd5(local.path);
+        if (localHash !== remote.md5Checksum) {
+          const reason: SyncPreviewItem['reason'] = profile.syncDirection === 'bidirectional' ? 'conflict' : 'updated';
+          preview.toUpload.push({ fileName: local.name, relativePath: local.relativePath, direction: 'upload', fileSize: local.size, reason });
+          preview.totalUploadBytes += local.size;
+        } else if (profile.syncDirection === 'upload') {
+          preview.alreadySynced++;
+        }
+      }
+    }
+  }
+
+  preview.durationMs = Date.now() - start;
+  return preview;
 }
 
 export function getFileLogs(sessionId: number): SyncFileEntry[] {

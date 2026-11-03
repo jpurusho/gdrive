@@ -122,6 +122,28 @@ export interface SessionsPage {
   pageSize: number;
 }
 
+// ─── Sync Preview ────────────────────────────────────────────────────────────
+
+export interface SyncPreviewItem {
+  fileName: string;
+  relativePath: string;
+  direction: 'download' | 'upload';
+  fileSize: number;
+  reason: 'new' | 'updated' | 'conflict';
+}
+
+export interface SyncPreview {
+  profileId: number;
+  profileName: string;
+  direction: string;
+  toDownload: SyncPreviewItem[];
+  toUpload: SyncPreviewItem[];
+  alreadySynced: number;
+  totalDownloadBytes: number;
+  totalUploadBytes: number;
+  durationMs: number;
+}
+
 // ─── DB Backup ──────────────────────────────────────────────────────────────
 
 export interface BackupResult {
@@ -185,6 +207,7 @@ export interface ElectronAPI {
     deleteProfile: (id: number) => Promise<void>;
     startSync: (profileId: number) => Promise<void>;
     cancelSync: (sessionId: number) => Promise<void>;
+    previewSync: (profileId: number) => Promise<SyncPreview>;
     getSessions: (profileId?: number) => Promise<SyncSession[]>;
     getSessionsPaged: (opts: { page: number; pageSize: number; profileId?: number }) => Promise<SessionsPage>;
     getFileLogs: (sessionId: number) => Promise<SyncFileEntry[]>;

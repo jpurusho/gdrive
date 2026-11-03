@@ -34,8 +34,10 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutlined';
 import EditProfileDialog from '../EditProfileDialog/EditProfileDialog';
 import FileLogDialog from '../FileLogDialog/FileLogDialog';
+import SyncPreviewDialog from '../SyncPreviewDialog/SyncPreviewDialog';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
-import type { SyncProfile, SyncSession, SyncFileEntry } from '../../../shared/types';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import type { SyncProfile, SyncSession, SyncFileEntry, SyncPreview } from '../../../shared/types';
 import { directionIcons, directionLabels } from '@/utils/syncDirection';
 import { formatBytes, formatDuration } from '@/utils/format';
 
@@ -57,6 +59,10 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
   const isFailed = session?.status === 'failed';
   const isCompleted = session?.status === 'completed';
   const [editOpen, setEditOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [recentSessions, setRecentSessions] = useState<SyncSession[]>([]);
   const [fileLogSessionId, setFileLogSessionId] = useState<number | null>(null);
   const [syncedFiles, setSyncedFiles] = useState<SyncFileEntry[]>([]);
@@ -81,6 +87,21 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
   const progress = session && session.totalFiles > 0
     ? ((session.filesSynced + session.filesSkipped + session.filesFailed) / session.totalFiles) * 100
     : 0;
+
+  async function handlePreview() {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreview(null);
+    try {
+      const result = await window.api.sync.previewSync(profile.id);
+      setPreview(result);
+    } catch (err: any) {
+      setPreviewError(err?.message || 'Preview failed');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -127,6 +148,9 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
                 Sync Now
               </Button>
             )}
+            <Button size="small" variant="outlined" startIcon={<VisibilityIcon />} onClick={handlePreview} disabled={isActive}>
+              Preview
+            </Button>
             <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => setEditOpen(true)}>
               Edit
             </Button>
@@ -411,6 +435,15 @@ export default function ProfileDetail({ profile, session, onSync, onPause, onDel
         onClose={() => setFileLogSessionId(null)}
         title={`Files — ${profile.name}`}
         sessionIds={fileLogSessionId !== null ? [fileLogSessionId] : []}
+      />
+
+      <SyncPreviewDialog
+        open={previewOpen}
+        loading={previewLoading}
+        error={previewError}
+        preview={preview}
+        onClose={() => setPreviewOpen(false)}
+        onSyncNow={() => { setPreviewOpen(false); onSync(); }}
       />
     </Box>
   );
