@@ -20,6 +20,18 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/electron
+          key: electron-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/electron-builder
+          key: electron-builder-${{ hashFiles('package-lock.json') }}
+
       - name: Install Python setuptools (needed by node-gyp for native modules)
         run: pip3 install --break-system-packages setuptools
 
