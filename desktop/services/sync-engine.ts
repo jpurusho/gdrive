@@ -80,7 +80,7 @@ async function validateLocalFolder(profile: SyncProfile): Promise<string | null>
     await fs.promises.access(profile.localPath);
     return null;
   } catch {
-    if (profile.syncDirection === 'download') {
+    if (profile.syncDirection === 'download' || profile.syncDirection === 'bidirectional') {
       try {
         await fs.promises.mkdir(profile.localPath, { recursive: true });
         console.log(`[Sync] Created local folder: ${profile.localPath}`);
@@ -741,7 +741,7 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   sendProgress(session);
 
   // Validate folders before starting
-  const localErr = await validateLocalFolder(profile);
+  const localErr = await validateLocalFolder(effectiveProfile);
   if (localErr) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();
@@ -754,7 +754,7 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
     return;
   }
 
-  const remoteErr = await validateRemoteFolder(profile, driveService);
+  const remoteErr = await validateRemoteFolder(effectiveProfile, driveService);
   if (remoteErr) {
     session.status = 'failed';
     session.completedAt = new Date().toISOString();
