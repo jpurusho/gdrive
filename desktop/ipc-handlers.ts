@@ -406,10 +406,10 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('app:getVersion', () => app.getVersion());
-  ipcMain.handle('app:checkForUpdates', async () => {
+  ipcMain.handle('app:checkForUpdates', async (_event, force?: boolean) => {
     const currentVersion = app.getVersion();
     const cached = getCachedUpdateCheck();
-    if (cached && Date.now() - cached.timestamp < UPDATE_CHECK_INTERVAL) {
+    if (!force && cached && Date.now() - cached.timestamp < UPDATE_CHECK_INTERVAL) {
       // Invalidate stale "available" cache if user already installed that version
       if (cached.result.status === 'available' && cached.result.version) {
         const cachedVer = cached.result.version.split('.').map(Number);

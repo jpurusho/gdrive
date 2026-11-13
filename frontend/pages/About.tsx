@@ -53,7 +53,7 @@ export default function About() {
     setUpdateVersion(null);
     setDownloadedPath(null);
     try {
-      const result = await window.api.app.checkForUpdates();
+      const result = await window.api.app.checkForUpdates(true);
       if (result.status === 'available') {
         setUpdateResult(`Update available: v${result.version}`);
         setUpdateUrl(result.url || null);
