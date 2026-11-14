@@ -722,12 +722,15 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
   // useSourceFolderName: create subfolder to keep source/dest aligned.
   // For download: append drive folder name to local path.
   // For upload: Drive subfolder is created during sync (runUploadSync calls ensureFolder).
-  // For bidirectional: useSourceFolderName is a no-op — syncing both ways with a renamed
-  // root on one side breaks path symmetry and causes one side to be scanned empty.
+  // For bidirectional: same as download — append drive folder name so paths stay symmetric.
+  //   useSourceFolderName should be disabled in the UI for bidirectional profiles; if it is
+  //   somehow set, honour it rather than ignoring it (ignoring caused spurious A/A/ uploads).
   let effectiveProfile = profile;
-  if (profile.useSourceFolderName && profile.syncDirection === 'download') {
-    const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
-    effectiveProfile = { ...profile, localPath: path.join(profile.localPath, folderName) };
+  if (profile.useSourceFolderName) {
+    if (profile.syncDirection === 'download' || profile.syncDirection === 'bidirectional') {
+      const folderName = profile.driveFolderPath.split('/').filter(Boolean).pop() || profile.driveName;
+      effectiveProfile = { ...profile, localPath: path.join(profile.localPath, folderName) };
+    }
   }
 
   const session = createSession(profileId, effectiveProfile.name);
@@ -736,8 +739,7 @@ export async function startSync(profileId: number, driveService: GoogleDriveServ
 
   console.log(`[Sync] Starting ${effectiveProfile.syncDirection} sync for "${effectiveProfile.name}"`);
   console.log(`[Sync]   Drive: ${effectiveProfile.driveName} (${effectiveProfile.driveId}), folder: ${effectiveProfile.driveFolderPath} (${effectiveProfile.driveFolderId})`);
-  const sfnNote = profile.useSourceFolderName && profile.syncDirection === 'download' ? ' (source folder name)' : '';
-  console.log(`[Sync]   Local: ${effectiveProfile.localPath}${sfnNote}`);
+  console.log(`[Sync]   Local: ${effectiveProfile.localPath}${profile.useSourceFolderName ? ' (source folder name)' : ''}`);
 
   sendProgress(session);
 

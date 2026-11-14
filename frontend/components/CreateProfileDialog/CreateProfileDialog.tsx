@@ -392,7 +392,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
         driveFolderPath: folderSel.folderPath,
         localPath,
         syncDirection: direction,
-        useSourceFolderName,
+        useSourceFolderName: direction !== 'bidirectional' && useSourceFolderName,
         convertHeicToJpeg,
         mirrorMode,
         maxDepth,
@@ -486,7 +486,7 @@ export default function CreateProfileDialog({ open, onClose, onCreate }: Props) 
 
         {/* Source folder name option */}
         <FormControlLabel
-          control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
+          control={<Checkbox checked={useSourceFolderName && direction !== 'bidirectional'} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" disabled={direction === 'bidirectional'} />}
           label={<Typography variant="body2">Create source folder in destination</Typography>}
         />
         <FormControlLabel

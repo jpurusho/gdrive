@@ -225,7 +225,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
       const updates: Partial<SyncProfile> = {
         name: name.trim(),
         syncDirection: direction,
-        useSourceFolderName,
+        useSourceFolderName: direction !== 'bidirectional' && useSourceFolderName,
         convertHeicToJpeg,
         mirrorMode,
         maxDepth,
@@ -415,7 +415,7 @@ export default function EditProfileDialog({ open, profile, onClose, onSave, onDe
         </Box>
 
         <FormControlLabel
-          control={<Checkbox checked={useSourceFolderName} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" />}
+          control={<Checkbox checked={useSourceFolderName && direction !== 'bidirectional'} onChange={(e) => setUseSourceFolderName(e.target.checked)} size="small" disabled={direction === 'bidirectional'} />}
           label={<Typography variant="body2">Create source folder in destination</Typography>}
         />
         <FormControlLabel
