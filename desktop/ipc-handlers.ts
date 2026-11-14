@@ -425,38 +425,35 @@ export function registerIpcHandlers(): void {
     }
 
     try {
+      // Fetch latest-mac.yml directly from release assets — not an API call, so no rate limit.
+      // GitHub redirects /releases/latest/download/<file> to the actual asset URL.
       const https = require('https');
 
-      const release: any = await new Promise((resolve, reject) => {
-        const req = https.get({
-          hostname: 'api.github.com',
-          path: '/repos/jpurusho/gdrive/releases/latest',
-          headers: { 'User-Agent': 'gsync-updater' },
-          timeout: 10000,
-        }, (res: any) => {
-          let data = '';
-          res.on('data', (chunk: string) => { data += chunk; });
-          res.on('end', () => {
-            console.log(`[Update] GitHub API: ${res.statusCode}`);
-            if (res.statusCode === 200) {
-              resolve(JSON.parse(data));
-            } else {
-              reject(new Error(`HTTP ${res.statusCode}`));
+      const fetchUrl = (url: string): Promise<{ status: number; body: string; location?: string }> =>
+        new Promise((resolve, reject) => {
+          const req = https.get(url, { timeout: 10000 }, (res: any) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              resolve({ status: res.statusCode, body: '', location: res.headers.location });
+              res.resume();
+              return;
             }
-          });
-        }).on('error', (err: any) => {
-          reject(new Error(err.message));
-        }).on('timeout', () => {
-          req.destroy();
-          reject(new Error('timeout'));
+            let data = '';
+            res.on('data', (chunk: string) => { data += chunk; });
+            res.on('end', () => resolve({ status: res.statusCode, body: data }));
+          }).on('error', reject).on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
         });
-      });
 
-      const latestVersion = release.tag_name?.replace(/^v/, '') || '';
-      const downloadUrl = release.html_url || '';
-      const releaseNotes = release.body || '';
+      // Follow one redirect (GitHub sends a 302 to the CDN asset URL)
+      let resp = await fetchUrl('https://github.com/jpurusho/gdrive/releases/latest/download/latest-mac.yml');
+      if ((resp.status === 301 || resp.status === 302) && resp.location) {
+        resp = await fetchUrl(resp.location);
+      }
+      console.log(`[Update] latest-mac.yml fetch: ${resp.status}`);
+      if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
 
-      if (!latestVersion) return { status: 'latest', version: currentVersion };
+      const versionMatch = resp.body.match(/^version:\s*(.+)$/m);
+      const latestVersion = versionMatch?.[1]?.trim() || '';
+      if (!latestVersion) throw new Error('Could not parse version from latest-mac.yml');
 
       const current = currentVersion.split('.').map(Number);
       const latest = latestVersion.split('.').map(Number);
@@ -464,16 +461,17 @@ export function registerIpcHandlers(): void {
         || (latest[0] === current[0] && latest[1] > current[1])
         || (latest[0] === current[0] && latest[1] === current[1] && latest[2] > current[2]);
 
+      const downloadUrl = `https://github.com/jpurusho/gdrive/releases/tag/v${latestVersion}`;
       const result = isNewer
-        ? { status: 'available', version: latestVersion, url: downloadUrl, notes: releaseNotes }
+        ? { status: 'available', version: latestVersion, url: downloadUrl }
         : { status: 'latest', version: currentVersion };
-      setCachedUpdateCheck(result);
+      // Only cache 'available' — never cache 'latest' so the next check always hits the server
+      if (result.status === 'available') setCachedUpdateCheck(result);
       return result;
     } catch (err: any) {
       console.error('[Update] Check failed:', err?.message);
-      // Return stale cache if available, otherwise silently report "latest"
-      if (cached) return cached.result;
-      return { status: 'latest', version: currentVersion };
+      if (cached?.result?.status === 'available') return cached.result;
+      return { status: 'error', message: `Update check failed: ${err?.message}` };
     }
   });
   ipcMain.handle('app:getPlatform', () => process.platform);
