@@ -396,7 +396,7 @@ export default function Settings() {
               and logging every operation. Supports pause/resume, scheduled auto-sync, mirror mode, HEIC conversion, and database backup to Drive.
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-              <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={async () => { setChecking(true); setUpdateMsg(''); try { const r = await window.api.app.checkForUpdates(); if (r.status === 'available') { setUpdateMsg(`Update available: v${r.version}`); } else { setUpdateMsg(`You're on the latest version.`); } } catch { setUpdateMsg('Could not check for updates.'); } finally { setChecking(false); } }} disabled={checking}>
+              <Button variant="outlined" size="small" startIcon={<SystemUpdateIcon />} onClick={async () => { setChecking(true); setUpdateMsg(''); try { const r = await window.api.app.checkForUpdates(true); if (r.status === 'available') { setUpdateMsg(`Update available: v${r.version}`); } else if (r.status === 'latest') { setUpdateMsg(`You're on the latest version.`); } else { setUpdateMsg(r.message || 'Could not check for updates.'); } } catch { setUpdateMsg('Could not check for updates.'); } finally { setChecking(false); } }} disabled={checking}>
                 {checking ? 'Checking...' : 'Check for Updates'}
               </Button>
               {updateMsg && <Typography variant="caption" color="text.secondary">{updateMsg}</Typography>}
