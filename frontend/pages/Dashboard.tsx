@@ -215,35 +215,37 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             >
               {formatDate()}
             </Typography>
-            <Tooltip title={updateAvailable ? `Update available: v${updateAvailable.version} — click to download` : `v${version} — up to date`}>
-              <Typography
-                variant="caption"
-                className="titlebar-nodrag"
-                onClick={() => updateAvailable && setUpdateDialogOpen(true)}
-                sx={{
-                  fontWeight: 700,
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  fontSize: 11,
-                  cursor: updateAvailable ? 'pointer' : 'default',
-                  bgcolor: (t) => updateAvailable
-                    ? alpha(t.palette.warning.main, 0.2)
-                    : alpha(t.palette.primary.main, 0.12),
-                  color: updateAvailable ? 'warning.main' : 'primary.light',
-                  animation: updateAvailable ? 'pulse 2s ease-in-out infinite' : 'none',
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.6 },
-                  },
-                  '&:hover': updateAvailable ? {
-                    bgcolor: (t: any) => alpha(t.palette.warning.main, 0.3),
-                  } : {},
-                }}
-              >
-                {updateAvailable ? `v${updateAvailable.version} available` : `v${version}`}
-              </Typography>
-            </Tooltip>
+            {(version || updateAvailable) && (
+              <Tooltip title={updateAvailable ? `Update available: v${updateAvailable.version} — click to download` : `v${version} — up to date`}>
+                <Typography
+                  variant="caption"
+                  className="titlebar-nodrag"
+                  onClick={() => updateAvailable && setUpdateDialogOpen(true)}
+                  sx={{
+                    fontWeight: 700,
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 1,
+                    fontSize: 11,
+                    cursor: updateAvailable ? 'pointer' : 'default',
+                    bgcolor: (t) => updateAvailable
+                      ? alpha(t.palette.warning.main, 0.2)
+                      : alpha(t.palette.primary.main, 0.12),
+                    color: updateAvailable ? 'warning.main' : 'primary.light',
+                    animation: updateAvailable ? 'pulse 2s ease-in-out infinite' : 'none',
+                    '@keyframes pulse': {
+                      '0%, 100%': { opacity: 1 },
+                      '50%': { opacity: 0.6 },
+                    },
+                    '&:hover': updateAvailable ? {
+                      bgcolor: (t: any) => alpha(t.palette.warning.main, 0.3),
+                    } : {},
+                  }}
+                >
+                  {updateAvailable ? `v${updateAvailable.version} available` : `v${version}`}
+                </Typography>
+              </Tooltip>
+            )}
           </Box>
         </Box>
 

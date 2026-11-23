@@ -470,7 +470,14 @@ export function registerIpcHandlers(): void {
       return result;
     } catch (err: any) {
       console.error('[Update] Check failed:', err?.message);
-      if (cached?.result?.status === 'available') return cached.result;
+      if (cached?.result?.status === 'available' && cached.result.version) {
+        const cachedVer = cached.result.version.split('.').map(Number);
+        const cur = currentVersion.split('.').map(Number);
+        const stillNewer = cachedVer[0] > cur[0]
+          || (cachedVer[0] === cur[0] && cachedVer[1] > cur[1])
+          || (cachedVer[0] === cur[0] && cachedVer[1] === cur[1] && cachedVer[2] > cur[2]);
+        if (stillNewer) return cached.result;
+      }
       return { status: 'error', message: `Update check failed: ${err?.message}` };
     }
   });
